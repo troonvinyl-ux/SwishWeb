@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Package, Coins, ShoppingBag, Lightbulb, Tag, ShoppingCart,
   Truck, TrendingUp, BarChart3, Wallet, CheckSquare, Terminal, Settings,
-  LogOut, ChevronDown, ChevronRight, Zap, RefreshCw, AlertCircle, ClipboardList
+  LogOut, ChevronDown, ChevronRight, Zap, RefreshCw, AlertCircle, ClipboardList, Sparkles
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -38,6 +38,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
       { label: 'Command Centre', to: '/command-centre', icon: Terminal },
+      { label: 'App Tools & Parity', to: '/tools', icon: Sparkles },
     ],
   },
   {

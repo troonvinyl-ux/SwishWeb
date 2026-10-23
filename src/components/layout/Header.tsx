@@ -6,6 +6,11 @@ import { useNavigate } from 'react-router-dom';
 const ROUTE_LABELS: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/command-centre': 'Command Centre',
+  '/tools': 'App Tools & Parity',
+  '/tools/islamic-batch': 'Islamic & Countermark Batch',
+  '/tools/silver-batch': 'Silver Batch',
+  '/tools/bike-flipper': 'Bike Flipper',
+  '/tools/listing-preflight': 'Listing Preflight',
   '/inventory': 'Inventory',
   '/identify': 'Coin Flipper',
   '/acquisitions': 'Acquisitions',
