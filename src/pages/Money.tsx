@@ -10,6 +10,13 @@ export default function Money() {
   const qc = useQueryClient();
   const [dateRange, setDateRange] = useState('30');
 
+  // Read the same canonical sales ledger used by the SWISH app. RLS remains
+  // enforced by the existing backend; only eBay sales are included here.
+  const { data: salesData, error: salesError } = useTable('sales', {
+    filter: { marketplace_id: 'ebay' },
+    order: { column: 'sold_at', ascending: false },
+    limit: 500,
+  });
   const { data: ordersData, error: ordersError } = useTable('orders', {
     order: { column: 'created_at', ascending: false },
     limit: 500,
@@ -37,6 +44,7 @@ export default function Money() {
     });
   }, []);
 
+  const sales    = (salesData || []) as Record<string, unknown>[];
   const orders   = (ordersData || []) as Record<string, unknown>[];
   const fees     = (feesData || []) as Record<string, unknown>[];
   const payouts  = (payoutsData || []) as Record<string, unknown>[];
@@ -44,19 +52,29 @@ export default function Money() {
   // Filter by date range
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - parseInt(dateRange));
-  const inRange = (row: Record<string, unknown>) => {
-    const d = row.created_at as string;
+  const inRange = (row: Record<string, unknown>, dateField = 'created_at') => {
+    const d = row[dateField] as string;
     return !d || new Date(d) >= cutoff;
   };
 
-  const filteredOrders  = orders.filter(inRange);
+  const filteredSales   = sales.filter(row => inRange(row, 'sold_at'));
+  const filteredOrders  = orders.filter(row => inRange(row));
   const filteredFees    = fees.filter(inRange);
   const filteredPayouts = payouts.filter(inRange);
 
   // Calculations — clearly labelled
-  const grossRevenue = filteredOrders.reduce((s, o) => s + Number((o.total_amount || o.sale_price) || 0), 0);
-  const refunds      = filteredOrders.filter(o => o.status === 'refunded').reduce((s, o) => s + Number((o.total_amount || o.sale_price) || 0), 0);
-  const totalFees    = filteredFees.reduce((s, f) => s + Number(f.amount || 0), 0);
+  // Prefer canonical sales ledger values. Fall back to legacy orders/fees only
+  // when this account has no sales rows yet, avoiding double-counting both tables.
+  const hasSalesLedger = filteredSales.length > 0;
+  const grossRevenue = hasSalesLedger
+    ? filteredSales.reduce((s, sale) => s + Number(sale.sale_price || 0), 0)
+    : filteredOrders.reduce((s, o) => s + Number((o.total_amount || o.sale_price) || 0), 0);
+  const refunds = hasSalesLedger
+    ? 0
+    : filteredOrders.filter(o => o.status === 'refunded').reduce((s, o) => s + Number((o.total_amount || o.sale_price) || 0), 0);
+  const totalFees = hasSalesLedger
+    ? filteredSales.reduce((s, sale) => s + Number(sale.marketplace_fee || 0), 0)
+    : filteredFees.reduce((s, f) => s + Number(f.amount || 0), 0);
   const totalPayouts = filteredPayouts.reduce((s, p) => s + Number(p.amount || 0), 0);
   const netRevenue   = grossRevenue - refunds - totalFees;
 
@@ -87,17 +105,17 @@ export default function Money() {
         </div>
       </div>
 
-      {ordersError && (
+      {(salesError || ordersError) && (
         <div className="swish-card p-4 flex gap-2 items-start">
           <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-          <p className="text-xs text-muted-foreground">Orders: {(ordersError as Error).message}</p>
+          <p className="text-xs text-muted-foreground">Sales backend: {salesError ? (salesError as Error).message : (ordersError as Error).message}</p>
         </div>
       )}
 
       {/* Financial summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Gross Revenue', value: formatCurrency(grossRevenue), positive: true, icon: TrendingUp, note: `${filteredOrders.length} orders` },
+          { label: 'Gross Revenue', value: formatCurrency(grossRevenue), positive: true, icon: TrendingUp, note: `${hasSalesLedger ? filteredSales.length : filteredOrders.length} ${hasSalesLedger ? 'sales' : 'orders'}` },
           { label: 'Refunds', value: formatCurrency(refunds), positive: false, icon: TrendingDown, note: refunds > 0 ? 'deducted' : 'none' },
           { label: 'Fees', value: formatCurrency(totalFees), positive: false, icon: TrendingDown, note: `${filteredFees.length} entries` },
           { label: 'Net Revenue', value: formatCurrency(netRevenue), positive: netRevenue >= 0, icon: Wallet, note: 'revenue − refunds − fees' },
