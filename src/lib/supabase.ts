@@ -25,7 +25,7 @@ export const BACKEND_URL = 'https://iwgaqieyoahmcjfziwga.backend.onspace.ai';
 
 // If you know your anon key at build time, set it here as a fallback constant.
 // It is public config — not a secret. Leave empty string if not yet known.
-const COMPILED_ANON_KEY = '';
+const COMPILED_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODkwNjM4MTgsImV4cCI6MjEwNDQyMzgxOCwicmVmIjoiaXdnYXFpZXlvYWhtY2pmeml3Z2EiLCJyb2xlIjoiYW5vbiIsImlzcyI6Im9uc3BhY2UifQ.cioQ38guPLFAbl3x48mUaJcMSxU5IpZn7-H-JhtvXJc';
 
 const LOCAL_KEY = 'swish_anon_key'; // localStorage — persists across sessions
 const META_ENDPOINT = `${BACKEND_URL}/meta`;
