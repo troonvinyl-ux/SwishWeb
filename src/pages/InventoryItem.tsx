@@ -9,9 +9,9 @@ import { toast } from 'sonner';
 export default function InventoryItem() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: item, isLoading, error, refetch } = useTableRow('inventory', id);
-  const update = useUpdate('inventory');
-  const del = useDelete('inventory');
+  const { data: item, isLoading, error, refetch } = useTableRow('items', id);
+  const update = useUpdate('items');
+  const del = useDelete('items');
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [identifying, setIdentifying] = useState(false);
@@ -94,7 +94,7 @@ export default function InventoryItem() {
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div className="flex-1 min-w-0">
-          <h1 className="page-title truncate">{(row.title || row.name || row.sku || 'Untitled Item') as string}</h1>
+          <h1 className="page-title truncate">{(row.canonical_title || row.title || row.name || row.sku || 'Untitled Item') as string}</h1>
           {row.sku && <p className="text-xs text-muted-foreground font-mono">SKU: {row.sku as string}</p>}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -116,7 +116,7 @@ export default function InventoryItem() {
               {/* REQ-LST-001 — only confirmed (active) items can generate listings */}
               {(row.status as string) === 'active' && (
                 <button
-                  onClick={() => navigate(`/listings/new?item_id=${id}&title=${encodeURIComponent((row.title || row.name || '') as string)}&price=${row.sale_price || row.valuation || ''}`)}
+                  onClick={() => navigate(`/listings/new?item_id=${id}&title=${encodeURIComponent((row.canonical_title || row.title || row.name || '') as string)}&price=${row.expected_selling_price || row.valuation_mid || row.sale_price || ''}`)}
                   className="btn-secondary"
                   title="Create a draft eBay listing from this item"
                 >
@@ -134,8 +134,8 @@ export default function InventoryItem() {
         {/* Image panel */}
         <div className="swish-card p-4 flex flex-col gap-3">
           <div className="aspect-square w-full bg-secondary rounded-lg overflow-hidden flex items-center justify-center">
-            {row.image_url ? (
-              <img src={row.image_url as string} alt="" className="w-full h-full object-contain" />
+            {(row.image_url || (Array.isArray(row.media) ? row.media[0] : null)) ? (
+              <img src={(row.image_url || (Array.isArray(row.media) ? row.media[0] : null)) as string} alt="" className="w-full h-full object-contain" />
             ) : (
               <Package className="w-16 h-16 text-muted-foreground" />
             )}
