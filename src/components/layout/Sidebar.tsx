@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import {
@@ -93,6 +93,14 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           SWISH
         </span>
         <span className="text-xs text-muted-foreground ml-auto">Web</span>
+      </div>
+
+      {/* Active specialist workspace */}
+      <div className="px-3 pt-3 pb-1">
+        <Link to="/niches" onClick={onClose} className="flex items-center justify-between gap-2 rounded-lg border border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar-accent))] px-3 py-2.5 hover:border-primary/50 transition-colors">
+          <span className="min-w-0"><span className="block text-[10px] uppercase tracking-wider text-muted-foreground">Specialist workspace</span><span className="block truncate text-xs font-semibold text-foreground">{({coins:'Coin Flipper',cards:'Card Flipper',antiques:'Antique Flipper',bikes:'Bike Flipper',mx:'Flipper MX',fossils:'Fossil Flipper',clothing:'Clothing Flipper',beauty:'Beauty Flipper',tech:'Tech Flipper',tools:'Tool Flipper'} as Record<string,string>)[localStorage.getItem('swish_active_niche') || ''] || 'Choose a niche'}</span></span>
+          <Sparkles className="w-4 h-4 shrink-0 text-primary" />
+        </Link>
       </div>
 
       {/* Nav */}
