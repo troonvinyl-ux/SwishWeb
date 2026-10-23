@@ -40,6 +40,7 @@ import EbayAnalytics from '@/pages/EbayAnalytics';
 import EbayImport from '@/pages/EbayImport';
 import EbayLogs from '@/pages/EbayLogs';
 import Settings from '@/pages/Settings';
+import ParityTools from '@/pages/ParityTools';
 import NotFound from '@/pages/NotFound';
 
 const queryClient = new QueryClient({
@@ -124,6 +125,13 @@ function AppRoutes() {
           <Route path="/ebay/analytics" element={<EbayAnalytics />} />
           <Route path="/ebay/import" element={<EbayImport />} />
           <Route path="/ebay/logs" element={<EbayLogs />} />
+
+          {/* Current app specialist tools / parity */}
+          <Route path="/tools" element={<ParityTools />} />
+          <Route path="/tools/islamic-batch" element={<ParityTools />} />
+          <Route path="/tools/silver-batch" element={<ParityTools />} />
+          <Route path="/tools/bike-flipper" element={<ParityTools />} />
+          <Route path="/tools/listing-preflight" element={<ParityTools />} />
 
           {/* Settings */}
           <Route path="/settings" element={<Settings />} />
