@@ -12,9 +12,9 @@ export default function Inventory() {
   const [status, setStatus] = useState('');
   const qc = useQueryClient();
 
-  const { data, isLoading, error } = useTable('inventory', {
+  const { data, isLoading, error } = useTable('items', {
     order: { column: 'created_at', ascending: false },
-    search: search ? { column: 'title', query: search } : undefined,
+    search: search ? { column: 'canonical_title', query: search } : undefined,
     filter: status ? { status } : undefined,
   });
 
@@ -37,7 +37,7 @@ export default function Inventory() {
           <p className="page-subtitle">{isLoading ? 'Loading…' : `${items.length} items`}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => qc.invalidateQueries({ queryKey: ['inventory'] })} className="btn-ghost" title="Refresh">
+          <button onClick={() => qc.invalidateQueries({ queryKey: ['items'] })} className="btn-ghost" title="Refresh">
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
           <Link to="/inventory/new" className="btn-primary">
@@ -60,11 +60,13 @@ export default function Inventory() {
         </div>
         <select value={status} onChange={e => setStatus(e.target.value)} className="input-field w-auto min-w-32">
           <option value="">All Status</option>
+          <option value="new">New</option>
+          <option value="identified">Identified</option>
+          <option value="review_required">Review Required</option>
           <option value="active">Active</option>
           <option value="listed">Listed</option>
           <option value="sold">Sold</option>
-          <option value="draft">Draft</option>
-          <option value="review">Review</option>
+          <option value="held">Archived</option>
         </select>
       </div>
 
@@ -114,14 +116,14 @@ export default function Inventory() {
                     <td>
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded bg-secondary shrink-0 overflow-hidden flex items-center justify-center">
-                          {item.image_url ? (
-                            <img src={item.image_url as string} alt="" className="w-full h-full object-cover" />
+                          {(item.image_url || (Array.isArray(item.media) ? item.media[0] : undefined)) ? (
+                            <img src={(item.image_url || (Array.isArray(item.media) ? item.media[0] : undefined)) as string} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <Package className="w-4 h-4 text-muted-foreground" />
                           )}
                         </div>
                         <div>
-                          <div className="font-medium text-xs">{truncate((item.title || item.name || 'Untitled') as string, 40)}</div>
+                          <div className="font-medium text-xs">{truncate((item.canonical_title || item.title || item.name || 'Untitled') as string, 40)}</div>
                           {item.brand && <div className="text-xs text-muted-foreground">{item.brand as string}</div>}
                         </div>
                       </div>
@@ -131,8 +133,8 @@ export default function Inventory() {
                     <td>
                       {item.status ? <span className={statusVariant(item.status as string)}>{item.status as string}</span> : '—'}
                     </td>
-                    <td className="text-right text-xs">{formatCurrency((item.cost_price || item.purchase_price) as number)}</td>
-                    <td className="text-right text-xs font-medium swish-gold">{formatCurrency((item.valuation || item.sale_price) as number)}</td>
+                    <td className="text-right text-xs">{formatCurrency((item.acquired_cost || item.cost_price || item.purchase_price) as number)}</td>
+                    <td className="text-right text-xs font-medium swish-gold">{formatCurrency((item.valuation_mid || item.valuation || item.expected_selling_price || item.sale_price) as number)}</td>
                     <td className="text-xs text-muted-foreground">{formatDate(item.created_at as string)}</td>
                   </tr>
                 ))}
