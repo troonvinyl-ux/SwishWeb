@@ -10,6 +10,7 @@ import { Loader2 } from 'lucide-react';
 
 import LoginPage from '@/pages/LoginPage';
 import NicheEntry from '@/pages/NicheEntry';
+import NicheWorkspace from '@/pages/NicheWorkspace';
 import Dashboard from '@/pages/Dashboard';
 import Inventory from '@/pages/Inventory';
 import InventoryItem from '@/pages/InventoryItem';
@@ -85,6 +86,7 @@ function AppRoutes() {
         <Routes>
           <Route path="/" element={<Navigate to="/niches" replace />} />
           <Route path="/niches" element={<NicheEntry />} />
+          <Route path="/workspace/:niche" element={<NicheWorkspace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/command-centre" element={<CommandCentre />} />
 
