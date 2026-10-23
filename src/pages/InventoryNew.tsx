@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useInsert } from '@/hooks/useSupabaseQuery';
+import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, Save, Package } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -18,25 +20,57 @@ const DEFAULT_FORM = {
   cost_price: '',
   valuation: '',
   sale_price: '',
-  status: 'active',
+  status: 'new',
 };
 
 export default function InventoryNew() {
   const navigate = useNavigate();
-  const insert = useInsert('inventory');
+  const insert = useInsert('items');
+  const { user } = useAuth();
   const [form, setForm] = useState<Record<string, unknown>>(DEFAULT_FORM);
 
   const setF = (key: string, val: unknown) => setForm(p => ({ ...p, [key]: val }));
   const f = (key: string) => (form[key] as string) || '';
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!f('title')) { toast.error('Title is required'); return; }
-    // Convert numeric fields
-    const row: Record<string, unknown> = { ...form };
-    ['cost_price', 'valuation', 'sale_price'].forEach(k => {
-      const v = parseFloat(row[k] as string);
-      row[k] = isNaN(v) ? null : v;
-    });
+    if (!user?.id) { toast.error('Please sign in before creating inventory'); return; }
+    // Resolve the current user's tenant using the same RLS-protected tenant list
+    // pattern as the mobile app. Never accept tenant_id from form input.
+    const sb = getSupabaseClient() || await getSupabaseClientAsync();
+    if (!sb) { toast.error('Backend not connected'); return; }
+    const { data: tenants, error: tenantError } = await sb.from('tenants').select('id').order('created_at', { ascending: true }).limit(1);
+    if (tenantError || !tenants?.[0]?.id) {
+      toast.error(tenantError?.message || 'No workspace found for this account');
+      return;
+    }
+    const numeric = (key: string) => {
+      const raw = f(key).trim();
+      if (!raw) return null;
+      const value = Number(raw);
+      return Number.isFinite(value) && value >= 0 ? value : null;
+    };
+    const title = f('title').trim();
+    const row: Record<string, unknown> = {
+      tenant_id: tenants[0].id,
+      canonical_title: title,
+      description: f('description').trim(),
+      specialist_id: 'curiosities_collectibles',
+      status: f('status') || 'new',
+      disposition_decision: 'pending',
+      condition: f('condition'),
+      attributes: {
+        brand: f('brand'), model: f('model'), category: f('category'),
+        colour: f('colour'), size: f('size'), location: f('location'),
+      },
+      sku: f('sku').trim() || null,
+      acquired_cost: numeric('cost_price'),
+      valuation_mid: numeric('valuation'),
+      expected_selling_price: numeric('sale_price'),
+      media: [],
+      warnings: [],
+      tags: [],
+    };
     insert.mutate(row, {
       onSuccess: (data) => {
         toast.success('Item created');
