@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { callEdgeFunction, EdgeFunctionError } from '@/lib/supabase';
 import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatDate, formatDateTime } from '@/lib/utils';
@@ -11,6 +12,7 @@ export default function EbayHub() {
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState('');
+  const qc = useQueryClient();
 
   const { data: accounts, isLoading } = useTable('ebay_accounts', { limit: 1 });
 
@@ -47,6 +49,7 @@ export default function EbayHub() {
     } else {
       const result = data as Record<string, unknown>;
       const msg = result?.message as string || 'eBay sync complete';
+      await Promise.all(['ebay_accounts', 'items', 'listings', 'ebay_listings', 'orders', 'ebay_orders', 'sales', 'fees', 'payouts', 'messages'].map(table => qc.invalidateQueries({ queryKey: [table] })));
       toast.success(msg);
     }
     setSyncing(false);
