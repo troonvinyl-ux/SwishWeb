@@ -24,7 +24,28 @@ export default function InventoryItem() {
 
   const save = () => {
     if (!id) return;
-    update.mutate({ id, updates: form }, {
+    const attributes = row?.attributes && typeof row.attributes === 'object'
+      ? { ...(row.attributes as Record<string, unknown>) } : {};
+    ['brand', 'model', 'category', 'colour', 'size', 'location'].forEach(key => {
+      if (form[key] !== undefined) attributes[key] = form[key];
+    });
+    const parseMoney = (key: string) => {
+      const raw = String(form[key] ?? '').trim();
+      if (!raw) return null;
+      const n = Number(raw);
+      return Number.isFinite(n) && n >= 0 ? n : null;
+    };
+    const updates: Record<string, unknown> = {
+      canonical_title: String(form.title ?? row?.canonical_title ?? '').trim(),
+      description: form.description ?? row?.description ?? '',
+      condition: form.condition ?? row?.condition ?? '',
+      attributes,
+      acquired_cost: parseMoney('cost_price'),
+      valuation_mid: parseMoney('valuation'),
+      expected_selling_price: parseMoney('sale_price'),
+    };
+    if (!updates.canonical_title) { toast.error('Title is required'); return; }
+    update.mutate({ id, updates }, {
       onSuccess: () => { toast.success('Saved'); setEditing(false); refetch(); },
       onError: (e) => toast.error(e.message),
     });
@@ -83,7 +104,18 @@ export default function InventoryItem() {
     );
   }
 
-  const f = (key: string) => editing ? (form[key] as string || '') : (row[key] as string || '');
+  const f = (key: string) => {
+    if (editing) return (form[key] as string || '');
+    if (key === 'title') return (row.canonical_title as string) || '';
+    if (key === 'cost_price') return String(row.acquired_cost ?? '');
+    if (key === 'valuation') return String(row.valuation_mid ?? '');
+    if (key === 'sale_price') return String(row.expected_selling_price ?? '');
+    if (['brand', 'model', 'category', 'colour', 'size', 'location'].includes(key)) {
+      const attrs = row.attributes as Record<string, unknown> | null;
+      return String(attrs?.[key] ?? '');
+    }
+    return (row[key] as string || '');
+  };
   const setF = (key: string, val: unknown) => setForm(p => ({ ...p, [key]: val }));
 
   return (
@@ -142,7 +174,7 @@ export default function InventoryItem() {
           </div>
           {Array.isArray(row.images) && (row.images as string[]).length > 1 && (
             <div className="grid grid-cols-4 gap-1">
-              {(row.images as string[]).slice(0, 8).map((img, i) => (
+              {((Array.isArray(row.media) ? row.media : Array.isArray(row.images) ? row.images : []) as string[]).slice(0, 8).map((img, i) => (
                 <img key={i} src={img} alt="" className="aspect-square w-full rounded object-cover" />
               ))}
             </div>
@@ -206,18 +238,18 @@ export default function InventoryItem() {
                       className="input-field mt-0.5 text-xs py-1.5"
                     />
                   ) : (
-                    <p className="text-sm font-semibold mt-0.5 swish-gold">{formatCurrency(row[key] as number)}</p>
+                    <p className="text-sm font-semibold mt-0.5 swish-gold">{formatCurrency((key === 'cost_price' ? row.acquired_cost : key === 'valuation' ? row.valuation_mid : row.expected_selling_price) as number)}</p>
                   )}
                 </div>
               ))}
             </div>
             {/* Profit indicator */}
-            {!editing && row.cost_price && row.valuation && (
+            {!editing && row.acquired_cost && row.valuation_mid && (
               <div className="mt-3 pt-3 border-t border-border/40">
                 <label className="text-xs text-muted-foreground">Est. Gross Margin</label>
                 {(() => {
-                  const cost = Number(row.cost_price);
-                  const val = Number(row.valuation);
+                  const cost = Number(row.acquired_cost);
+                  const val = Number(row.valuation_mid);
                   const diff = val - cost;
                   const pct = cost > 0 ? (diff / cost * 100) : 0;
                   return (
