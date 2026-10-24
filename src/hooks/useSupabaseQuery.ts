@@ -32,8 +32,11 @@ export interface TableOptions {
 // ---------------------------------------------------------------------------
 
 export function useTable(table: string, options?: TableOptions) {
+  const activeNiche = options?.nicheScope === false ? null : getActiveNiche();
   return useQuery({
-    queryKey: [table, options],
+    // Include the active workspace in cache identity to prevent cached rows from
+    // one niche being briefly rendered after switching to another niche.
+    queryKey: [table, activeNiche?.id ?? 'all-niches', options],
     enabled: options?.enabled !== false,
     retry: (failureCount, error) => {
       // Don't retry schema/auth errors — they won't resolve on their own
