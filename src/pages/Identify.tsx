@@ -6,8 +6,8 @@
  * REQ-CAP-002 Optional edge/detail/reference/extra images + weight/diameter/URL/notes
  * REQ-CAP-003 Editable typed notes; voice note with honest unavailable-state
  * REQ-CAP-004 Single submit, duplicate-submit protection, progress, error, retry
- * REQ-ID-001  Calls existing `swish-identity` Edge Function via secure path
- * REQ-ID-002  Routes Islamic/Indian/countermark to `swish-islamic-identity`, falls back to `swish-identity`
+ * REQ-ID-001  Calls existing `swish-identify` Edge Function via secure path
+ * REQ-ID-002  Routes Islamic/Indian/countermark to `swish-islamic-identify`, falls back to `swish-identify`
  * REQ-ID-003  Weight + diameter passed as hard evidence; match/contradiction displayed
  * REQ-ID-004  Ranked candidates, evidence, confidence label, contradictions, catalogue links
  * REQ-ID-005  NEVER fabricates results — all states are truthful
@@ -663,7 +663,7 @@ export default function Identify() {
       toast.warning(`Specialist service unavailable (${errMsg}) — using general identification`);
       setProgressMsg('Falling back to general identification…');
 
-      const { data: fallback, error: fallbackErr } = await callEdgeFunction<IdentifyResult>('swish-identity', { ...payload, specialist: false });
+      const { data: fallback, error: fallbackErr } = await callEdgeFunction<IdentifyResult>('swish-identify', { ...payload, specialist: false });
 
       if (fallbackErr) {
         const msg = fallbackErr instanceof EdgeFunctionError ? fallbackErr.displayMessage : fallbackErr.message;
@@ -710,7 +710,7 @@ export default function Identify() {
     const identificationData = {
       confirmed_candidate: candidate,
       all_candidates: result?.candidates ?? [],
-      service_used: needsSpecialist ? 'swish-islamic-identity' : 'swish-identity',
+      service_used: needsSpecialist ? 'swish-islamic-identify' : 'swish-identify',
       specialist_routed: result?.specialist_routed ?? false,
       scan_metadata: {
         weight: metadata.weight,
