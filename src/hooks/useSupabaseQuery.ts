@@ -108,13 +108,41 @@ export function useTable(table: string, options?: TableOptions) {
 // ---------------------------------------------------------------------------
 
 export function useTableRow(table: string, id: string | null | undefined, select = '*') {
+  const niche = getActiveNiche();
   return useQuery({
-    queryKey: [table, id, select],
+    queryKey: [table, id, select, niche?.id ?? 'all-niches'],
     enabled: !!id && id !== 'new',
     retry: false,
     queryFn: async () => {
       const sb = await getClient();
-      const { data, error } = await sb.from(table).select(select).eq('id', id!).single();
+      let q = sb.from(table).select(select).eq('id', id!);
+      const scopedTables = new Set([
+        'items', 'inventory', 'listings', 'orders', 'sales', 'acquisitions',
+        'opportunities', 'tasks', 'stock_listings', 'ebay_listings', 'ebay_orders',
+      ]);
+      if (niche && scopedTables.has(table)) {
+        let scoped = false;
+        let lastColumnError = '';
+        for (const column of ['specialist_id', 'niche_id', 'niche', 'specialist']) {
+          const probe = await sb.from(table).select(column).limit(0);
+          if (!probe.error) {
+            const values = column === 'specialist_id' || column === 'specialist'
+              ? niche.specialistIds : [niche.id];
+            q = values.length === 1 ? q.eq(column, values[0]) : q.in(column, values);
+            scoped = true;
+            break;
+          }
+          lastColumnError = probe.error.message;
+          const msg = lastColumnError.toLowerCase();
+          if (!(msg.includes('column') || msg.includes('schema cache') || msg.includes('does not exist'))) {
+            throw new Error(lastColumnError);
+          }
+        }
+        if (!scoped) {
+          throw new Error(`Cannot safely scope "${table}" to active niche "${niche.name}". ${lastColumnError}`);
+        }
+      }
+      const { data, error } = await q.single();
       if (error) throw new Error(error.message);
       return data;
     },
@@ -181,12 +209,37 @@ export function useDelete(table: string) {
 // ---------------------------------------------------------------------------
 
 export function useCount(table: string, filter?: Record<string, unknown>) {
+  const niche = getActiveNiche();
   return useQuery({
-    queryKey: [table, 'count', filter],
+    queryKey: [table, 'count', filter, niche?.id ?? 'all-niches'],
     retry: false,
     queryFn: async () => {
       const sb = await getClient();
       let q = sb.from(table).select('*', { count: 'exact', head: true });
+      const scopedTables = new Set([
+        'items', 'inventory', 'listings', 'orders', 'sales', 'acquisitions',
+        'opportunities', 'tasks', 'stock_listings', 'ebay_listings', 'ebay_orders',
+      ]);
+      if (niche && scopedTables.has(table)) {
+        let scoped = false;
+        let lastColumnError = '';
+        for (const column of ['specialist_id', 'niche_id', 'niche', 'specialist']) {
+          const probe = await sb.from(table).select(column).limit(0);
+          if (!probe.error) {
+            const values = column === 'specialist_id' || column === 'specialist'
+              ? niche.specialistIds : [niche.id];
+            q = values.length === 1 ? q.eq(column, values[0]) : q.in(column, values);
+            scoped = true;
+            break;
+          }
+          lastColumnError = probe.error.message;
+          const msg = lastColumnError.toLowerCase();
+          if (!(msg.includes('column') || msg.includes('schema cache') || msg.includes('does not exist'))) {
+            throw new Error(lastColumnError);
+          }
+        }
+        if (!scoped) throw new Error(`Cannot safely scope count for "${table}" to "${niche.name}". ${lastColumnError}`);
+      }
       if (filter) Object.entries(filter).forEach(([k, v]) => { if (v != null) q = q.eq(k, v); });
       const { count, error } = await q;
       if (error) {
