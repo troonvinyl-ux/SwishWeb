@@ -5,6 +5,7 @@ import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, Save, Package } from 'lucide-react';
 import { toast } from 'sonner';
+import { getActiveNiche } from '@/lib/niches';
 
 const DEFAULT_FORM = {
   title: '',
@@ -28,6 +29,7 @@ export default function InventoryNew() {
   const insert = useInsert('items');
   const { user } = useAuth();
   const [form, setForm] = useState<Record<string, unknown>>(DEFAULT_FORM);
+  const activeNiche = getActiveNiche();
 
   const setF = (key: string, val: unknown) => setForm(p => ({ ...p, [key]: val }));
   const f = (key: string) => (form[key] as string) || '';
@@ -55,7 +57,9 @@ export default function InventoryNew() {
       tenant_id: tenants[0].id,
       canonical_title: title,
       description: f('description').trim(),
-      specialist_id: 'curiosities_collectibles',
+      niche_id: activeNiche?.id ?? 'coins',
+      niche: activeNiche?.id ?? 'coins',
+      specialist_id: activeNiche?.specialistIds[0] ?? 'coins',
       status: f('status') || 'new',
       disposition_decision: 'pending',
       condition: f('condition'),
@@ -89,7 +93,7 @@ export default function InventoryNew() {
         </Link>
         <div className="flex-1">
           <h1 className="page-title">New Inventory Item</h1>
-          <p className="page-subtitle">Add a new item to your SWISH inventory</p>
+          <p className="page-subtitle">Add a new item to your {activeNiche?.name ?? 'SWISH'} inventory</p>
         </div>
         <button onClick={handleSave} disabled={insert.isPending} className="btn-primary">
           <Save className="w-3.5 h-3.5" />{insert.isPending ? 'Creating…' : 'Create Item'}
