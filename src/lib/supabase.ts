@@ -190,7 +190,23 @@ export async function callEdgeFunction<T = unknown>(
     };
   }
 
-  const { data, error } = await sb.functions.invoke(fn, { body: payload });
+  let invocation: Awaited<ReturnType<typeof sb.functions.invoke>>;
+  try {
+    invocation = await sb.functions.invoke(fn, { body: payload });
+  } catch (cause) {
+    // A rejected fetch (network/CORS/unreachable function) throws before the
+    // SDK can return FunctionsHttpError. Convert it to a safe diagnostic result.
+    const message = cause instanceof Error ? cause.message : 'Network request failed';
+    console.error(`[SWISH] Edge Function "${fn}" could not be reached`, {
+      message,
+      backendHost: (() => { try { return new URL(BACKEND_URL).host; } catch { return 'unknown'; } })(),
+    });
+    return {
+      data: null,
+      error: new EdgeFunctionError(fn, 0, `Request could not reach the backend: ${message}`),
+    };
+  }
+  const { data, error } = invocation;
 
   if (error) {
     // Supabase JS wraps the HTTP response error — extract what we can
