@@ -455,6 +455,16 @@ export default function Identify() {
     setValuationLoading(false);
   }, [metadata.weight, metadata.diameter]);
 
+  // Convert captured/uploaded files to data URLs so identification still works
+  // when public Storage upload is unavailable. The existing SWISH App Edge Function
+  // accepts data URLs in the `images` array.
+  const fileToDataUrl = (file: File): Promise<string> => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Could not read image'));
+    reader.onerror = () => reject(reader.error || new Error('Could not read image'));
+    reader.readAsDataURL(file);
+  });
+
   // ──────────────────────────────────────────────────────────────────────────
   // SUBMIT — identification request (REQ-CAP-004, REQ-ID-001, REQ-ID-002)
   // ──────────────────────────────────────────────────────────────────────────
@@ -487,10 +497,22 @@ export default function Identify() {
       : metadata.is_countermark ? 'countermark'
       : 'general';
 
+    let imageDataUrls: string[] = [];
+    try {
+      // Send the actual captured files as well as any successfully stored URLs.
+      // This avoids HTTP 400 when the Storage upload/bucket is unavailable.
+      imageDataUrls = await Promise.all(Array.from(images.values()).map(img => fileToDataUrl(img.file)));
+    } catch (readError) {
+      const detail = readError instanceof Error ? readError.message : 'Unknown image read error';
+      setErrorMsg(`Could not read the captured coin images: ${detail}`);
+      setStep('capture');
+      submitGuard.current = false;
+      return;
+    }
+
     const payload = {
-      // Match the existing SWISH App swish-identify contract:
-      // it accepts base64 images in `images` or stored URLs in `existingImageUrls`.
-      // These are already-uploaded persistent image URLs, not raw image objects.
+      images: imageDataUrls,
+      imageLabels: Array.from(images.values()).map(img => img.side),
       existingImageUrls: Array.from(storedUrls.values()),
       specialistId: 'coins',
       acquisitionContext: 'Coin Flipper identification from microscope capture',
