@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { setActiveNiche, type NicheId } from '@/lib/niches';
+import { setActiveNiche, type NicheId, NICHES } from '@/lib/niches';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, Camera, Search, Package, Tag, ShoppingCart, BarChart3, Wrench, Sparkles, BookOpen, Coins, Bike, Shirt, Gem, Gamepad2, Monitor, Hammer, FlaskConical } from 'lucide-react';
 
@@ -18,9 +18,12 @@ const CONFIGS: Record<string,WorkspaceConfig> = {
 };
 export default function NicheWorkspace(){
  const {niche='coins'}=useParams(); const navigate=useNavigate();
+ const canonical = NICHES[niche as keyof typeof NICHES]?.id;
  const config=useMemo(()=>CONFIGS[niche]||CONFIGS.coins,[niche]); const BrandIcon=config.icon;
+ const routeValid = Boolean(canonical && CONFIGS[niche]);
  const enter=()=>{setActiveNiche(config.id as NicheId)};
- useEffect(()=>{enter();},[config]);
+ useEffect(()=>{ if (!routeValid) { navigate('/niches', { replace:true }); return; } enter(); },[config, routeValid, navigate]);
+ if (!routeValid) return null;
  return <div className="niche-workspace space-y-6" style={{'--workspace-accent':config.accent} as React.CSSProperties}>
   <div className="flex items-center justify-between gap-3"><Link to="/niches" className="btn-ghost"><ArrowLeft className="w-4 h-4"/>All niches</Link><span className="text-xs text-muted-foreground">Specialist workspace</span></div>
   <section className="workspace-hero relative overflow-hidden" style={{backgroundImage:'linear-gradient(90deg,rgba(7,10,18,.97) 0%,rgba(7,10,18,.82) 58%,rgba(7,10,18,.35) 100%),url("'+config.hero+'")',backgroundSize:'cover',backgroundPosition:'center'}}>
