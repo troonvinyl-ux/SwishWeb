@@ -244,13 +244,14 @@ export default function Identify() {
   const navigate = useNavigate();
   const [activeNiche] = useState(() => getActiveNiche());
 
+  // This route uses coin-specific capture, metadata, identification and valuation.
+  // Keep the specialist gate before any coin-related queries or effects can run.
   if (activeNiche && activeNiche.id !== 'coins') {
     return (
       <div className="swish-card max-w-2xl mx-auto p-6 space-y-3">
         <h1 className="page-title">{activeNiche.name} identification</h1>
         <p className="text-sm text-muted-foreground">
-          The current capture workflow is coin-specific. This specialist route is gated so it will not submit
-          {activeNiche.name.toLowerCase().replace(' flipper', '')} items to the coin identification service.
+          The current capture workflow is coin-specific. This specialist route is gated so it will not submit non-coin items to the coin identification service.
         </p>
         <p className="text-xs text-muted-foreground">
           This workflow will become available when a verified niche-specific identification service and save schema are connected.
@@ -259,6 +260,8 @@ export default function Identify() {
       </div>
     );
   }
+
+
 
   // Duplicate-submit guard (ref — not state — so it doesn't cause re-renders)
   const submitGuard = useRef(false);
