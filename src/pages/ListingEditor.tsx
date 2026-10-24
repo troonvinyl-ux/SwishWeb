@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTableRow, useUpsert } from '@/hooks/useSupabaseQuery';
 import { callEdgeFunction, EdgeFunctionError } from '@/lib/supabase';
-import { ArrowLeft, Save, Zap, Send, Loader2, ImageIcon, CheckCircle, ChevronDown, ChevronRight, AlertTriangle, Upload, X, RotateCw, Sun, Contrast, ChevronLeft, Star } from 'lucide-react';
+import { ArrowLeft, Save, Zap, Send, Loader2, ImageIcon, CheckCircle, ChevronDown, ChevronRight, AlertTriangle, Upload, X, RotateCw, Sun, Contrast } from 'lucide-react';
 import { getSupabaseClientAsync } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -118,7 +118,8 @@ export default function ListingEditor() {
           ...Object.entries(scanImages).filter(([_, url]) => !!url).map(([side, url]) => ({ side, url })),
           ...uploadedImages,
         ];
-        const availableUrls = imageEntries.map(image => image.url);
+        const existingListingImages = (form.images as string[] || []).filter(Boolean);
+        const availableUrls = [...new Set([...imageEntries.map(image => image.url), ...existingListingImages])];
         const toggleImage = (url: string) => setSelectedImages(prev =>
           prev.includes(url) ? prev.filter(u => u !== url) : [...prev, url]
         );
