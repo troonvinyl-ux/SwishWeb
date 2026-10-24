@@ -126,6 +126,7 @@ interface ScanMetadata {
   is_islamic?: boolean;
   is_indian?: boolean;
   is_countermark?: boolean;
+  metal?: string;
 }
 
 // ---------------------------------------------------------------------------
