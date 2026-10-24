@@ -1,5 +1,7 @@
 /**
- * SWISH Coin Flipper — Production Identification Workflow
+ * SWISH Specialist Identification Workflow
+ * Coin-specific capture/identification below remains enabled only for the coins niche until
+ * verified specialist Edge Function contracts exist for the other niches.
  *
  * Requirements satisfied:
  * REQ-CAP-001 Obverse + reverse required before submission
@@ -28,6 +30,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatCurrency } from '@/lib/utils';
+import { getActiveNiche } from '@/lib/niches';
 import {
   Camera, Upload, X, Zap, Loader2, AlertCircle, CheckCircle, Tag,
   AlertTriangle, Info, Mic, MicOff, ExternalLink, RotateCcw,
@@ -239,6 +242,23 @@ function ImageSlot({
 
 export default function Identify() {
   const navigate = useNavigate();
+  const [activeNiche] = useState(() => getActiveNiche());
+
+  if (activeNiche && activeNiche.id !== 'coins') {
+    return (
+      <div className="swish-card max-w-2xl mx-auto p-6 space-y-3">
+        <h1 className="page-title">{activeNiche.name} identification</h1>
+        <p className="text-sm text-muted-foreground">
+          The current capture workflow is coin-specific. This specialist route is gated so it will not submit
+          {activeNiche.name.toLowerCase().replace(' flipper', '')} items to the coin identification service.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          This workflow will become available when a verified niche-specific identification service and save schema are connected.
+        </p>
+        <button className="btn-secondary" onClick={() => navigate('/workspace/' + activeNiche.id)}>Back to {activeNiche.name}</button>
+      </div>
+    );
+  }
 
   // Duplicate-submit guard (ref — not state — so it doesn't cause re-renders)
   const submitGuard = useRef(false);
