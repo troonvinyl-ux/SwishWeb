@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { setActiveNiche, type NicheId, NICHES } from '@/lib/niches';
+import { setActiveNiche, type NicheId } from '@/lib/niches';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, Camera, Search, Package, Tag, ShoppingCart, BarChart3, Wrench, Sparkles, BookOpen, Coins, Bike, Shirt, Gem, Gamepad2, Monitor, Hammer, FlaskConical } from 'lucide-react';
 
@@ -18,9 +18,8 @@ const CONFIGS: Record<string,WorkspaceConfig> = {
 };
 export default function NicheWorkspace(){
  const {niche='coins'}=useParams(); const navigate=useNavigate();
- const canonical = NICHES[niche as keyof typeof NICHES]?.id;
  const config=useMemo(()=>CONFIGS[niche]||CONFIGS.coins,[niche]); const BrandIcon=config.icon;
- const routeValid = Boolean(canonical && CONFIGS[niche]);
+ const routeValid = Object.prototype.hasOwnProperty.call(CONFIGS, niche);
  const enter=()=>{setActiveNiche(config.id as NicheId)};
  useEffect(()=>{ if (!routeValid) { navigate('/niches', { replace:true }); return; } enter(); },[config, routeValid, navigate]);
  if (!routeValid) return null;
