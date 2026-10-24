@@ -7,7 +7,7 @@ import {
   LogOut, ChevronDown, ChevronRight, Zap, RefreshCw, AlertCircle, ClipboardList, Sparkles
 } from 'lucide-react';
 import { useState } from 'react';
-import { getActiveNiche, NICHES } from '@/lib/niches';
+import { getActiveNiche } from '@/lib/niches';
 
 interface NavItemDef {
   label: string;
