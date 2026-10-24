@@ -202,17 +202,7 @@ export default function ListingNew() {
     || activeNiche.id === linkedNicheText
     || activeNiche.specialistIds.some(id => id.toLowerCase() === linkedNicheText);
 
-  if (itemIdParam && inv && !linkedItemMatchesNiche) {
-    return (
-      <div className="swish-card max-w-2xl mx-auto p-6 space-y-3">
-        <h1 className="page-title">Item belongs to another specialist</h1>
-        <p className="text-sm text-muted-foreground">
-          This item does not match the active {activeNiche?.name ?? 'SWISH'} workspace. Switch to the item's workspace before creating a listing.
-        </p>
-        <Link to="/niches" className="btn-secondary inline-flex">Switch workspace</Link>
-      </div>
-    );
-  }
+
 
   // Initial param pre-fill (lightweight — just the URL params)
   useEffect(() => {
@@ -359,6 +349,18 @@ export default function ListingNew() {
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   const titleLen = f('title').length;
+
+  if (itemIdParam && inv && !linkedItemMatchesNiche) {
+    return (
+      <div className="swish-card max-w-2xl mx-auto p-6 space-y-3">
+        <h1 className="page-title">Item belongs to another specialist</h1>
+        <p className="text-sm text-muted-foreground">
+          This item does not match the active {activeNiche?.name ?? 'SWISH'} workspace. Switch to the item's workspace before creating a listing.
+        </p>
+        <Link to="/niches" className="btn-secondary inline-flex">Switch workspace</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 animate-fade-in max-w-2xl">
