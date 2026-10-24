@@ -23,7 +23,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { callEdgeFunction, getSupabaseClient, EdgeFunctionError } from '@/lib/supabase';
+import { callEdgeFunction, getSupabaseClient, getSupabaseClientAsync, EdgeFunctionError } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useInsert, useTable } from '@/hooks/useSupabaseQuery';
@@ -429,30 +429,62 @@ export default function Identify() {
     return urls;
   };
 
-  // Fetch valuation for the top candidate (REQ-VAL-001)
+  // Fetch valuation through the existing SWISH App backend. The market-value
+  // function requires an authenticated tenantId and specialistId; never guess a
+  // tenant or bypass its membership check.
   const fetchValuation = useCallback(async (candidate: Candidate) => {
     setValuationLoading(true);
-    const { data, error } = await callEdgeFunction<ValuationData>('swish-market-value', {
-      title: candidate.title || candidate.denomination,
-      category: candidate.category,
-      brand: candidate.brand || candidate.manufacturer,
-      model: candidate.model,
-      reference: candidate.reference,
-      year: candidate.year,
-      country: candidate.country,
-      denomination: candidate.denomination,
-      metal: candidate.metal || candidate.alloy,
-      weight: metadata.weight ? parseFloat(metadata.weight) : undefined,
-      diameter: metadata.diameter ? parseFloat(metadata.diameter) : undefined,
-    });
-    if (data && !error) {
-      setValuation(data as ValuationData);
-    } else if (error) {
-      // Non-fatal — valuation unavailable, show appropriate state
+    try {
+      const sb = await getSupabaseClientAsync();
+      if (!sb) throw new Error('Backend client is not initialised');
+
+      const { data: { user }, error: userError } = await sb.auth.getUser();
+      if (userError || !user) throw new Error('Sign in to SWISH before requesting market valuation');
+
+      const { data: membership, error: membershipError } = await sb
+        .from('tenant_memberships')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      if (membershipError) throw new Error(`Could not resolve your SWISH tenant: ${membershipError.message}`);
+      if (!membership?.tenant_id) throw new Error('No SWISH tenant membership was found for this account');
+
+      const title = String(candidate.title || candidate.denomination || candidate.name || '').trim();
+      if (title.length < 3) throw new Error('The identification did not provide a usable title for valuation');
+
+      const { data, error } = await callEdgeFunction<ValuationData>('swish-market-value', {
+        tenantId: membership.tenant_id,
+        title,
+        specialistId: 'coins',
+        attributes: {
+          category: candidate.category,
+          brand: candidate.brand || candidate.manufacturer,
+          model: candidate.model,
+          reference: candidate.reference,
+          year: candidate.year,
+          country: candidate.country,
+          denomination: candidate.denomination,
+          metal: candidate.metal || candidate.alloy,
+          weight: metadata.weight ? parseFloat(metadata.weight) : undefined,
+          diameter: metadata.diameter ? parseFloat(metadata.diameter) : undefined,
+        },
+        identificationConfidence: typeof candidate.confidence === 'number' ? candidate.confidence : 0.5,
+        identificationTier: (typeof candidate.confidence === 'number' && candidate.confidence >= 0.85) ? 'high'
+          : (typeof candidate.confidence === 'number' && candidate.confidence >= 0.5) ? 'medium' : 'low',
+      });
+      if (data && !error) {
+        setValuation(data as ValuationData);
+      } else if (error) {
+        setValuation({ data_unavailable: true });
+        console.warn('[CoinFlipper] Valuation unavailable:', error instanceof EdgeFunctionError ? error.displayMessage : error.message);
+      }
+    } catch (err) {
       setValuation({ data_unavailable: true });
-      console.warn('[CoinFlipper] Valuation unavailable:', error instanceof EdgeFunctionError ? error.displayMessage : error.message);
+      console.warn('[CoinFlipper] Valuation unavailable:', err instanceof Error ? err.message : 'Unknown valuation error');
+    } finally {
+      setValuationLoading(false);
     }
-    setValuationLoading(false);
   }, [metadata.weight, metadata.diameter]);
 
   // Convert captured/uploaded files to data URLs so identification still works
