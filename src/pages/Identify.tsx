@@ -502,10 +502,35 @@ export default function Identify() {
   // Convert captured/uploaded files to data URLs so identification still works
   // when public Storage upload is unavailable. The existing SWISH App Edge Function
   // accepts data URLs in the `images` array.
+  // Match the proven KeenOnCoins Capture Station upload path: normalise selected
+  // images before sending them to the existing SWISH Edge Function. This prevents
+  // oversized phone/microscope originals causing HTTP 400 payload failures.
   const fileToDataUrl = (file: File): Promise<string> => new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Could not read image'));
     reader.onerror = () => reject(reader.error || new Error('Could not read image'));
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') {
+        reject(new Error('Could not read image'));
+        return;
+      }
+      const image = new Image();
+      image.onerror = () => reject(new Error('Could not decode selected image'));
+      image.onload = () => {
+        const maxDimension = 1800;
+        const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext('2d', { alpha: false });
+        if (!context) {
+          reject(new Error('Could not prepare selected image'));
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.92));
+      };
+      image.src = reader.result;
+    };
     reader.readAsDataURL(file);
   });
 
