@@ -294,6 +294,23 @@ export default function Identify() {
     setMetadata(p => ({ ...p, [k]: v }));
   }, []);
 
+  // Keep this niche gate after all hooks have been initialised.
+  if (activeNiche && activeNiche.id !== 'coins') {
+    return (
+      <div className="swish-card max-w-2xl mx-auto p-6 space-y-3">
+        <h1 className="page-title">{activeNiche.name} identification</h1>
+        <p className="text-sm text-muted-foreground">
+          The current capture workflow is coin-specific. Non-coin items are not submitted to the coin identification service.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Specialist identification will be enabled when a verified niche-specific service and save schema are connected.
+        </p>
+        <button className="btn-secondary" onClick={() => navigate('/workspace/' + activeNiche.id)}>Back to {activeNiche.name}</button>
+      </div>
+    );
+  }
+
+
   // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
@@ -1296,21 +1313,6 @@ export default function Identify() {
 
 
 
-  // Keep this niche gate after all hooks have been initialised.
-  if (activeNiche && activeNiche.id !== 'coins') {
-    return (
-      <div className="swish-card max-w-2xl mx-auto p-6 space-y-3">
-        <h1 className="page-title">{activeNiche.name} identification</h1>
-        <p className="text-sm text-muted-foreground">
-          The current capture workflow is coin-specific. Non-coin items are not submitted to the coin identification service.
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Specialist identification will be enabled when a verified niche-specific service and save schema are connected.
-        </p>
-        <button className="btn-secondary" onClick={() => navigate('/workspace/' + activeNiche.id)}>Back to {activeNiche.name}</button>
-      </div>
-    );
-  }
 
 
   return (
