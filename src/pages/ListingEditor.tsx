@@ -113,13 +113,32 @@ export default function ListingEditor() {
       {linkedItem && (() => {
         const inv = linkedItem as Record<string, unknown>;
         const idData = (inv.identification_data || {}) as Record<string, unknown>;
-        const scanImages = (idData.scan_images || {}) as Record<string, string>;
+        const scanImages = (idData.scan_images || {}) as Record<string, unknown>;
+        // Capture Station stores both uploaded sides on items.media; older records may use
+        // identification_data.scan_images or other legacy image fields.
+        const asImageUrl = (value: unknown): string | null => {
+          if (typeof value === 'string') return value.trim() || null;
+          if (value && typeof value === 'object') {
+            const obj = value as Record<string, unknown>;
+            const candidate = obj.url || obj.publicUrl || obj.public_url || obj.src || obj.path;
+            return typeof candidate === 'string' && candidate.trim() ? candidate.trim() : null;
+          }
+          return null;
+        };
+        const mediaValues = [
+          ...(Array.isArray(inv.media) ? inv.media : []),
+          ...(Array.isArray(inv.images) ? inv.images : []),
+          ...(Array.isArray(inv.image_urls) ? inv.image_urls : []),
+          ...(Array.isArray(inv.photos) ? inv.photos : []),
+          ...Object.values(scanImages),
+        ];
+        const mediaEntries = mediaValues.map((value, i) => ({ side: i === 0 ? 'Obverse / photo 1' : i === 1 ? 'Reverse / photo 2' : `Photo ${i + 1}`, url: asImageUrl(value) })).filter((image): image is {side: string; url: string} => !!image.url);
         const existingListingImages = (form.images as string[] || []).filter(Boolean);
         const imageEntries = [
-          ...Object.entries(scanImages).filter(([_, url]) => !!url).map(([side, url]) => ({ side, url })),
+          ...mediaEntries,
           ...uploadedImages,
-          ...existingListingImages.filter(url => !Object.values(scanImages).includes(url) && !uploadedImages.some(image => image.url === url)).map((url, i) => ({ side: `Existing photo ${i + 1}`, url })),
-        ];
+          ...existingListingImages.map((url, i) => ({ side: `Existing photo ${i + 1}`, url })),
+        ].filter((image, index, all) => all.findIndex(other => other.url === image.url) === index);
         const availableUrls = [...new Set(imageEntries.map(image => image.url))];
         const toggleImage = (url: string) => setSelectedImages(prev =>
           prev.includes(url) ? prev.filter(u => u !== url) : [...prev, url]
