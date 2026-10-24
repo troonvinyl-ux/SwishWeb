@@ -23,10 +23,10 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { callEdgeFunction, getSupabaseClient, getSupabaseClientAsync, EdgeFunctionError } from '@/lib/supabase';
+import { callEdgeFunction, getSupabaseClientAsync, EdgeFunctionError } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useInsert, useTable } from '@/hooks/useSupabaseQuery';
+import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatCurrency } from '@/lib/utils';
 import {
   Camera, Upload, X, Zap, Loader2, AlertCircle, CheckCircle, Tag,
@@ -226,7 +226,6 @@ function ImageSlot({
 
 export default function Identify() {
   const navigate = useNavigate();
-  const insert = useInsert('inventory');
 
   // Duplicate-submit guard (ref — not state — so it doesn't cause re-renders)
   const submitGuard = useRef(false);
@@ -254,8 +253,8 @@ export default function Identify() {
 
   // Existing inventory search (for REQ-INV-002 — update path)
   const [inventorySearch, setInventorySearch] = useState('');
-  const { data: inventoryResults } = useTable('inventory', {
-    search: { column: 'title', query: inventorySearch },
+  const { data: inventoryResults } = useTable('items', {
+    search: { column: 'canonical_title', query: inventorySearch },
     limit: 10,
     enabled: inventorySearch.length > 2,
   });
@@ -516,9 +515,25 @@ export default function Identify() {
     // Upload images to persistent storage
     const storedUrls = await uploadImages();
 
-    // Build payload
-    const imagePayload: Record<string, string> = {};
-    storedUrls.forEach((url, side) => { imagePayload[side] = url; });
+    // Resolve authenticated tenant context from the existing SWISH App backend.
+    // Edge Functions enforce tenant membership; never invent or omit this context.
+    let tenantId = '';
+    try {
+      const sb = await getSupabaseClientAsync();
+      if (!sb) throw new Error('SWISH backend is not connected');
+      const { data: { user }, error: userError } = await sb.auth.getUser();
+      if (userError || !user) throw new Error('Please sign in to SWISH before identifying coins');
+      const { data: membership, error: membershipError } = await sb
+        .from('tenant_memberships').select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
+      if (membershipError) throw new Error(`Could not resolve your SWISH tenant: ${membershipError.message}`);
+      if (!membership?.tenant_id) throw new Error('No SWISH tenant membership was found for this account');
+      tenantId = membership.tenant_id;
+    } catch (tenantError) {
+      setErrorMsg(tenantError instanceof Error ? tenantError.message : 'Could not resolve your SWISH tenant');
+      setStep('capture');
+      submitGuard.current = false;
+      return;
+    }
 
     setProgressMsg('Analysing coin with AI…');
 
@@ -546,7 +561,8 @@ export default function Identify() {
       images: imageDataUrls,
       imageLabels: Array.from(images.values()).map(img => img.side),
       existingImageUrls: Array.from(storedUrls.values()),
-      specialistId: 'coins',
+      specialistId: needsSpecialist ? 'islamic_silver' : 'coins',
+      tenantId,
       acquisitionContext: 'Coin Flipper identification from microscope capture',
       // REQ-ID-003 — weight and diameter as hard evidence
       weight: metadata.weight ? parseFloat(metadata.weight) : undefined,
@@ -636,31 +652,71 @@ export default function Identify() {
 
     // REQ-INV-001 — confidence < 0.5 → 'review'; ≥ 0.5 → 'active'
     const confidence = candidate.confidence ?? 0;
-    const status = confidence >= 0.5 ? 'active' : 'review';
-
+    const sb = await getSupabaseClientAsync();
+    if (!sb) {
+      toast.error('SWISH backend is not connected');
+      setStep('review');
+      return;
+    }
+    const { data: { user }, error: userError } = await sb.auth.getUser();
+    if (userError || !user) {
+      toast.error('Please sign in to save this coin');
+      setStep('review');
+      return;
+    }
+    const { data: membership, error: membershipError } = await sb
+      .from('tenant_memberships').select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
+    if (membershipError || !membership?.tenant_id) {
+      toast.error(membershipError?.message || 'No SWISH tenant membership was found');
+      setStep('review');
+      return;
+    }
+    const tenantId = membership.tenant_id as string;
+    const media = Array.from(images.values()).map(i => i.storedUrl).filter((url): url is string => !!url && /^https:\/\//i.test(url));
+    const attributes = {
+      ...candidate,
+      source_scan: identificationData,
+      supplied_weight_g: metadata.weight ? Number(metadata.weight) : undefined,
+      supplied_diameter_mm: metadata.diameter ? Number(metadata.diameter) : undefined,
+      reference_url: metadata.reference_url || undefined,
+      custom_notes: metadata.notes || undefined,
+      valuation_data: valuation,
+    };
     const row: Record<string, unknown> = {
-      title: candidate.title ?? candidate.denomination ?? 'Unidentified Coin',
-      brand: candidate.brand ?? candidate.manufacturer,
-      model: candidate.model,
-      category: candidate.category ?? 'Coins',
-      description: candidate.description,
+      tenant_id: tenantId,
+      canonical_title: String(candidate.title ?? candidate.denomination ?? candidate.name ?? 'Unidentified Coin'),
+      description: String(candidate.description ?? ''),
+      specialist_id: needsSpecialist ? 'islamic_silver' : 'coins',
+      status: confidence >= 0.5 ? 'identified' : 'review_required',
+      disposition_decision: 'pending',
       condition: 'Used',
-      status,
-      valuation: valuation?.median ?? valuation?.estimated_value ?? (candidate.estimated_value as number | undefined),
-      identification_data: identificationData,
-      identified: true,
-      confidence: candidate.confidence,
-      notes: metadata.notes,
-      // Primary image = obverse stored URL
-      image_url: images.get('obverse')?.storedUrl ?? images.get('obverse')?.preview,
-      images: Array.from(images.values()).map(i => i.storedUrl ?? i.preview).filter(Boolean),
+      condition_notes: '',
+      identification_confidence: confidence,
+      identification_source: 'detected',
+      valuation_low: Number(valuation?.low ?? 0),
+      valuation_mid: Number(valuation?.median ?? valuation?.estimated_value ?? candidate.estimated_value ?? 0),
+      valuation_high: Number(valuation?.high ?? 0),
+      valuation_confidence: valuation?.confidence && Number(valuation.confidence) >= 0.8 ? 'high' : 'unknown',
+      expected_selling_price: Number(valuation?.median ?? valuation?.estimated_value ?? candidate.estimated_value ?? 0),
+      expected_net: 0,
+      expected_profit: 0,
+      sale_prob_30d: 0,
+      attributes,
+      media,
+      warnings: confidence < 0.5 ? ['Identification confidence is low; manual review required before listing.'] : [],
+      tags: ['coin-flipper'],
+      acquired_cost: 0,
+      weight_grams: metadata.weight ? Number(metadata.weight) : null,
+      dimensions_mm: metadata.diameter ? { diameter: Number(metadata.diameter) } : {},
+      material: String(candidate.metal ?? candidate.alloy ?? ''),
+      country_of_origin: String(candidate.country ?? ''),
+      denomination: String(candidate.denomination ?? ''),
+      catalogue_number: String(candidate.reference ?? ''),
     };
 
     // REQ-INV-002 — if user selected an existing coin to update, use upsert instead
     if (showUpdatePanel && updateTargetId) {
-      const sb = getSupabaseClient();
-      if (!sb) { toast.error('Backend not connected'); setStep('review'); return; }
-      const { error } = await sb.from('inventory').update(row).eq('id', updateTargetId);
+      const { error } = await sb.from('items').update(row).eq('id', updateTargetId).eq('tenant_id', tenantId);
       if (error) {
         toast.error(error.message);
         setStep('review');
@@ -672,18 +728,15 @@ export default function Identify() {
       return;
     }
 
-    insert.mutate(row, {
-      onSuccess: (data) => {
-        toast.success('Coin saved to inventory');
-        const id = (data as Record<string, unknown>)?.id as string;
-        setSavedInventoryId(id || null);
-        setStep('confirmed');
-      },
-      onError: (e) => {
-        toast.error(e.message);
-        setStep('review');
-      },
-    });
+    const { data: savedItem, error: saveError } = await sb.from('items').insert(row).select('id').single();
+    if (saveError || !savedItem) {
+      toast.error(saveError?.message || 'Coin could not be saved to SWISH inventory');
+      setStep('review');
+      return;
+    }
+    setSavedInventoryId(savedItem.id as string);
+    toast.success('Coin saved to SWISH inventory');
+    setStep('confirmed');
   };
 
   const handleReset = () => {
@@ -1055,14 +1108,14 @@ export default function Identify() {
                 <button
                   key={item.id as string}
                   type="button"
-                  onClick={() => { setUpdateTargetId(item.id as string); setInventorySearch(item.title as string ?? ''); }}
+                  onClick={() => { setUpdateTargetId(item.id as string); setInventorySearch(String(item.canonical_title ?? '')); }}
                   className={`w-full text-left p-2 rounded-lg text-xs border transition-colors ${
                     updateTargetId === item.id
                       ? 'border-primary bg-primary/5'
                       : 'border-border hover:border-primary/40'
                   }`}
                 >
-                  <div className="font-medium">{item.title as string ?? 'Untitled'}</div>
+                  <div className="font-medium">{String(item.canonical_title ?? 'Untitled')}</div>
                   <div className="text-muted-foreground">{item.sku as string ?? ''}</div>
                 </button>
               ))}
