@@ -577,7 +577,7 @@ export default function Identify() {
     setProgressMsg('Analysing coin with AI…');
 
     // REQ-ID-002 — specialist routing
-    const fnName = needsSpecialist ? 'swish-islamic-identity' : 'swish-identity';
+    const fnName = needsSpecialist ? 'swish-islamic-identify' : 'swish-identify';
     const coinType = metadata.is_islamic ? 'islamic'
       : metadata.is_indian ? 'indian'
       : metadata.is_countermark ? 'countermark'
@@ -596,18 +596,37 @@ export default function Identify() {
       return;
     }
 
+    const measurementWeight = metadata.weight ? parseFloat(metadata.weight) : undefined;
+    const measurementDiameter = metadata.diameter ? parseFloat(metadata.diameter) : undefined;
+    const observedMetal = String(metadata['metal'] || 'Unknown');
+    const observationNotes = [metadata.notes, metadata.voice_note].filter(Boolean).join('\n').trim();
+    const knownAttributes = {
+      weight_g: measurementWeight,
+      diameter_mm: measurementDiameter,
+      thickness_mm: undefined,
+      metal: observedMetal,
+      notes: observationNotes,
+    };
+    const imageSides = Array.from(images.values());
     const payload = {
+      // Keep the same data-URL image transport used by KeenOnCoins Capture Station.
+      // Include side labels and both legacy/current field names for the existing SWISH handler.
       images: imageDataUrls,
-      imageLabels: Array.from(images.values()).map(img => img.side),
+      imageLabels: imageSides.map(img => img.side),
       existingImageUrls: Array.from(storedUrls.values()),
-      specialistId: needsSpecialist ? 'islamic_silver' : 'coins',
       tenantId,
+      tenant_id: tenantId,
+      specialistId: needsSpecialist ? 'islamic_silver' : 'coins',
+      nicheId: 'coins',
       acquisitionContext: 'Coin Flipper identification from microscope capture',
-      // REQ-ID-003 — weight and diameter as hard evidence
-      weight: metadata.weight ? parseFloat(metadata.weight) : undefined,
-      diameter: metadata.diameter ? parseFloat(metadata.diameter) : undefined,
+      knownAttributes,
+      weight: measurementWeight,
+      weight_g: measurementWeight,
+      diameter: measurementDiameter,
+      diameter_mm: measurementDiameter,
+      metal: observedMetal,
+      notes: observationNotes || undefined,
       reference_url: metadata.reference_url || undefined,
-      notes: metadata.notes || undefined,
       voice_note: metadata.voice_note || undefined,
       coin_type: coinType,
       specialist: needsSpecialist,
