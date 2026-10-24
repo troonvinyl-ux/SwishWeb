@@ -214,21 +214,36 @@ export async function callEdgeFunction<T = unknown>(
     let message = error.message || 'Unknown error';
     let body: unknown = null;
 
-    // FunctionsHttpError contains context property with status / body
+    // FunctionsHttpError.context is normally a Response object. Read a clone
+    // of its body so the original SDK response remains untouched. Previously we
+    // inspected Response.body (a ReadableStream), which hid the actual server
+    // validation message and left users with only "HTTP 400".
     const ctx = (error as unknown as Record<string, unknown>).context;
     if (ctx && typeof ctx === 'object') {
-      const c = ctx as Record<string, unknown>;
-      if (typeof c.status === 'number') status = c.status;
-      if (c.body) {
+      if (typeof Response !== 'undefined' && ctx instanceof Response) {
+        status = ctx.status;
         try {
-          body = typeof c.body === 'string' ? JSON.parse(c.body) : c.body;
-          if (body && typeof body === 'object') {
-            const b = body as Record<string, unknown>;
-            // Extract structured message if backend sends one
-            const extracted = (b.message || b.error || b.detail || b.msg) as string;
-            if (extracted) message = extracted;
+          const raw = await ctx.clone().text();
+          if (raw) {
+            try { body = JSON.parse(raw); } catch { body = raw.slice(0, 2000); }
           }
-        } catch { body = c.body; }
+        } catch { /* keep the SDK message if the response body cannot be read */ }
+      } else {
+        const c = ctx as Record<string, unknown>;
+        if (typeof c.status === 'number') status = c.status;
+        if (c.body && typeof c.body === 'string') {
+          try { body = JSON.parse(c.body); } catch { body = c.body.slice(0, 2000); }
+        } else if (c.body && typeof c.body === 'object') {
+          body = c.body;
+        }
+      }
+      if (body && typeof body === 'object') {
+        const b = body as Record<string, unknown>;
+        // Show only the backend's structured error message; never credentials.
+        const extracted = (b.message || b.error || b.detail || b.msg) as string;
+        if (typeof extracted === 'string' && extracted.trim()) message = extracted;
+      } else if (typeof body === 'string' && body.trim()) {
+        message = body;
       }
     }
 
