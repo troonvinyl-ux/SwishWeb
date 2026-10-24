@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
+import { getActiveNiche, matchesNicheValue } from '@/lib/niches';
 
 // ---------------------------------------------------------------------------
 // Internal helper — gets a connected client or throws a descriptive error
@@ -22,6 +23,8 @@ export interface TableOptions {
   limit?: number;
   search?: { column: string; query: string };
   enabled?: boolean;
+  /** Opt out only for deliberately account-wide tables (e.g. seller finances/messages). */
+  nicheScope?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -41,6 +44,38 @@ export function useTable(table: string, options?: TableOptions) {
     queryFn: async () => {
       const sb = await getClient();
       let q = sb.from(table).select(options?.select || '*');
+
+      // Scope item-linked tables to the selected specialist whenever a niche is active.
+      // Because older tables differ in schema, attempt explicit known niche fields in order.
+      // We never silently remove this scope on an unknown schema: the error is surfaced.
+      const niche = options?.nicheScope === false ? null : getActiveNiche();
+      const scopedTables = new Set([
+        'items', 'inventory', 'listings', 'orders', 'sales', 'acquisitions',
+        'opportunities', 'tasks', 'stock_listings', 'ebay_listings', 'ebay_orders',
+      ]);
+      if (niche && scopedTables.has(table)) {
+        const candidates = ['niche_id', 'specialist_id', 'niche', 'specialist'];
+        let applied = false;
+        for (const column of candidates) {
+          const { data: columnProbe, error: probeError } = await sb.from(table).select(column).limit(1);
+          if (!probeError) {
+            // Existing rows may use canonical niche id OR a known specialist identifier.
+            // Apply a single-column equality filter for compatibility with PostgREST.
+            q = q.eq(column, niche.id);
+            applied = true;
+            break;
+          }
+          if (!probeError.message.toLowerCase().includes('column') &&
+              !probeError.message.toLowerCase().includes('schema cache')) {
+            throw new Error(probeError.message);
+          }
+          void columnProbe;
+        }
+        if (!applied) {
+          throw new Error(`Cannot safely scope "${table}" to the active "${niche.name}" niche: no supported niche column (niche_id, specialist_id, niche, specialist) is available. Add a schema-backed niche field before using this table across multiple niches.`);
+        }
+      }
+
       if (options?.filter) {
         Object.entries(options.filter).forEach(([k, v]) => {
           if (v != null) q = q.eq(k, v);
