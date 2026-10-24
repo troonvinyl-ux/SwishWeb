@@ -347,9 +347,6 @@ export default function ListingNew() {
     setPreflighting(false);
   };
 
-  // ── RENDER ────────────────────────────────────────────────────────────────
-  const titleLen = f('title').length;
-
   if (itemIdParam && inv && !linkedItemMatchesNiche) {
     return (
       <div className="swish-card max-w-2xl mx-auto p-6 space-y-3">
@@ -361,6 +358,11 @@ export default function ListingNew() {
       </div>
     );
   }
+
+  // ── RENDER ────────────────────────────────────────────────────────────────
+  const titleLen = f('title').length;
+
+
 
   return (
     <div className="space-y-4 animate-fade-in max-w-2xl">
