@@ -162,10 +162,10 @@ function ConfidenceBar({ score }: { score: number }) {
 }
 
 function ImageSlot({
-  side, label, required, image, onAdd, onRemove,
+  side, label, required, image, onAdd, onRemove, onCamera,
 }: {
   side: CoinSide; label: string; required: boolean;
-  image?: CoinImage; onAdd: (s: CoinSide, f: File) => void; onRemove: (s: CoinSide) => void;
+  image?: CoinImage; onAdd: (s: CoinSide, f: File) => void; onRemove: (s: CoinSide) => void; onCamera: (s: CoinSide) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
 
@@ -213,6 +213,9 @@ function ImageSlot({
           </div>
         )}
       </div>
+      <button type="button" onClick={() => onCamera(side)} className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg border border-border px-2 py-2 text-xs hover:border-primary hover:text-primary transition-colors">
+        <Camera className="w-3.5 h-3.5" /> Capture with microscope
+      </button>
     </div>
   );
 }
@@ -240,6 +243,12 @@ export default function Identify() {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
   const [showOptional, setShowOptional] = useState(false);
+  const [cameraSide, setCameraSide] = useState<CoinSide | null>(null);
+  const [cameraDevices, setCameraDevices] = useState<MediaDeviceInfo[]>([]);
+  const [cameraDeviceId, setCameraDeviceId] = useState('');
+  const [cameraError, setCameraError] = useState('');
+  const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
   const [showUpdatePanel, setShowUpdatePanel] = useState(false);
   const [updateTargetId, setUpdateTargetId] = useState('');
 
@@ -276,6 +285,72 @@ export default function Identify() {
     const preview = URL.createObjectURL(file);
     setImages(p => { const n = new Map(p); n.set(side, { side, file, preview }); return n; });
   }, []);
+
+  const stopCamera = useCallback(() => {
+    cameraStreamRef.current?.getTracks().forEach(track => track.stop());
+    cameraStreamRef.current = null;
+    if (cameraVideoRef.current) cameraVideoRef.current.srcObject = null;
+    setCameraSide(null);
+    setCameraError('');
+  }, []);
+
+  const startCamera = useCallback(async (deviceId?: string) => {
+    cameraStreamRef.current?.getTracks().forEach(track => track.stop());
+    cameraStreamRef.current = null;
+    setCameraError('');
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraError('Camera access is unavailable. Use Chrome or Edge over HTTPS, or upload a microscope image.');
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: deviceId ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } } : { width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
+      });
+      cameraStreamRef.current = stream;
+      const videoDevices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+      setCameraDevices(videoDevices);
+      const activeId = stream.getVideoTracks()[0]?.getSettings().deviceId || deviceId || '';
+      setCameraDeviceId(activeId);
+      if (cameraVideoRef.current) {
+        cameraVideoRef.current.srcObject = stream;
+        await cameraVideoRef.current.play().catch(() => undefined);
+      }
+    } catch (err) {
+      setCameraError(err instanceof Error && err.name === 'NotAllowedError'
+        ? 'Camera permission was denied. Allow camera access in your browser settings and try again.'
+        : 'Could not open the microscope. Close other camera apps and retry, or upload an image.');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (cameraSide) void startCamera(cameraDeviceId || undefined);
+    return () => {
+      cameraStreamRef.current?.getTracks().forEach(track => track.stop());
+      cameraStreamRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraSide]);
+
+  const captureCameraImage = useCallback(() => {
+    const video = cameraVideoRef.current;
+    if (!video || !cameraSide || !video.videoWidth || !video.videoHeight) {
+      setCameraError('Live preview is not ready yet. Wait for the image, then capture.');
+      return;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) { setCameraError('Could not capture this frame. Please try again.'); return; }
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(blob => {
+      if (!blob) { setCameraError('Could not create the image. Please try again.'); return; }
+      addImage(cameraSide, new File([blob], `coin-${cameraSide}-${Date.now()}.jpg`, { type: 'image/jpeg' }));
+      stopCamera();
+      toast.success('Coin image captured');
+    }, 'image/jpeg', 0.95);
+  }, [cameraSide, addImage, stopCamera]);
 
   const removeImage = useCallback((side: CoinSide) => {
     setImages(p => {
@@ -1023,8 +1098,8 @@ export default function Identify() {
           <span className="text-xs text-destructive font-medium">* Both required</span>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <ImageSlot side="obverse" label="Obverse (Front)" required image={obverse} onAdd={addImage} onRemove={removeImage} />
-          <ImageSlot side="reverse" label="Reverse (Back)"  required image={reverse} onAdd={addImage} onRemove={removeImage} />
+          <ImageSlot side="obverse" label="Obverse (Front)" required image={obverse} onAdd={addImage} onRemove={removeImage} onCamera={setCameraSide} />
+          <ImageSlot side="reverse" label="Reverse (Back)"  required image={reverse} onAdd={addImage} onRemove={removeImage} onCamera={setCameraSide} />
         </div>
         {!canSubmit && (
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -1053,10 +1128,10 @@ export default function Identify() {
         {showOptional && (
           <div className="px-4 pb-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <ImageSlot side="edge"      label="Edge"      required={false} image={images.get('edge')}      onAdd={addImage} onRemove={removeImage} />
-              <ImageSlot side="detail"    label="Detail"    required={false} image={images.get('detail')}    onAdd={addImage} onRemove={removeImage} />
-              <ImageSlot side="reference" label="Reference" required={false} image={images.get('reference')} onAdd={addImage} onRemove={removeImage} />
-              <ImageSlot side="extra"     label="Extra"     required={false} image={images.get('extra')}     onAdd={addImage} onRemove={removeImage} />
+              <ImageSlot side="edge"      label="Edge"      required={false} image={images.get('edge')}      onAdd={addImage} onRemove={removeImage} onCamera={setCameraSide} />
+              <ImageSlot side="detail"    label="Detail"    required={false} image={images.get('detail')}    onAdd={addImage} onRemove={removeImage} onCamera={setCameraSide} />
+              <ImageSlot side="reference" label="Reference" required={false} image={images.get('reference')} onAdd={addImage} onRemove={removeImage} onCamera={setCameraSide} />
+              <ImageSlot side="extra"     label="Extra"     required={false} image={images.get('extra')}     onAdd={addImage} onRemove={removeImage} onCamera={setCameraSide} />
             </div>
           </div>
         )}
@@ -1208,6 +1283,27 @@ export default function Identify() {
           </p>
         )}
       </div>
+
+      {cameraSide && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-3" role="dialog" aria-modal="true" aria-label="Microscope camera capture">
+          <div className="w-full max-w-3xl rounded-2xl border border-border bg-background p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div><h2 className="font-semibold">Capture {cameraSide === 'obverse' ? 'obverse (front)' : cameraSide === 'reverse' ? 'reverse (back)' : cameraSide}</h2><p className="text-xs text-muted-foreground">Select your USB microscope if multiple cameras are available.</p></div>
+              <button type="button" onClick={stopCamera} className="rounded-lg p-2 hover:bg-secondary" aria-label="Close camera"><X className="w-5 h-5" /></button>
+            </div>
+            {cameraDevices.length > 1 && <select value={cameraDeviceId} onChange={e => { setCameraDeviceId(e.target.value); void startCamera(e.target.value); }} className="input-field w-full text-sm" aria-label="Select camera">
+              {cameraDevices.map((device, i) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${i + 1}`}</option>)}
+            </select>}
+            <video ref={cameraVideoRef} autoPlay playsInline muted className="w-full max-h-[65vh] rounded-xl bg-black object-contain" />
+            {cameraError && <p role="alert" className="text-sm text-destructive">{cameraError}</p>}
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={captureCameraImage} className="btn-primary"><Camera className="w-4 h-4" /> Capture image</button>
+              <button type="button" onClick={() => void startCamera(cameraDeviceId || undefined)} className="rounded-lg border border-border px-3 py-2 text-sm">Reconnect camera</button>
+              <button type="button" onClick={stopCamera} className="rounded-lg border border-border px-3 py-2 text-sm">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tip */}
       <div className="swish-card p-4 flex gap-3 items-start">
