@@ -1237,7 +1237,7 @@ export default function Identify() {
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={handleConfirm}
-            disabled={!selectionMade || insert.isPending}
+            disabled={!selectionMade || step === 'confirming'}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <CheckCircle className="w-4 h-4" />
