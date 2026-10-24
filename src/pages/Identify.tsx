@@ -488,10 +488,12 @@ export default function Identify() {
       : 'general';
 
     const payload = {
-      images: imagePayload,
-      image_urls: Array.from(storedUrls.values()),
-      obverse_url: storedUrls.get('obverse'),
-      reverse_url: storedUrls.get('reverse'),
+      // Match the existing SWISH App swish-identify contract:
+      // it accepts base64 images in `images` or stored URLs in `existingImageUrls`.
+      // These are already-uploaded persistent image URLs, not raw image objects.
+      existingImageUrls: Array.from(storedUrls.values()),
+      specialistId: 'coins',
+      acquisitionContext: 'Coin Flipper identification from microscope capture',
       // REQ-ID-003 — weight and diameter as hard evidence
       weight: metadata.weight ? parseFloat(metadata.weight) : undefined,
       diameter: metadata.diameter ? parseFloat(metadata.diameter) : undefined,
