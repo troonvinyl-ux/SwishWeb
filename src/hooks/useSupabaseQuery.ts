@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
-import { getActiveNiche, matchesNicheValue } from '@/lib/niches';
+import { getActiveNiche } from '@/lib/niches';
 
 // ---------------------------------------------------------------------------
 // Internal helper — gets a connected client or throws a descriptive error
@@ -54,20 +54,16 @@ export function useTable(table: string, options?: TableOptions) {
         'opportunities', 'tasks', 'stock_listings', 'ebay_listings', 'ebay_orders',
       ]);
       if (niche && scopedTables.has(table)) {
-        const candidates = ['niche_id', 'specialist_id', 'niche', 'specialist'];
+        const candidates = ['specialist_id', 'niche_id', 'niche', 'specialist'];
         let scoped = false;
         let lastColumnError = '';
         for (const column of candidates) {
           const probe = await sb.from(table).select(column).limit(0);
           if (!probe.error) {
-            // Existing app data is keyed primarily by specialist_id. Prefer that
-            // field if available; canonical id matching is used for niche_id/niche.
             const values = column === 'specialist_id' || column === 'specialist'
               ? niche.specialistIds
               : [niche.id];
-            q = values.length === 1
-              ? q.eq(column, values[0])
-              : q.in(column, values);
+            q = values.length === 1 ? q.eq(column, values[0]) : q.in(column, values);
             scoped = true;
             break;
           }
@@ -78,7 +74,7 @@ export function useTable(table: string, options?: TableOptions) {
           }
         }
         if (!scoped) {
-          throw new Error(`Cannot safely scope "${table}" to active niche "${niche.name}". No supported niche field exists (niche_id, specialist_id, niche, specialist). ${lastColumnError}`);
+          throw new Error(`Cannot safely scope "${table}" to active niche "${niche.name}". No supported niche field exists (specialist_id, niche_id, niche, specialist). ${lastColumnError}`);
         }
       }
 
