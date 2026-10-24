@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { setActiveNiche, type NicheId } from '@/lib/niches';
 import { useNavigate } from 'react-router-dom';
 import { Search, Sparkles, ArrowUpRight, Coins, Bike, Shirt, Gem, Gamepad2, Hammer, FlaskConical, Monitor, Wrench, BookOpen } from 'lucide-react';
 
@@ -25,8 +26,7 @@ export default function NicheEntry() {
   const navigate = useNavigate();
   const niches = useMemo(() => NICHES.filter(n => (n.name + ' ' + n.detail).toLowerCase().includes(query.toLowerCase())), [query]);
   const enter = (niche: Niche) => {
-    localStorage.setItem('swish_active_niche', niche.id);
-    localStorage.setItem('swish_active_niche_name', niche.name);
+    setActiveNiche(niche.id as NicheId);
     navigate(niche.route);
   };
 
