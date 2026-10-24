@@ -57,13 +57,15 @@ export default function InventoryNew() {
       tenant_id: tenants[0].id,
       canonical_title: title,
       description: f('description').trim(),
-      niche_id: activeNiche?.id ?? 'coins',
-      niche: activeNiche?.id ?? 'coins',
+      // specialist_id is used by the existing SWISH inventory data model.
+      // Also retain the canonical niche in attributes for clients that read metadata.
       specialist_id: activeNiche?.specialistIds[0] ?? 'coins',
       status: f('status') || 'new',
       disposition_decision: 'pending',
       condition: f('condition'),
       attributes: {
+        niche_id: activeNiche?.id ?? 'coins',
+        niche_name: activeNiche?.name ?? 'Coin Flipper',
         brand: f('brand'), model: f('model'), category: f('category'),
         colour: f('colour'), size: f('size'), location: f('location'),
       },
