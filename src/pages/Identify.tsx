@@ -6,8 +6,8 @@
  * REQ-CAP-002 Optional edge/detail/reference/extra images + weight/diameter/URL/notes
  * REQ-CAP-003 Editable typed notes; voice note with honest unavailable-state
  * REQ-CAP-004 Single submit, duplicate-submit protection, progress, error, retry
- * REQ-ID-001  Calls existing `swish-identify` Edge Function via secure path
- * REQ-ID-002  Routes Islamic/Indian/countermark to `swish-islamic-identify`, falls back to `swish-identify`
+ * REQ-ID-001  Calls existing `swish-identity` Edge Function via secure path
+ * REQ-ID-002  Routes Islamic/Indian/countermark to `swish-islamic-identity`, falls back to `swish-identity`
  * REQ-ID-003  Weight + diameter passed as hard evidence; match/contradiction displayed
  * REQ-ID-004  Ranked candidates, evidence, confidence label, contradictions, catalogue links
  * REQ-ID-005  NEVER fabricates results — all states are truthful
@@ -162,10 +162,10 @@ function ConfidenceBar({ score }: { score: number }) {
 }
 
 function ImageSlot({
-  side, label, required, image, onAdd, onRemove, onCamera,
+  side, label, required, image, onAdd, onRemove, 
 }: {
   side: CoinSide; label: string; required: boolean;
-  image?: CoinImage; onAdd: (s: CoinSide, f: File) => void; onRemove: (s: CoinSide) => void; onCamera: (s: CoinSide) => void;
+  image?: CoinImage; onAdd: (s: CoinSide, f: File) => void; onRemove: (s: CoinSide) => void; 
 }) {
   const ref = useRef<HTMLInputElement>(null);
 
@@ -213,8 +213,8 @@ function ImageSlot({
           </div>
         )}
       </div>
-      <button type="button" onClick={() => onCamera(side)} className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg border border-border px-2 py-2 text-xs hover:border-primary hover:text-primary transition-colors">
-        <Camera className="w-3.5 h-3.5" /> Capture with microscope
+      <button type="button" onClick={() => ref.current?.click()} className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg border border-border px-2 py-2 text-xs hover:border-primary hover:text-primary transition-colors">
+        <Upload className="w-3.5 h-3.5" /> Choose image file
       </button>
     </div>
   );
@@ -552,7 +552,7 @@ export default function Identify() {
     setProgressMsg('Analysing coin with AI…');
 
     // REQ-ID-002 — specialist routing
-    const fnName = needsSpecialist ? 'swish-islamic-identify' : 'swish-identify';
+    const fnName = needsSpecialist ? 'swish-islamic-identity' : 'swish-identity';
     const coinType = metadata.is_islamic ? 'islamic'
       : metadata.is_indian ? 'indian'
       : metadata.is_countermark ? 'countermark'
@@ -598,7 +598,7 @@ export default function Identify() {
       toast.warning(`Specialist service unavailable (${errMsg}) — using general identification`);
       setProgressMsg('Falling back to general identification…');
 
-      const { data: fallback, error: fallbackErr } = await callEdgeFunction<IdentifyResult>('swish-identify', { ...payload, specialist: false });
+      const { data: fallback, error: fallbackErr } = await callEdgeFunction<IdentifyResult>('swish-identity', { ...payload, specialist: false });
 
       if (fallbackErr) {
         const msg = fallbackErr instanceof EdgeFunctionError ? fallbackErr.displayMessage : fallbackErr.message;
@@ -645,7 +645,7 @@ export default function Identify() {
     const identificationData = {
       confirmed_candidate: candidate,
       all_candidates: result?.candidates ?? [],
-      service_used: needsSpecialist ? 'swish-islamic-identify' : 'swish-identify',
+      service_used: needsSpecialist ? 'swish-islamic-identity' : 'swish-identity',
       specialist_routed: result?.specialist_routed ?? false,
       scan_metadata: {
         weight: metadata.weight,
@@ -1237,8 +1237,8 @@ export default function Identify() {
           <span className="text-xs text-destructive font-medium">* Both required</span>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <ImageSlot side="obverse" label="Obverse (Front)" required image={obverse} onAdd={addImage} onRemove={removeImage} onCamera={setCameraSide} />
-          <ImageSlot side="reverse" label="Reverse (Back)"  required image={reverse} onAdd={addImage} onRemove={removeImage} onCamera={setCameraSide} />
+          <ImageSlot side="obverse" label="Obverse (Front)" required image={obverse} onAdd={addImage} onRemove={removeImage} />
+          <ImageSlot side="reverse" label="Reverse (Back)"  required image={reverse} onAdd={addImage} onRemove={removeImage} />
         </div>
         {!canSubmit && (
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -1267,10 +1267,10 @@ export default function Identify() {
         {showOptional && (
           <div className="px-4 pb-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <ImageSlot side="edge"      label="Edge"      required={false} image={images.get('edge')}      onAdd={addImage} onRemove={removeImage} onCamera={setCameraSide} />
-              <ImageSlot side="detail"    label="Detail"    required={false} image={images.get('detail')}    onAdd={addImage} onRemove={removeImage} onCamera={setCameraSide} />
-              <ImageSlot side="reference" label="Reference" required={false} image={images.get('reference')} onAdd={addImage} onRemove={removeImage} onCamera={setCameraSide} />
-              <ImageSlot side="extra"     label="Extra"     required={false} image={images.get('extra')}     onAdd={addImage} onRemove={removeImage} onCamera={setCameraSide} />
+              <ImageSlot side="edge"      label="Edge"      required={false} image={images.get('edge')}      onAdd={addImage} onRemove={removeImage} />
+              <ImageSlot side="detail"    label="Detail"    required={false} image={images.get('detail')}    onAdd={addImage} onRemove={removeImage} />
+              <ImageSlot side="reference" label="Reference" required={false} image={images.get('reference')} onAdd={addImage} onRemove={removeImage} />
+              <ImageSlot side="extra"     label="Extra"     required={false} image={images.get('extra')}     onAdd={addImage} onRemove={removeImage} />
             </div>
           </div>
         )}
