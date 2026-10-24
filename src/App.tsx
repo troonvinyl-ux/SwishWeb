@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Loader2 } from 'lucide-react';
+import { getActiveNiche, normalizeNicheId, setActiveNiche } from '@/lib/niches';
 
 import LoginPage from '@/pages/LoginPage';
 import NicheEntry from '@/pages/NicheEntry';
@@ -57,6 +58,15 @@ const queryClient = new QueryClient({
 
 function AppRoutes() {
   const { connectionStatus, loading, user } = useAuth();
+
+  // Hydrate the active niche from workspace URLs, including direct links.
+  // This is client-side UX/gating only; database RLS remains the security boundary.
+  const locationPath = window.location.pathname;
+  const workspaceMatch = locationPath.match(/^\/workspace\/([^/]+)/);
+  const workspaceNiche = workspaceMatch ? normalizeNicheId(decodeURIComponent(workspaceMatch[1])) : null;
+  if (workspaceNiche && getActiveNiche()?.id !== workspaceNiche) {
+    setActiveNiche(workspaceNiche);
+  }
 
   // Establishing backend connection
   if (connectionStatus === 'initialising') {
