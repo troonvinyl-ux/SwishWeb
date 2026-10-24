@@ -97,6 +97,7 @@ function AppRoutes() {
           <Route path="/" element={<Navigate to="/niches" replace />} />
           <Route path="/niches" element={<NicheEntry />} />
           <Route path="/workspace/:niche" element={<NicheWorkspace />} />
+          <Route path="/workspace" element={<Navigate to="/niches" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/command-centre" element={<CommandCentre />} />
 
