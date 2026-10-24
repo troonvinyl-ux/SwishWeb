@@ -45,9 +45,9 @@ export function useTable(table: string, options?: TableOptions) {
       const sb = await getClient();
       let q = sb.from(table).select(options?.select || '*');
 
-      // Scope item-linked tables to the selected specialist whenever a niche is active.
-      // Because older tables differ in schema, attempt explicit known niche fields in order.
-      // We never silently remove this scope on an unknown schema: the error is surfaced.
+      // Scope item-linked tables to the active specialist. Fail closed if the
+      // existing table doesn't expose a recognised niche field: silently loading
+      // all rows here would risk cross-niche data leakage.
       const niche = options?.nicheScope === false ? null : getActiveNiche();
       const scopedTables = new Set([
         'items', 'inventory', 'listings', 'orders', 'sales', 'acquisitions',
@@ -56,23 +56,22 @@ export function useTable(table: string, options?: TableOptions) {
       if (niche && scopedTables.has(table)) {
         const candidates = ['niche_id', 'specialist_id', 'niche', 'specialist'];
         let applied = false;
+        let lastColumnError = '';
         for (const column of candidates) {
-          const { data: columnProbe, error: probeError } = await sb.from(table).select(column).limit(1);
-          if (!probeError) {
-            // Existing rows may use canonical niche id OR a known specialist identifier.
-            // Apply a single-column equality filter for compatibility with PostgREST.
+          const attempt = await sb.from(table).select('*').eq(column, niche.id).limit(0);
+          if (!attempt.error) {
             q = q.eq(column, niche.id);
             applied = true;
             break;
           }
-          if (!probeError.message.toLowerCase().includes('column') &&
-              !probeError.message.toLowerCase().includes('schema cache')) {
-            throw new Error(probeError.message);
+          lastColumnError = attempt.error.message;
+          const msg = lastColumnError.toLowerCase();
+          if (!(msg.includes('column') || msg.includes('schema cache') || msg.includes('does not exist'))) {
+            throw new Error(lastColumnError);
           }
-          void columnProbe;
         }
         if (!applied) {
-          throw new Error(`Cannot safely scope "${table}" to the active "${niche.name}" niche: no supported niche column (niche_id, specialist_id, niche, specialist) is available. Add a schema-backed niche field before using this table across multiple niches.`);
+          throw new Error(`Cannot safely scope "${table}" to the active "${niche.name}" niche: no supported niche column is available. ${lastColumnError}`);
         }
       }
 
