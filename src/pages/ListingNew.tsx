@@ -311,6 +311,8 @@ export default function ListingNew() {
 
     const row: Record<string, unknown> = {
       ...form,
+      niche_id: activeNiche?.id ?? 'coins',
+      specialist_id: activeNiche?.specialistIds[0] ?? 'coins',
       status: 'draft',   // REQ-LST-002 — cannot be overridden to 'active' on insert
       price: parseFloat(form.price as string) || null,
       quantity: parseInt(form.quantity as string, 10) || 1,
