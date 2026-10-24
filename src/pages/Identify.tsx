@@ -163,10 +163,13 @@ function ConfidenceBar({ score }: { score: number }) {
 }
 
 function ImageSlot({
-  side, label, required, image, onAdd, onRemove, 
+  side, label, required, image, onAdd, onRemove, onCamera,
 }: {
   side: CoinSide; label: string; required: boolean;
-  image?: CoinImage; onAdd: (s: CoinSide, f: File) => void; onRemove: (s: CoinSide) => void; 
+  image?: CoinImage;
+  onAdd: (s: CoinSide, f: File) => void;
+  onRemove: (s: CoinSide) => void;
+  onCamera: (s: CoinSide) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
 
@@ -184,7 +187,11 @@ function ImageSlot({
         {required && <span className="text-destructive text-xs">*</span>}
       </div>
       <div
-        onClick={() => !image && ref.current?.click()}
+        onClick={() => !image && onCamera(side)}
+        onKeyDown={e => { if (!image && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onCamera(side); } }}
+        role={!image ? 'button' : undefined}
+        tabIndex={!image ? 0 : undefined}
+        aria-label={!image ? `Open camera to capture ${label}` : undefined}
         className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all
           ${image
             ? 'border-primary/40 bg-secondary cursor-default'
@@ -214,9 +221,14 @@ function ImageSlot({
           </div>
         )}
       </div>
-      <button type="button" onClick={() => ref.current?.click()} className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-lg border border-border px-2 py-2 text-xs hover:border-primary hover:text-primary transition-colors">
-        <Upload className="w-3.5 h-3.5" /> Choose image file
-      </button>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <button type="button" onClick={() => onCamera(side)} className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-primary/10 border border-primary/30 px-2 py-2 text-xs hover:bg-primary/15 transition-colors">
+          <Camera className="w-3.5 h-3.5" /> {image ? 'Retake photo' : 'Open camera'}
+        </button>
+        <button type="button" onClick={() => ref.current?.click()} className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-border px-2 py-2 text-xs hover:border-primary hover:text-primary transition-colors">
+          <Upload className="w-3.5 h-3.5" /> Choose file
+        </button>
+      </div>
     </div>
   );
 }
@@ -304,7 +316,9 @@ export default function Identify() {
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: deviceId ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } } : { width: { ideal: 1920 }, height: { ideal: 1080 } },
+        video: deviceId
+          ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+          : { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
       });
       cameraStreamRef.current = stream;
@@ -619,7 +633,7 @@ export default function Identify() {
       // Keep the same data-URL image transport used by KeenOnCoins Capture Station.
       // Include side labels and both legacy/current field names for the existing SWISH handler.
       images: imageDataUrls,
-      imageLabels: imageSides.map(img => img.side),
+      imageLabels: orderedImages.map(img => img.side),
       existingImageUrls: Array.from(storedUrls.values()),
       tenantId,
       tenant_id: tenantId,
@@ -1288,8 +1302,8 @@ export default function Identify() {
           <span className="text-xs text-destructive font-medium">* Both required</span>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <ImageSlot side="obverse" label="Obverse (Front)" required image={obverse} onAdd={addImage} onRemove={removeImage} />
-          <ImageSlot side="reverse" label="Reverse (Back)"  required image={reverse} onAdd={addImage} onRemove={removeImage} />
+          <ImageSlot side="obverse" label="Obverse (Front)" required image={obverse} onAdd={addImage} onRemove={removeImage} onCamera={side => { setCameraError(''); setCameraSide(side); }} />
+          <ImageSlot side="reverse" label="Reverse (Back)"  required image={reverse} onAdd={addImage} onRemove={removeImage} onCamera={side => { setCameraError(''); setCameraSide(side); }} />
         </div>
         {!canSubmit && (
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -1318,10 +1332,10 @@ export default function Identify() {
         {showOptional && (
           <div className="px-4 pb-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <ImageSlot side="edge"      label="Edge"      required={false} image={images.get('edge')}      onAdd={addImage} onRemove={removeImage} />
-              <ImageSlot side="detail"    label="Detail"    required={false} image={images.get('detail')}    onAdd={addImage} onRemove={removeImage} />
-              <ImageSlot side="reference" label="Reference" required={false} image={images.get('reference')} onAdd={addImage} onRemove={removeImage} />
-              <ImageSlot side="extra"     label="Extra"     required={false} image={images.get('extra')}     onAdd={addImage} onRemove={removeImage} />
+              <ImageSlot side="edge"      label="Edge"      required={false} image={images.get('edge')}      onAdd={addImage} onRemove={removeImage} onCamera={side => { setCameraError(''); setCameraSide(side); }} />
+              <ImageSlot side="detail"    label="Detail"    required={false} image={images.get('detail')}    onAdd={addImage} onRemove={removeImage} onCamera={side => { setCameraError(''); setCameraSide(side); }} />
+              <ImageSlot side="reference" label="Reference" required={false} image={images.get('reference')} onAdd={addImage} onRemove={removeImage} onCamera={side => { setCameraError(''); setCameraSide(side); }} />
+              <ImageSlot side="extra"     label="Extra"     required={false} image={images.get('extra')}     onAdd={addImage} onRemove={removeImage} onCamera={side => { setCameraError(''); setCameraSide(side); }} />
             </div>
           </div>
         )}
