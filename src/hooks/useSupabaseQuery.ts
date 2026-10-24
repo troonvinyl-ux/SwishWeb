@@ -45,9 +45,9 @@ export function useTable(table: string, options?: TableOptions) {
       const sb = await getClient();
       let q = sb.from(table).select(options?.select || '*');
 
-      // Scope item-linked tables to the active specialist. Fail closed if the
-      // existing table doesn't expose a recognised niche field: silently loading
-      // all rows here would risk cross-niche data leakage.
+      // Scope item-linked rows to the active niche using columns supported by
+      // PostgREST's OR syntax. If the schema lacks a supported field, fail closed
+      // rather than returning rows from every specialist workspace.
       const niche = options?.nicheScope === false ? null : getActiveNiche();
       const scopedTables = new Set([
         'items', 'inventory', 'listings', 'orders', 'sales', 'acquisitions',
@@ -55,23 +55,23 @@ export function useTable(table: string, options?: TableOptions) {
       ]);
       if (niche && scopedTables.has(table)) {
         const candidates = ['niche_id', 'specialist_id', 'niche', 'specialist'];
-        let applied = false;
+        let scoped = false;
         let lastColumnError = '';
         for (const column of candidates) {
-          const attempt = await sb.from(table).select('*').eq(column, niche.id).limit(0);
-          if (!attempt.error) {
+          const probe = await sb.from(table).select(column).limit(0);
+          if (!probe.error) {
             q = q.eq(column, niche.id);
-            applied = true;
+            scoped = true;
             break;
           }
-          lastColumnError = attempt.error.message;
+          lastColumnError = probe.error.message;
           const msg = lastColumnError.toLowerCase();
           if (!(msg.includes('column') || msg.includes('schema cache') || msg.includes('does not exist'))) {
             throw new Error(lastColumnError);
           }
         }
-        if (!applied) {
-          throw new Error(`Cannot safely scope "${table}" to the active "${niche.name}" niche: no supported niche column is available. ${lastColumnError}`);
+        if (!scoped) {
+          throw new Error(`Cannot safely scope "${table}" to the active "${niche.name}" niche. No supported niche field exists (niche_id, specialist_id, niche, specialist). ${lastColumnError}`);
         }
       }
 
