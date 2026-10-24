@@ -29,7 +29,7 @@ export default function InventoryNew() {
   const insert = useInsert('items');
   const { user } = useAuth();
   const [form, setForm] = useState<Record<string, unknown>>(DEFAULT_FORM);
-  const activeNiche = getActiveNiche();
+  const [activeNiche] = useState(() => getActiveNiche());
 
   const setF = (key: string, val: unknown) => setForm(p => ({ ...p, [key]: val }));
   const f = (key: string) => (form[key] as string) || '';
