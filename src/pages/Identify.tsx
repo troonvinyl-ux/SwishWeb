@@ -406,20 +406,30 @@ export default function Identify() {
       const ext = (img.file.name.split('.').pop() || 'jpg').replace(/[^a-z0-9]/gi, '') || 'jpg';
       // Match the existing SWISH App item-images bucket and item-scoped path policy.
       const path = `${itemId}/${index}_${side}.${ext}`;
-      const { data, error } = await sb.storage.from('item-images').upload(path, img.file, { upsert: true, contentType: img.file.type || 'image/jpeg' });
-      if (!error && data) {
-        const { data: urlData } = sb.storage.from('images').getPublicUrl(path);
-        if (urlData?.publicUrl) {
-          urls.set(side, urlData.publicUrl);
+      try {
+        const { data, error } = await sb.storage.from('item-images').upload(path, img.file, { upsert: true, contentType: img.file.type || 'image/jpeg' });
+        if (!error && data) {
+          const { data: urlData } = sb.storage.from('item-images').getPublicUrl(path);
+          if (urlData?.publicUrl) {
+            urls.set(side, urlData.publicUrl);
+            setImages(p => {
+              const n = new Map(p);
+              const i = n.get(side);
+              if (i) n.set(side, { ...i, storedUrl: urlData.publicUrl });
+              return n;
+            });
+          }
+        } else {
+          console.warn(`[CoinFlipper] Upload failed for ${side}:`, error?.message);
           setImages(p => {
             const n = new Map(p);
             const i = n.get(side);
-            if (i) n.set(side, { ...i, storedUrl: urlData.publicUrl });
+            if (i) n.set(side, { ...i, uploadFailed: true });
             return n;
           });
         }
-      } else {
-        console.warn(`[CoinFlipper] Upload failed for ${side}:`, error?.message);
+      } catch (uploadError) {
+        console.warn(`[CoinFlipper] Upload failed for ${side}:`, uploadError instanceof Error ? uploadError.message : 'Network error');
         setImages(p => {
           const n = new Map(p);
           const i = n.get(side);
