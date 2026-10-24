@@ -114,12 +114,13 @@ export default function ListingEditor() {
         const inv = linkedItem as Record<string, unknown>;
         const idData = (inv.identification_data || {}) as Record<string, unknown>;
         const scanImages = (idData.scan_images || {}) as Record<string, string>;
+        const existingListingImages = (form.images as string[] || []).filter(Boolean);
         const imageEntries = [
           ...Object.entries(scanImages).filter(([_, url]) => !!url).map(([side, url]) => ({ side, url })),
           ...uploadedImages,
+          ...existingListingImages.filter(url => !Object.values(scanImages).includes(url) && !uploadedImages.some(image => image.url === url)).map((url, i) => ({ side: `Existing photo ${i + 1}`, url })),
         ];
-        const existingListingImages = (form.images as string[] || []).filter(Boolean);
-        const availableUrls = [...new Set([...imageEntries.map(image => image.url), ...existingListingImages])];
+        const availableUrls = [...new Set(imageEntries.map(image => image.url))];
         const toggleImage = (url: string) => setSelectedImages(prev =>
           prev.includes(url) ? prev.filter(u => u !== url) : [...prev, url]
         );
