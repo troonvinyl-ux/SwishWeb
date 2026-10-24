@@ -584,11 +584,17 @@ export default function Identify() {
       : metadata.is_countermark ? 'countermark'
       : 'general';
 
+    // Keep image order deterministic so the backend always receives obverse then
+    // reverse, followed by optional detail/reference images, regardless of upload order.
+    const sideOrder: CoinSide[] = ['obverse', 'reverse', 'edge', 'detail', 'reference', 'extra'];
+    const orderedImages = Array.from(images.values()).sort(
+      (a, b) => sideOrder.indexOf(a.side) - sideOrder.indexOf(b.side),
+    );
     let imageDataUrls: string[] = [];
     try {
-      // Send the actual captured files as well as any successfully stored URLs.
-      // This avoids HTTP 400 when the Storage upload/bucket is unavailable.
-      imageDataUrls = await Promise.all(Array.from(images.values()).map(img => fileToDataUrl(img.file)));
+      // Reuse the proven Capture Station path: normalize image files and send data URLs
+      // directly to the existing SWISH Edge Function, without relying on Storage uploads.
+      imageDataUrls = await Promise.all(orderedImages.map(img => fileToDataUrl(img.file)));
     } catch (readError) {
       const detail = readError instanceof Error ? readError.message : 'Unknown image read error';
       setErrorMsg(`Could not read the captured coin images: ${detail}`);
