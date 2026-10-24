@@ -23,7 +23,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { callEdgeFunction, getSupabaseClientAsync, EdgeFunctionError } from '@/lib/supabase';
+import { callEdgeFunction, getSupabaseClient, getSupabaseClientAsync, EdgeFunctionError } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useTable } from '@/hooks/useSupabaseQuery';
@@ -394,16 +394,19 @@ export default function Identify() {
   };
 
   // Upload all images to storage
-  const uploadImages = async (): Promise<Map<CoinSide, string>> => {
-    const sb = getSupabaseClient();
+  const uploadImages = async (itemId: string): Promise<Map<CoinSide, string>> => {
+    const sb = await getSupabaseClientAsync();
     const urls = new Map<CoinSide, string>();
-    if (!sb) return urls;
+    if (!sb || !itemId) return urls;
 
+    let index = 0;
     for (const [side, img] of images) {
-      setProgressMsg(`Uploading ${side} image…`);
-      const ext = img.file.name.split('.').pop() || 'jpg';
-      const path = `coin-flipper/${Date.now()}_${side}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const { data, error } = await sb.storage.from('images').upload(path, img.file, { upsert: true });
+      index += 1;
+      setProgressMsg(`Saving ${side} image…`);
+      const ext = (img.file.name.split('.').pop() || 'jpg').replace(/[^a-z0-9]/gi, '') || 'jpg';
+      // Match the existing SWISH App item-images bucket and item-scoped path policy.
+      const path = `${itemId}/${index}_${side}.${ext}`;
+      const { data, error } = await sb.storage.from('item-images').upload(path, img.file, { upsert: true, contentType: img.file.type || 'image/jpeg' });
       if (!error && data) {
         const { data: urlData } = sb.storage.from('images').getPublicUrl(path);
         if (urlData?.publicUrl) {
@@ -512,8 +515,9 @@ export default function Identify() {
     setValuation(null);
     setStep('identifying');
 
-    // Upload images to persistent storage
-    const storedUrls = await uploadImages();
+    // Identification uses the original image data directly. Persist images only after
+    // an item ID exists so uploads use SWISH App's item-images/{itemId}/ path contract.
+    const storedUrls = new Map<CoinSide, string>();
 
     // Resolve authenticated tenant context from the existing SWISH App backend.
     // Edge Functions enforce tenant membership; never invent or omit this context.
@@ -722,6 +726,14 @@ export default function Identify() {
         setStep('review');
         return;
       }
+      const savedUrls = await uploadImages(updateTargetId);
+      const permanentMedia = Array.from(savedUrls.values());
+      if (permanentMedia.length) {
+        const { error: mediaError } = await sb.from('items').update({ media: permanentMedia }).eq('id', updateTargetId).eq('tenant_id', tenantId);
+        if (mediaError) toast.warning(`Coin updated, but image links could not be saved: ${mediaError.message}`);
+      } else {
+        toast.warning('Coin updated, but microscope images could not be uploaded. Check item-images storage permissions.');
+      }
       toast.success('Inventory record updated');
       setSavedInventoryId(updateTargetId);
       setStep('confirmed');
@@ -733,6 +745,14 @@ export default function Identify() {
       toast.error(saveError?.message || 'Coin could not be saved to SWISH inventory');
       setStep('review');
       return;
+    }
+    const savedUrls = await uploadImages(savedItem.id as string);
+    const permanentMedia = Array.from(savedUrls.values());
+    if (permanentMedia.length) {
+      const { error: mediaError } = await sb.from('items').update({ media: permanentMedia }).eq('id', savedItem.id).eq('tenant_id', tenantId);
+      if (mediaError) toast.warning(`Coin saved, but image links could not be saved: ${mediaError.message}`);
+    } else {
+      toast.warning('Coin saved, but microscope images could not be uploaded. Check item-images storage permissions.');
     }
     setSavedInventoryId(savedItem.id as string);
     toast.success('Coin saved to SWISH inventory');
