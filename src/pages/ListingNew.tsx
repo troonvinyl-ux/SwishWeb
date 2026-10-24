@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
+import { getActiveNiche } from '@/lib/niches';
 
 // ---------------------------------------------------------------------------
 // Description builder — generates an eBay-ready coin description from AI data
@@ -167,6 +168,7 @@ export default function ListingNew() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const insert = useInsert('listings');
+  const [activeNiche] = useState(() => getActiveNiche());
 
   const [form, setForm] = useState<Record<string, unknown>>(DEFAULT_FORM);
   const [preflighting, setPreflighting] = useState(false);
@@ -189,6 +191,16 @@ export default function ListingNew() {
   // Load linked inventory record to extract AI identification data
   const { data: linkedItem } = useTableRow('inventory', itemIdParam || null);
   const inv = linkedItem as Record<string, unknown> | null;
+
+  // Do not create a listing from an item that belongs to another selected niche.
+  const linkedItemNiche = inv?.niche_id || inv?.niche || inv?.specialist_id
+    || (inv?.attributes && typeof inv.attributes === 'object'
+      ? (inv.attributes as Record<string, unknown>).niche_id
+      : undefined);
+  const linkedNicheText = typeof linkedItemNiche === 'string' ? linkedItemNiche.toLowerCase() : '';
+  const linkedItemMatchesNiche = !activeNiche || !linkedItemNiche
+    || activeNiche.id === linkedNicheText
+    || activeNiche.specialistIds.some(id => id.toLowerCase() === linkedNicheText);
 
   // Initial param pre-fill (lightweight — just the URL params)
   useEffect(() => {
