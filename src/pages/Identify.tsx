@@ -244,6 +244,9 @@ export default function Identify() {
   const navigate = useNavigate();
   const [activeNiche] = useState(() => getActiveNiche());
 
+
+
+
   // This route uses coin-specific capture, metadata, identification and valuation.
   // Keep the specialist gate before any coin-related queries or effects can run.
   if (activeNiche && activeNiche.id !== 'coins') {
@@ -260,7 +263,6 @@ export default function Identify() {
       </div>
     );
   }
-
 
 
   // Duplicate-submit guard (ref — not state — so it doesn't cause re-renders)
