@@ -4,29 +4,70 @@ import { formatCurrency, formatDate, statusVariant, truncate } from '@/lib/utils
 import { RefreshCw, Search, ExternalLink, Plus } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { callEdgeFunction } from '@/lib/supabase';
+import { callEdgeFunction, getSupabaseClient } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export default function EbayListings() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [syncing, setSyncing] = useState(false);
 
+  const preferredNiche = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins').toLowerCase();
+  const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
+  const activeNiche = String((isOwner ? localStorage.getItem('swish_active_niche') : preferredNiche) || preferredNiche).toLowerCase();
+  const specialistIds: string[] =
+    ['clothing', 'fashion', 'threads', 'threads_flip', 'trainers', 'trainers_sneakers'].includes(activeNiche)
+      ? ['clothing', 'trainers_sneakers']
+      : ['bicycles', 'bikes', 'cycling', 'bike_flipper'].includes(activeNiche)
+        ? ['bicycles', 'bikes']
+        : ['motocross', 'mx', 'flipper_mx'].includes(activeNiche)
+          ? ['motocross', 'mx']
+          : ['surplus_flip', 'surplus-flip', 'surplus_trader', 'catalog_flip', 'catalog_surplus'].includes(activeNiche)
+            ? ['surplus_trader', 'surplus_flip']
+            : ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic'].includes(activeNiche)
+              ? ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic', 'curiosities_collectibles']
+              : [];
+
   const { data, isLoading, error } = useTable('listings', {
+    select: '*, items!inner(specialist_id)',
     order: { column: 'created_at', ascending: false },
     search: search ? { column: 'title', query: search } : undefined,
-    filter: status ? { status } : undefined,
+    filter: { marketplace_id: 'ebay', ...(status ? { status } : {}) },
+    inFilter: specialistIds.length ? { 'items.specialist_id': specialistIds } : undefined,
+    enabled: specialistIds.length > 0,
   });
 
   const items = (data || []) as Record<string, unknown>[];
 
   const syncListings = async () => {
     setSyncing(true);
-    const { error } = await callEdgeFunction('ebay-sync-listings', {});
-    if (error) toast.error(error.message);
-    else { toast.success('Listings synced'); qc.invalidateQueries({ queryKey: ['listings'] }); }
-    setSyncing(false);
+    try {
+      const sb = getSupabaseClient();
+      if (!sb || !user) throw new Error('Please sign in again before syncing listings.');
+      const { data: membership, error: membershipError } = await sb
+        .from('tenant_memberships')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      if (membershipError) throw membershipError;
+      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready.');
+      const { error } = await callEdgeFunction('swish-ebay-sync', {
+        tenantId: membership.tenant_id, mode: 'full',
+      }, sb);
+      if (error) throw error;
+      await Promise.all([
+        'marketplace_connectors', 'items', 'listings', 'orders', 'sales',
+      ].map(table => qc.invalidateQueries({ queryKey: [table] })));
+      toast.success('eBay listings synced');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not sync eBay listings.');
+    } finally {
+      setSyncing(false);
+    }
   };
 
   return (
