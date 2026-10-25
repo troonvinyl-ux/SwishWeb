@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { callEdgeFunction, getSupabaseClient } from '@/lib/supabase';
@@ -27,6 +27,21 @@ export default function Onboarding() {
   const [steps, setSteps] = useState<Record<string, boolean>>(initial);
   const [savingProfile, setSavingProfile] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  useEffect(() => {
+    const sb = getSupabaseClient();
+    if (!sb || !user) return;
+    let active = true;
+    sb.from('ebay_accounts').select('id').limit(1).then(({ data, error }) => {
+      if (!active || error || !data?.length) return;
+      setSteps(current => {
+        if (current.ebay) return current;
+        const next = { ...current, ebay: true };
+        localStorage.setItem(storageKey, JSON.stringify(next));
+        return next;
+      });
+    });
+    return () => { active = false; };
+  }, [storageKey, user]);
   const completed = Object.values(steps).filter(Boolean).length;
   const isOwner = user?.email?.toLowerCase() === OWNER_EMAIL;
 
@@ -88,7 +103,7 @@ export default function Onboarding() {
   const rows = [
     { id: 'profile', title: 'Confirm your account', detail: 'Use your account name to initialise your SWISH profile.', icon: UserRound, action: saveProfile, label: 'Confirm profile', busy: savingProfile },
     { id: 'ebay', title: 'Connect eBay', detail: 'Authorise the existing eBay integration to sync listings and orders.', icon: Link2, action: connectEbay, label: 'Connect eBay', busy: connecting },
-    { id: 'inventory', title: 'Bring in your stock', detail: 'Import an existing eBay CSV or start with an empty inventory.', icon: Package, action: () => { updateStep('inventory'); navigate('/ebay/import'); }, label: 'Open import tools', busy: false },
+    { id: 'inventory', title: 'Bring in your stock', detail: 'Import an existing eBay CSV or start with an empty inventory.', icon: Package, action: () => navigate('/ebay/import'), label: 'Open import tools', busy: false },
   ];
 
   return <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
