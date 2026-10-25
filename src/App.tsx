@@ -16,6 +16,7 @@ import Inventory from '@/pages/Inventory';
 import InventoryItem from '@/pages/InventoryItem';
 import InventoryNew from '@/pages/InventoryNew';
 import Identify from '@/pages/Identify';
+import NicheCapture from '@/pages/NicheCapture';
 import Acquisitions from '@/pages/Acquisitions';
 import Opportunities from '@/pages/Opportunities';
 import ReviewRequired from '@/pages/ReviewRequired';
@@ -96,6 +97,7 @@ function AppRoutes() {
           <Route path="/inventory/:id" element={<InventoryItem />} />
 
           <Route path="/identify" element={<Identify />} />
+          <Route path="/scan/:niche" element={<NicheCapture />} />
           <Route path="/acquisitions" element={<Acquisitions />} />
           <Route path="/opportunities" element={<Opportunities />} />
           <Route path="/review-required" element={<ReviewRequired />} />
