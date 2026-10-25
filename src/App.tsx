@@ -43,6 +43,7 @@ import EbayAnalytics from '@/pages/EbayAnalytics';
 import EbayImport from '@/pages/EbayImport';
 import EbayLogs from '@/pages/EbayLogs';
 import Settings from '@/pages/Settings';
+import MasterAdmin from '@/pages/MasterAdmin';
 import ParityTools from '@/pages/ParityTools';
 import NotFound from '@/pages/NotFound';
 
@@ -141,6 +142,7 @@ function AppRoutes() {
 
           {/* Settings */}
           <Route path="/settings" element={<Settings />} />
+          <Route path="/master-admin" element={<MasterAdmin />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
