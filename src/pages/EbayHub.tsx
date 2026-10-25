@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { callEdgeFunction, EdgeFunctionError, getSupabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +15,6 @@ export default function EbayHub() {
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState('');
   const [tenantId, setTenantId] = useState<string | null>(null);
-  const authWindowRef = useRef<Window | null>(null);
   const connectedNoticeShown = useRef(false);
   const qc = useQueryClient();
 
@@ -51,7 +50,6 @@ export default function EbayHub() {
           token_expires_at: data.access_token_expires_at || previous?.token_expires_at,
         }));
         setConnecting(false);
-        authWindowRef.current = null;
         await Promise.all([
           'ebay_accounts', 'marketplace_connectors', 'items', 'listings',
           'ebay_listings', 'orders', 'ebay_orders', 'sales', 'fees', 'payouts', 'messages',
@@ -79,9 +77,6 @@ export default function EbayHub() {
   const handleConnect = async () => {
     setConnecting(true);
     connectedNoticeShown.current = false;
-    // Open a blank tab synchronously so mobile browsers do not block OAuth as a popup.
-    const authWindow = window.open('about:blank', '_blank');
-    authWindowRef.current = authWindow;
     try {
       const sb = getSupabaseClient();
       if (!sb || !user) throw new Error('Please sign in again before connecting eBay.');
@@ -134,14 +129,11 @@ export default function EbayHub() {
       if (typeof url !== 'string' || !url.startsWith('https://auth.ebay.com/')) {
         throw new Error('The existing eBay authorisation service did not return a valid eBay consent URL.');
       }
-      if (authWindow) authWindow.location.href = url;
-      else {
-        // Pop-up blockers can prevent a new tab on mobile; same-tab OAuth remains usable.
-        window.location.assign(url);
-      }
+      // Use same-tab OAuth on the web. eBay's consent page necessarily opens on
+      // eBay, then its configured callback returns the user to this SWISH app.
+      // Avoid pop-up/new-tab behaviour, especially on mobile Safari.
+      window.location.assign(url);
     } catch (error) {
-      authWindow?.close();
-      authWindowRef.current = null;
       const msg = error instanceof EdgeFunctionError ? error.displayMessage : error instanceof Error ? error.message : 'Could not start eBay connection';
       toast.error(msg);
       setConnecting(false);
