@@ -106,20 +106,48 @@ export default function NicheCapture() {
       const result = (data?.identification || data?.result?.identification || data?.result || data) as Record<string, unknown>;
       if (!result || typeof result !== 'object' || !Object.keys(result).length) throw new Error('The clothing identification engine returned no result.');
       setClothingAiResult(result);
-      const attrs = (result.attributesConfirmed || result.attributes || result.attributesInferred || {}) as Record<string, unknown>;
+      // The shared SWISH identification contract returns clothing-specific fields
+      // separately from generic confirmed/inferred attributes. Merge all supported
+      // shapes so Threads Flip gets the same specialist data as the mobile app.
+      const object = (value: unknown): Record<string, unknown> =>
+        value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+      const attrs = {
+        ...object(result.attributesInferred),
+        ...object(result.attributes),
+        ...object(result.attributesConfirmed),
+        ...object(result.clothingFields),
+        ...object(result.garmentFields),
+      };
+      const usable = (value: unknown) => {
+        if (value === undefined || value === null) return false;
+        if (typeof value === 'string') {
+          const text = value.trim();
+          return !!text && !/^(not established|not legible|unknown|n\/a|none)$/i.test(text);
+        }
+        return typeof value === 'number' || typeof value === 'boolean';
+      };
       const setIfPresent = (formKey: string, ...values: unknown[]) => {
-        const value = values.find(v => v !== undefined && v !== null && String(v).trim());
+        const value = values.find(usable);
         if (value !== undefined) setF(formKey, String(value));
       };
-      setIfPresent('title', result.canonicalTitle, result.title);
-      setIfPresent('brand', attrs.brand, attrs.brand_label, result.brand);
-      setIfPresent('category', attrs.category, attrs.garmentType, attrs.garment_type, result.garmentType);
-      setIfPresent('size', attrs.size, attrs.taggedSize, attrs.tagged_size, attrs.labelled_size, result.size);
-      setIfPresent('colour', attrs.colour, attrs.color, attrs.colour_pattern, attrs.color_description, result.colour);
-      setIfPresent('material', attrs.material, attrs.fabric, attrs.fibre_composition, attrs.composition, attrs.fiber_composition, result.material);
-      setIfPresent('style', attrs.style, attrs.era, attrs.era_estimate, result.style);
-      setIfPresent('condition', result.condition, attrs.condition);
-      setIfPresent('flaws', attrs.flaws, attrs.visibleFlaws, attrs.damage_notes, result.conditionNotes);
+      setIfPresent('title', result.canonicalTitle, result.title, attrs.canonicalTitle);
+      setIfPresent('brand', attrs.brand, attrs.brand_label, attrs.labelBrand, result.brand);
+      setIfPresent('category', attrs.garmentType, attrs.garment_type, attrs.category, attrs.objectType, result.garmentType);
+      setIfPresent('size', attrs.labelledSize, attrs.labelled_size, attrs.taggedSize, attrs.tagged_size, attrs.size, result.size);
+      setIfPresent('colour', attrs.colourDescription, attrs.colour_description, attrs.colour, attrs.color, attrs.colour_pattern, attrs.color_description, result.colour);
+      setIfPresent('material', attrs.fiberComposition, attrs.fiber_composition, attrs.fibreComposition, attrs.fibre_composition, attrs.primaryMaterial, attrs.material, attrs.fabric, attrs.composition, result.material);
+      setIfPresent('style', attrs.eraEstimate, attrs.era_estimate, attrs.style, attrs.era, result.style);
+      setIfPresent('condition', result.condition, attrs.condition, result.conditionGrade);
+      const damage = Array.isArray(attrs.visibleDamage) ? attrs.visibleDamage.join('; ') : attrs.visibleDamage;
+      setIfPresent('flaws', attrs.flaws, attrs.visibleFlaws, attrs.damage_notes, damage, result.conditionNotes);
+      const gender = attrs.genderCategory ?? attrs.gender_category;
+      if (usable(gender)) setIfPresent('description', [f('description'), 'Gender category: ' + String(gender)].filter(Boolean).join('\n'));
+      const evidence = [
+        ...(Array.isArray(result.evidenceSupporting) ? result.evidenceSupporting : []),
+        ...(Array.isArray(result.missingInformation) ? result.missingInformation.map((v: unknown) => 'Missing information: '+String(v)) : []),
+        ...(Array.isArray(result.warnings) ? result.warnings : []),
+      ].map(String);
+      if (evidence.length) setF('description', [f('description'), ...evidence].filter(Boolean).join('\n'));
       const evidence = [
         ...(Array.isArray(result.evidenceSupporting) ? result.evidenceSupporting : []),
         ...(Array.isArray(result.missingInformation) ? result.missingInformation.map((v: unknown) => 'Missing information: '+String(v)) : []),
@@ -295,11 +323,11 @@ export default function NicheCapture() {
                 {clothingPreviews[slot.key]?<img src={clothingPreviews[slot.key]} alt={slot.title} className="max-h-60 w-full rounded-xl object-contain"/>:<Camera className="mb-3 h-10 w-10" style={{color:'#E91E8C'}}/>}
                 <span className="mt-2 font-semibold">{slot.title}</span><span className="mt-1 text-xs font-semibold tracking-wider" style={{color:slot.required?'#FF3DAA':'#9A7090'}}>{slot.required?'REQUIRED':'OPTIONAL'}</span><span className="mt-2 text-sm" style={{color:'#9A7090'}}>{slot.hint}</span>
                 <div className="mt-4 flex w-full flex-wrap justify-center gap-2">
-                  <button type="button" onClick={()=>clothingCameraInputs.current[slot.key]?.click()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-bold" style={{background:'#E91E8C',color:'#0C080C'}}><Camera className="h-4 w-4"/>Take photo</button>
-                  <button type="button" onClick={()=>clothingFileInputs.current[slot.key]?.click()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold" style={{borderColor:'#58304F',color:'#F5EEF5'}}><ImagePlus className="h-4 w-4"/>Choose file</button>
+                  <label htmlFor={`threads-camera-${slot.key}`} className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-bold" style={{background:'#E91E8C',color:'#0C080C'}}><Camera className="h-4 w-4"/>Take photo</label>
+                  <label htmlFor={`threads-file-${slot.key}`} className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold" style={{borderColor:'#58304F',color:'#F5EEF5'}}><ImagePlus className="h-4 w-4"/>Choose file</label>
                 </div>
-                <input ref={el=>{clothingCameraInputs.current[slot.key]=el}} type="file" accept="image/*" capture="environment" className="hidden" onChange={e=>{addClothingPhoto(slot.key,e.target.files?.[0]);e.currentTarget.value='';}}/>
-                <input ref={el=>{clothingFileInputs.current[slot.key]=el}} type="file" accept="image/*" className="hidden" onChange={e=>{addClothingPhoto(slot.key,e.target.files?.[0]);e.currentTarget.value='';}}/>
+                <input id={`threads-camera-${slot.key}`} ref={el=>{clothingCameraInputs.current[slot.key]=el}} type="file" accept="image/*" capture="environment" className="sr-only" onChange={e=>{addClothingPhoto(slot.key,e.target.files?.[0]);e.currentTarget.value='';}}/>
+                <input id={`threads-file-${slot.key}`} ref={el=>{clothingFileInputs.current[slot.key]=el}} type="file" accept="image/*" className="sr-only" onChange={e=>{addClothingPhoto(slot.key,e.target.files?.[0]);e.currentTarget.value='';}}/>
               </div>
             </div>)}
           </div>
