@@ -141,8 +141,8 @@ export default function NicheCapture() {
       const damage = Array.isArray(attrs.visibleDamage) ? attrs.visibleDamage.join('; ') : attrs.visibleDamage;
       setIfPresent('flaws', attrs.flaws, attrs.visibleFlaws, attrs.damage_notes, damage, result.conditionNotes);
       const gender = attrs.genderCategory ?? attrs.gender_category;
-      if (usable(gender)) setIfPresent('description', [f('description'), 'Gender category: ' + String(gender)].filter(Boolean).join('\n'));
       const evidence = [
+        ...(usable(gender) ? ['Gender category: ' + String(gender)] : []),
         ...(Array.isArray(result.evidenceSupporting) ? result.evidenceSupporting : []),
         ...(Array.isArray(result.missingInformation) ? result.missingInformation.map((v: unknown) => 'Missing information: '+String(v)) : []),
         ...(Array.isArray(result.warnings) ? result.warnings : []),
