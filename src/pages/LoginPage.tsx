@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { useAuth, ConnectionStatus } from '@/contexts/AuthContext';
 import { Zap, Eye, EyeOff, Loader2, Key, WifiOff, UserPlus, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,9 +9,17 @@ const PRODUCTS = {
   '/mx': { id: 'motocross', label: 'SWISH MX', description: 'Buy, prepare and sell motocross and off-road bikes', accent: '#EF4444' },
   '/bikes': { id: 'bicycles', label: 'SWISH Bikes', description: 'Identify, value and sell bicycles', accent: '#22C55E' },
   '/threads': { id: 'clothing', label: 'Threads Flip', description: 'Turn fashion into opportunity', accent: '#E91E8C' },
+  '/clothes': { id: 'clothing', label: 'Threads Flip', description: 'Turn fashion into opportunity', accent: '#E91E8C' },
   '/surplus': { id: 'surplus_flip', label: 'Surplus Flip', description: 'Turn job lots and pallet manifests into listings', accent: '#14B8A6' },
 } as const;
 const DEFAULT_PRODUCT = PRODUCTS['/coins'];
+const ENTRY_PRODUCTS = [
+  { path: '/coins', ...PRODUCTS['/coins'] },
+  { path: '/mx', ...PRODUCTS['/mx'] },
+  { path: '/bikes', ...PRODUCTS['/bikes'] },
+  { path: '/clothes', ...PRODUCTS['/clothes'] },
+  { path: '/surplus', ...PRODUCTS['/surplus'] },
+];
 
 function ConnectionBanner({ status }: { status: ConnectionStatus }) {
   if (status === 'initialising') {
@@ -26,6 +34,7 @@ function ConnectionBanner({ status }: { status: ConnectionStatus }) {
 export default function LoginPage() {
   const { signIn, signUp, connectionStatus, setManualKey } = useAuth();
   const location = useLocation();
+  const isRootEntry = location.pathname === '/';
   const product = PRODUCTS[location.pathname as keyof typeof PRODUCTS] || DEFAULT_PRODUCT;
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [fullName, setFullName] = useState('');
