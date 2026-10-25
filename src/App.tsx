@@ -92,11 +92,12 @@ function AppRoutes() {
       <ErrorBoundary name="router">
         <Routes>
           <Route path="/" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
-          <Route path="/coins" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
-          <Route path="/mx" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
-          <Route path="/bikes" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
-          <Route path="/threads" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
-          <Route path="/surplus" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
+          <Route path="/coins" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'coins' : safeNiche}`} replace />} />
+          <Route path="/mx" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'motocross' : safeNiche}`} replace />} />
+          <Route path="/bikes" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'bicycles' : safeNiche}`} replace />} />
+          <Route path="/threads" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'clothing' : safeNiche}`} replace />} />
+          <Route path="/clothes" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'clothing' : safeNiche}`} replace />} />
+          <Route path="/surplus" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'surplus_flip' : safeNiche}`} replace />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/niches" element={isOwner ? <NicheEntry /> : <Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
           <Route path="/workspace/:niche" element={<NicheWorkspace />} />
