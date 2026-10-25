@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { callEdgeFunction } from '@/lib/supabase';
-import { BadgeCheck, Crown, ExternalLink, RefreshCw, ShieldAlert } from 'lucide-react';
+import { BadgeCheck, Crown, ExternalLink, RefreshCw, ShieldAlert, Coins, Bike, Shirt, Wrench, Package, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Subscription = {
@@ -13,18 +14,33 @@ type Subscription = {
 };
 
 const OWNER_EMAIL = 'troonvinyl@gmail.com';
+const NICHES = [
+  { id: 'coins', name: 'SWISH Coins', tagline: 'Identify, value and flip coins & collectibles', colour: '#F5C842', icon: Coins },
+  { id: 'motocross', name: 'SWISH MX', tagline: 'Buy, prep and flip motocross & off-road bikes', colour: '#EF4444', icon: Wrench },
+  { id: 'bicycles', name: 'SWISH Bikes', tagline: 'Identify, value and flip bicycles', colour: '#22C55E', icon: Bike },
+  { id: 'clothing', name: 'Threads Flip', tagline: 'Turn fashion into opportunity.', colour: '#E91E8C', icon: Shirt },
+  { id: 'surplus_flip', name: 'Surplus Flip', tagline: 'Turn job lots and pallet manifests into eBay listings', colour: '#14B8A6', icon: Package },
+];
 
 export default function MasterAdmin() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isOwner = user?.email?.toLowerCase() === OWNER_EMAIL;
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(false);
   const [checkedAt, setCheckedAt] = useState<string | null>(null);
+  const activeNiche = localStorage.getItem('swish_active_niche') || 'coins';
+
+  const switchNiche = (niche: typeof NICHES[number]) => {
+    localStorage.setItem('swish_active_niche', niche.id);
+    localStorage.setItem('swish_active_niche_name', niche.name);
+    document.documentElement.dataset.niche = niche.id;
+    navigate('/workspace/' + niche.id);
+  };
 
   const refresh = useCallback(async () => {
     if (!isOwner) return;
     setLoading(true);
-    // Existing deployed function: checks the authenticated user's Stripe subscription.
     const result = await callEdgeFunction<Subscription>('swish-check-subscription', {});
     setLoading(false);
     setCheckedAt(new Date().toISOString());
@@ -43,19 +59,27 @@ export default function MasterAdmin() {
   }
 
   const entitlements = subscription?.niche_entitlements ?? [];
-  const subscriptionEnd = subscription?.subscription_end
-    ? new Date(subscription.subscription_end).toLocaleDateString('en-GB')
-    : '—';
+  const subscriptionEnd = subscription?.subscription_end ? new Date(subscription.subscription_end).toLocaleDateString('en-GB') : '—';
 
   return <div className="space-y-6 animate-fade-in">
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div><div className="flex items-center gap-2"><Crown className="w-6 h-6 swish-gold" /><h1 className="page-title">Master Admin</h1></div><p className="page-subtitle">Owner controls · subscription overview · platform access</p></div>
+      <div><div className="flex items-center gap-2"><Crown className="w-6 h-6 swish-gold" /><h1 className="page-title">Master Admin</h1></div><p className="page-subtitle">Owner control centre · all production niches</p></div>
       <button onClick={() => void refresh()} disabled={loading} className="btn-secondary"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />Refresh status</button>
     </div>
 
     <section className="swish-card p-5 space-y-4">
+      <div className="flex items-center gap-2"><BadgeCheck className="w-5 h-5 swish-gold" /><h2 className="font-semibold">Master workspace switcher</h2></div>
+      <p className="text-sm text-muted-foreground">As master admin, open any registered production niche. Stock and workflows remain context-specific, just like the app.</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {NICHES.map(niche => { const Icon = niche.icon; const active = activeNiche === niche.id; return <button key={niche.id} onClick={() => switchNiche(niche)} className={`master-niche-card ${active ? 'is-active' : ''}`} style={{ '--niche-color': niche.colour } as React.CSSProperties}>
+          <span className="master-niche-icon"><Icon className="w-6 h-6" /></span><span className="master-niche-copy"><strong>{niche.name}</strong><small>{niche.tagline}</small></span>{active ? <span className="master-niche-active"><CheckCircle2 className="w-4 h-4" />ACTIVE</span> : <span className="master-niche-arrow">›</span>}
+        </button>; })}
+      </div>
+    </section>
+
+    <section className="swish-card p-5 space-y-4">
       <div className="flex items-center gap-2"><BadgeCheck className="w-5 h-5 swish-gold" /><h2 className="font-semibold">Current owner subscription</h2></div>
-      {loading && !subscription ? <p className="text-sm text-muted-foreground">Checking the existing SWISH subscription service…</p> : subscription ? <>
+      {loading && !subscription ? <p className="text-sm text-muted-foreground">Checking subscription service…</p> : subscription ? <>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="stat-card"><div className="text-xs text-muted-foreground">Stripe subscription</div><div className="text-xl font-bold mt-1">{subscription.subscribed ? 'Active' : 'Not active'}</div></div>
           <div className="stat-card"><div className="text-xs text-muted-foreground">Entitled niches</div><div className="text-xl font-bold mt-1">{entitlements.length}</div><div className="text-xs text-muted-foreground mt-1">{entitlements.length ? entitlements.join(', ') : 'No Stripe niche entitlement returned'}</div></div>
@@ -66,23 +90,13 @@ export default function MasterAdmin() {
     </section>
 
     <section className="swish-card p-5 space-y-3">
-      <h2 className="font-semibold">Existing subscription functions</h2>
-      <p className="text-sm text-muted-foreground">These are the verified functions in SWISH’s current backend. They are used for subscription status, paid checkout, and the signed-in customer’s billing portal.</p>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="rounded-lg border border-border p-4"><div className="font-medium">Check subscription</div><code className="text-xs text-muted-foreground">swish-check-subscription</code><div className="text-xs text-muted-foreground mt-2">Connected above</div></div>
-        <div className="rounded-lg border border-border p-4"><div className="font-medium">Paid checkout</div><code className="text-xs text-muted-foreground">swish-create-checkout</code><div className="text-xs text-muted-foreground mt-2">Authenticated customer only</div></div>
-        <div className="rounded-lg border border-border p-4"><div className="font-medium">Billing portal</div><code className="text-xs text-muted-foreground">swish-customer-portal</code><div className="text-xs text-muted-foreground mt-2">Authenticated customer only</div></div>
-      </div>
-    </section>
-
-    <section className="swish-card p-5 space-y-3">
       <h2 className="font-semibold">Subscriber management and free trials</h2>
       <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 space-y-2">
         <p className="font-medium">Admin grants are not supported by the existing backend</p>
-        <p className="text-sm text-muted-foreground">The previous page called a non-existent `swish-admin-membership` function, causing the 404. That call and the misleading grant/revoke controls have been removed. The verified subscription functions cannot list or change other users, grant premium, or persist a trial expiry. I have not substituted insecure client-side database edits.</p>
+        <p className="text-sm text-muted-foreground">The previous page called a non-existent `swish-admin-membership` function, causing the 404. The verified functions cannot grant premium, list all subscribers, or persist trial expiries. This page therefore does not fake a membership change in browser storage. A real grant/trial workflow requires server-side authorisation and expiry handling.</p>
       </div>
-      <p className="text-sm text-muted-foreground">The existing entitlement model recognises tenant tiers such as professional, business, enterprise and lifetime. A real trial/grant workflow must be authorised server-side and must include expiry handling before it can safely be offered here.</p>
-      <a className="inline-flex items-center gap-2 text-sm text-primary hover:underline" href="https://github.com/troonvinyl-ux/SWISH/tree/main/supabase/functions" target="_blank" rel="noreferrer">Review verified SWISH Edge Functions <ExternalLink className="w-3.5 h-3.5" /></a>
+      <a className="inline-flex items-center gap-2 text-sm text-primary hover:underline" href="https://github.com/troonvinyl-ux/SWISH/tree/main/supabase/functions" target="_blank" rel="noreferrer">Review SWISH Edge Functions <ExternalLink className="w-3.5 h-3.5" /></a>
     </section>
+    <div><Link to="/niches" className="btn-secondary">Back to SWISH Verticals</Link></div>
   </div>;
 }

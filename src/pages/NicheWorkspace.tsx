@@ -1,35 +1,138 @@
 import { useEffect, useMemo } from 'react';
+import { useCount } from '@/hooks/useSupabaseQuery';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowUpRight, Camera, Search, Package, Tag, ShoppingCart, BarChart3, Wrench, Sparkles, BookOpen, Coins, Bike, Shirt, Gem, Gamepad2, Monitor, Hammer, FlaskConical } from 'lucide-react';
+import { ArrowLeft, Search, Camera, Package, Tag, ShoppingCart, BarChart3, Wrench, Sparkles, Coins, Bike, Shirt, Lightbulb, Store, ScanLine } from 'lucide-react';
 
-type WorkspaceConfig = { id:string; name:string; tagline:string; detail:string; accent:string; hero:string; icon: typeof Coins; scan:string; actions:{label:string;detail:string;icon:typeof Coins;to:string}[] };
-const CONFIGS: Record<string,WorkspaceConfig> = {
- coins:{id:'coins',name:'Coin Flipper',tagline:'History identified. Opportunity realised.',detail:'Ancient, Islamic, world coins and tokens',accent:'#d9ad54',hero:'https://images.unsplash.com/photo-1624365169364-0640dd10e7b2?auto=format&fit=crop&w=1400&q=85',icon:Coins,scan:'Capture and identify a coin',actions:[{label:'Capture & identify',detail:'Start a new coin identification',icon:Camera,to:'/identify'},{label:'My coin inventory',detail:'Review saved coins and references',icon:Package,to:'/inventory'},{label:'Islamic & countermark batch',detail:'Process specialist coin batches',icon:Sparkles,to:'/tools/islamic-batch'},{label:'Market values',detail:'Review valuations and opportunities',icon:BarChart3,to:'/opportunities'},{label:'Listings',detail:'Prepare coins for sale',icon:Tag,to:'/listings'},{label:'Orders & dispatch',detail:'Manage sales fulfilment',icon:ShoppingCart,to:'/orders'}]},
- cards:{id:'cards',name:'Card Flipper',tagline:'Find the rare. Know the value.',detail:'Trading cards, TCG and sports cards',accent:'#45caff',hero:'https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?auto=format&fit=crop&w=1400&q=85',icon:Gamepad2,scan:'Identify a trading card',actions:[{label:'Identify cards',detail:'Open the identification workflow',icon:Camera,to:'/identify'},{label:'Collection',detail:'Review your saved inventory',icon:Package,to:'/inventory'},{label:'Value opportunities',detail:'Review potential buys',icon:BarChart3,to:'/opportunities'},{label:'Listings',detail:'Manage listing drafts',icon:Tag,to:'/listings'},{label:'Orders',detail:'Track customer orders',icon:ShoppingCart,to:'/orders'}]},
- antiques:{id:'antiques',name:'Antique Flipper',tagline:'Old finds. New opportunities.',detail:'Antiques, vintage and collectables',accent:'#cda66a',hero:'https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?auto=format&fit=crop&w=1400&q=85',icon:Gem,scan:'Identify an antique or collectable',actions:[{label:'Identify an item',detail:'Start item research',icon:Camera,to:'/identify'},{label:'Collection',detail:'Browse your inventory',icon:Package,to:'/inventory'},{label:'Research & value',detail:'Review buying opportunities',icon:BookOpen,to:'/opportunities'},{label:'Listings',detail:'Prepare items for sale',icon:Tag,to:'/listings'},{label:'Orders',detail:'Manage fulfilment',icon:ShoppingCart,to:'/orders'}]},
- bikes:{id:'bikes',name:'Bike Flipper',tagline:'Buy smart. Build better. Sell strong.',detail:'Bicycles, components, repairs and upgrades',accent:'#a4ed38',hero:'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=1400&q=85',icon:Bike,scan:'Assess a bicycle',actions:[{label:'Find & assess a bike',detail:'Start identification and valuation',icon:Search,to:'/identify'},{label:'My bikes',detail:'Review saved bikes and projects',icon:Package,to:'/inventory'},{label:'Parts & repairs',detail:'Open specialist tools',icon:Wrench,to:'/tools/bike-flipper'},{label:'Profit opportunities',detail:'Review potential buys',icon:BarChart3,to:'/opportunities'},{label:'List & sell',detail:'Manage listings',icon:Tag,to:'/listings'},{label:'Orders',detail:'Track sales and dispatch',icon:ShoppingCart,to:'/orders'}]},
- mx:{id:'mx',name:'Flipper MX',tagline:'Find. Fix. Flip. Repeat.',detail:'Dirt bikes, parts and workshop projects',accent:'#ff7a1a',hero:'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1400&q=85',icon:Wrench,scan:'Assess a dirt bike or part',actions:[{label:'Find & assess',detail:'Start identification',icon:Search,to:'/identify'},{label:'Workshop inventory',detail:'Review bikes and parts',icon:Package,to:'/inventory'},{label:'Fix & prep tools',detail:'Open specialist tools',icon:Wrench,to:'/tools/bike-flipper'},{label:'Profit analysis',detail:'Review buying opportunities',icon:BarChart3,to:'/opportunities'},{label:'List & sell',detail:'Prepare listings',icon:Tag,to:'/listings'}]},
- fossils:{id:'fossils',name:'Fossil Flipper',tagline:'Discover value in deep time.',detail:'Fossils, minerals and specimens',accent:'#54d6e8',hero:'https://images.unsplash.com/photo-1564053489984-317bbd824340?auto=format&fit=crop&w=1400&q=85',icon:FlaskConical,scan:'Identify a fossil or specimen',actions:[{label:'Identify specimen',detail:'Start identification',icon:Camera,to:'/identify'},{label:'Collection',detail:'Browse saved specimens',icon:Package,to:'/inventory'},{label:'Research & value',detail:'Review opportunities',icon:BookOpen,to:'/opportunities'},{label:'Listings',detail:'Prepare items for sale',icon:Tag,to:'/listings'}]},
- clothing:{id:'clothing',name:'Clothing Flipper',tagline:'Turn fashion into opportunity.',detail:'Vintage, streetwear, designer and high street',accent:'#ff557e',hero:'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=85',icon:Shirt,scan:'Identify a garment or brand',actions:[{label:'Identify clothing',detail:'Start brand and item identification',icon:Camera,to:'/identify'},{label:'My wardrobe inventory',detail:'Browse saved items',icon:Package,to:'/inventory'},{label:'Value opportunities',detail:'Review potential buys',icon:BarChart3,to:'/opportunities'},{label:'Listings',detail:'Prepare items for sale',icon:Tag,to:'/listings'},{label:'Orders',detail:'Manage fulfilment',icon:ShoppingCart,to:'/orders'}]},
- beauty:{id:'beauty',name:'Beauty Flipper',tagline:'Beauty finds. Better margins.',detail:'Cosmetics, fragrances and skincare',accent:'#f58ac1',hero:'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1400&q=85',icon:Sparkles,scan:'Identify a beauty product',actions:[{label:'Identify product',detail:'Start product identification',icon:Camera,to:'/identify'},{label:'Stock inventory',detail:'Browse saved items',icon:Package,to:'/inventory'},{label:'Value opportunities',detail:'Review buying opportunities',icon:BarChart3,to:'/opportunities'},{label:'Listings',detail:'Prepare listings',icon:Tag,to:'/listings'}]},
- tech:{id:'tech',name:'Tech Flipper',tagline:'Smarter tech. Better flips.',detail:'Electronics, gaming and consumer tech',accent:'#35c7ff',hero:'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=1400&q=85',icon:Monitor,scan:'Identify an electronic device',actions:[{label:'Identify device',detail:'Start device identification',icon:Camera,to:'/identify'},{label:'Device inventory',detail:'Browse saved stock',icon:Package,to:'/inventory'},{label:'Buying opportunities',detail:'Review potential buys',icon:BarChart3,to:'/opportunities'},{label:'Listings',detail:'Prepare listings',icon:Tag,to:'/listings'},{label:'Orders',detail:'Manage sales fulfilment',icon:ShoppingCart,to:'/orders'}]},
- tools:{id:'tools',name:'Tool Flipper',tagline:'Know the kit. Know the margin.',detail:'Power tools, trade gear and equipment',accent:'#ffc52e',hero:'https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=1400&q=85',icon:Hammer,scan:'Identify a tool or piece of equipment',actions:[{label:'Identify equipment',detail:'Start identification',icon:Camera,to:'/identify'},{label:'Tool inventory',detail:'Browse saved stock',icon:Package,to:'/inventory'},{label:'Value opportunities',detail:'Review potential buys',icon:BarChart3,to:'/opportunities'},{label:'Listings',detail:'Prepare items for sale',icon:Tag,to:'/listings'}]}
+type Action = { label: string; detail: string; icon: typeof Coins; to: string };
+type WorkspaceConfig = {
+  id: string; name: string; tagline: string; detail: string; accent: string;
+  icon: typeof Coins; scan: string; actions: Action[];
 };
-export default function NicheWorkspace(){
- const {niche='coins'}=useParams(); const navigate=useNavigate();
- const config=useMemo(()=>CONFIGS[niche]||CONFIGS.coins,[niche]); const BrandIcon=config.icon;
- const enter=()=>{localStorage.setItem('swish_active_niche',config.id);localStorage.setItem('swish_active_niche_name',config.name)};
- useEffect(()=>{enter();},[config]);
- return <div className="niche-workspace space-y-6" style={{'--workspace-accent':config.accent} as React.CSSProperties}>
-  <div className="flex items-center justify-between gap-3"><Link to="/niches" className="btn-ghost"><ArrowLeft className="w-4 h-4"/>All niches</Link><span className="text-xs text-muted-foreground">Specialist workspace</span></div>
-  <section className="workspace-hero relative overflow-hidden" style={{backgroundImage:'linear-gradient(90deg,rgba(7,10,18,.97) 0%,rgba(7,10,18,.82) 58%,rgba(7,10,18,.35) 100%),url("'+config.hero+'")',backgroundSize:'cover',backgroundPosition:'center'}}>
-   <div className="relative max-w-2xl"><div className="flex items-center gap-3 mb-5"><span className="workspace-action-icon"><BrandIcon className="w-5 h-5"/></span><span className="text-xs uppercase tracking-[.2em]" style={{color:config.accent}}>SWISH SPECIALIST</span></div>
-    <p className="text-xs uppercase tracking-[.2em] text-white/55 mb-2">{config.detail}</p><h1 className="text-3xl sm:text-5xl font-extrabold">{config.name}</h1><p className="text-lg sm:text-xl mt-3 text-white/80">{config.tagline}</p><p className="mt-3 text-sm text-white/60 max-w-xl">Your dedicated workspace for identification, inventory, valuation and selling. Use the shortcuts below to work with the existing SWISH backend.</p>
-    <button className="workspace-primary mt-6" onClick={()=>{enter();navigate('/identify')}}><Camera className="w-4 h-4"/>{config.scan}<ArrowUpRight className="w-4 h-4"/></button>
-   </div>
-  </section>
-  <div className="flex items-end justify-between gap-3"><div><h2 className="text-xl font-bold">Your workflow</h2><p className="text-sm text-muted-foreground mt-1">Choose what you want to do next.</p></div><span className="text-xs rounded-full px-3 py-1 border" style={{borderColor:config.accent,color:config.accent}}> {config.name}</span></div>
-  <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">{config.actions.map(action=>{const Icon=action.icon;return <Link key={action.label} to={action.to} onClick={enter} className="workspace-action"><span className="workspace-action-icon"><Icon className="w-5 h-5"/></span><span className="font-semibold">{action.label}<ArrowUpRight className="inline w-3.5 h-3.5 ml-2"/></span><span className="text-xs text-muted-foreground">{action.detail}</span></Link>})}</section>
-  <div className="swish-card p-4 flex flex-wrap items-center justify-between gap-3"><div><div className="font-semibold text-sm">Need another specialist?</div><p className="text-xs text-muted-foreground mt-1">Switch niches without losing your place.</p></div><Link to="/niches" className="btn-secondary">Browse all niches</Link></div>
- </div>;
+
+const CONFIGS: Record<string, WorkspaceConfig> = {
+  coins: { id: 'coins', name: 'SWISH Coins', tagline: 'Identify, value and flip coins & collectibles', detail: 'Ancient · Islamic silver · banknotes · gold', accent: '#F5C842', icon: Coins, scan: 'Scan Coin', actions: [
+    { label: 'Scan Coin', detail: 'Identify a coin and check references', icon: Camera, to: '/identify' },
+    { label: 'My Stock', detail: 'Review saved coins and references', icon: Package, to: '/inventory' },
+    { label: 'Islamic Silver', detail: 'Process specialist silver and countermark batches', icon: Sparkles, to: '/tools/islamic-batch' },
+    { label: 'Value Opportunities', detail: 'Review valuations and buying opportunities', icon: BarChart3, to: '/opportunities' },
+    { label: 'List & Sell', detail: 'Prepare and manage coin listings', icon: Tag, to: '/listings' },
+    { label: 'Orders & Dispatch', detail: 'Manage orders and fulfilment', icon: ShoppingCart, to: '/orders' },
+  ] },
+  motocross: { id: 'motocross', name: 'SWISH MX', tagline: 'Buy, prep and flip motocross & off-road bikes', detail: 'Motocross · enduro · trail bikes · parts', accent: '#EF4444', icon: Wrench, scan: 'Identify Bike', actions: [
+    { label: 'Identify Bike', detail: 'Start a bike or parts assessment', icon: Camera, to: '/identify' },
+    { label: 'Workshop Stock', detail: 'Review bikes, parts and projects', icon: Package, to: '/inventory' },
+    { label: 'Acquisition Calculator', detail: 'Estimate prep costs and margin', icon: Wrench, to: '/opportunities' },
+    { label: 'List & Sell', detail: 'Prepare listings for sale', icon: Tag, to: '/listings' },
+    { label: 'Orders & Dispatch', detail: 'Track completed sales', icon: ShoppingCart, to: '/orders' },
+  ] },
+  bicycles: { id: 'bicycles', name: 'SWISH Bikes', tagline: 'Identify, value and flip bicycles', detail: 'Road · mountain · gravel · hybrid · BMX · e-bikes', accent: '#22C55E', icon: Bike, scan: 'Identify Bike', actions: [
+    { label: 'Identify Bike', detail: 'Assess a bike, frame and components', icon: Camera, to: '/identify' },
+    { label: 'My Bikes', detail: 'Review saved bikes and projects', icon: Package, to: '/inventory' },
+    { label: 'Parts & Repairs', detail: 'Open bike-flipper specialist tools', icon: Wrench, to: '/tools/bike-flipper' },
+    { label: 'Profit Opportunities', detail: 'Compare potential acquisitions', icon: BarChart3, to: '/opportunities' },
+    { label: 'List & Sell', detail: 'Prepare listings and manage stock', icon: Tag, to: '/listings' },
+    { label: 'Orders & Dispatch', detail: 'Track sales and fulfilment', icon: ShoppingCart, to: '/orders' },
+  ] },
+  clothing: { id: 'clothing', name: 'Threads Flip', tagline: 'Turn fashion into opportunity.', detail: 'Vintage · designer · streetwear · high street', accent: '#E91E8C', icon: Shirt, scan: 'Scan Item', actions: [
+    { label: 'Scan Item', detail: 'Capture and identify clothing, brand and era', icon: Camera, to: '/identify' },
+    { label: 'My Wardrobe', detail: 'Review your clothing inventory', icon: Package, to: '/inventory' },
+    { label: 'Brands', detail: 'Explore brands and authentication checks', icon: Shirt, to: '/identify' },
+    { label: 'List & Sell', detail: 'Prepare fashion listings', icon: Tag, to: '/listings' },
+    { label: 'Profits', detail: 'Track margins and realised sales', icon: BarChart3, to: '/money' },
+    { label: 'Insights', detail: 'Review market and style insights', icon: Lightbulb, to: '/insights' },
+  ] },
+  surplus_flip: { id: 'surplus_flip', name: 'Surplus Flip', tagline: 'Turn job lots and pallet manifests into eBay listings', detail: 'Job lots · pallets · wholesale · returns', accent: '#14B8A6', icon: Package, scan: 'Match Product', actions: [
+    { label: 'Import Manifest', detail: 'Bring a supplier manifest into SWISH', icon: Package, to: '/tools' },
+    { label: 'Match Product Photo', detail: 'Identify product and packaging', icon: Camera, to: '/identify' },
+    { label: 'My Stock', detail: 'Check quantities and saved stock', icon: Package, to: '/inventory' },
+    { label: 'Value Opportunities', detail: 'Review margin and buying opportunities', icon: BarChart3, to: '/opportunities' },
+    { label: 'List & Sell', detail: 'Prepare marketplace listings', icon: Tag, to: '/listings' },
+    { label: 'Orders & Dispatch', detail: 'Manage order fulfilment', icon: ShoppingCart, to: '/orders' },
+  ] },
+};
+
+const CLOTHING_CATEGORIES = [
+  { label: 'Vintage', detail: 'Pre-1995 · Deadstock' },
+  { label: 'Designer', detail: 'Luxury · Authentication' },
+  { label: 'Streetwear', detail: 'Supreme · Nike · Brands' },
+  { label: 'High Street', detail: 'M&S · Zara · Next' },
+  { label: 'Sustainable', detail: 'Pre-loved · Circular' },
+  { label: 'Trainers', detail: 'Sneakers · Deadstock · Auth' },
+  { label: 'Accessories', detail: 'Bags · Belts · Hats' },
+  { label: 'Sportswear', detail: 'Activewear · Athleisure' },
+];
+const BRAND_NAMES = ["Levi's", 'Nike', 'Carhartt', 'Ralph Lauren', 'Stone Island', 'The North Face', 'Adidas', 'Burberry', 'Prada', 'Supreme'];
+
+function setActiveNiche(config: WorkspaceConfig) {
+  localStorage.setItem('swish_active_niche', config.id);
+  localStorage.setItem('swish_active_niche_name', config.name);
+  document.documentElement.dataset.niche = config.id;
+}
+
+export default function NicheWorkspace() {
+  const { niche = 'coins' } = useParams();
+  const navigate = useNavigate();
+  const config = useMemo(() => CONFIGS[niche] || CONFIGS.coins, [niche]);
+  const BrandIcon = config.icon;
+  const { data: inventoryCount } = useCount('inventory');
+  useEffect(() => { setActiveNiche(config); }, [config]);
+
+  if (config.id === 'clothing') {
+    const route = (to: string) => navigate(to);
+    return <div className="threads-page">
+      <header className="threads-header">
+        <button className="threads-hanger" onClick={() => navigate('/niches')} aria-label="Switch niche"><Shirt /></button>
+        <div className="threads-brand"><div><span>Threads</span> <b>Flip</b> <i>PRO</i></div><small>IDENTIFY - VALUE - STYLE - SELL</small></div>
+        <button className="threads-hanger threads-account" onClick={() => navigate('/settings')} aria-label="Account settings"><Shirt /></button>
+      </header>
+      <nav className="threads-tabs" aria-label="Threads Flip sections">
+        {[{ label: 'Identify', icon: Search, to: '/identify' }, { label: 'Value', icon: BarChart3, to: '/opportunities' }, { label: 'Style', icon: Sparkles, to: '/insights' }, { label: 'Sell', icon: Tag, to: '/listings' }, { label: 'Insights', icon: Lightbulb, to: '/insights' }].map(tab => { const Icon = tab.icon; return <button key={tab.label} onClick={() => route(tab.to)}><Icon />{tab.label}</button>; })}
+      </nav>
+      <div className="threads-content">
+        <section className="threads-hero">
+          <div className="threads-hero-icon"><Shirt /></div>
+          <div className="threads-hero-copy"><div className="threads-title">Threads <b>Flip</b></div><p>Turn fashion into opportunity.</p><small>IDENTIFY - VALUE - STYLE - SELL</small><div className="threads-hero-chips">{CLOTHING_CATEGORIES.slice(0, 3).map(c => <span key={c.label}>{c.label}</span>)}</div></div>
+          <span className="threads-pro">PRO</span>
+        </section>
+        <section className="threads-stats" aria-label="Threads Flip summary">
+          <div><strong>{inventoryCount ?? '—'}</strong><span>ITEMS IN STOCK</span></div><div><strong>8</strong><span>CATEGORIES</span></div><div><strong className="threads-green">Yes</strong><span>AI POWERED</span></div>
+        </section>
+        <h2 className="threads-section-title">TOOLS</h2>
+        <section className="threads-tools">
+          {[
+            { label: 'Scan Item', icon: Camera, to: '/identify' },
+            { label: 'My Wardrobe', icon: Package, to: '/inventory' },
+            { label: 'Brands', icon: Shirt, to: '/identify' },
+            { label: 'List & Sell', icon: Tag, to: '/listings' },
+            { label: 'Profits', icon: BarChart3, to: '/money' },
+            { label: 'Insights', icon: Lightbulb, to: '/insights' },
+          ].map(tool => { const Icon = tool.icon; return <button key={tool.label} className="threads-tool" onClick={() => route(tool.to)}><span><Icon /></span><strong>{tool.label}</strong></button>; })}
+        </section>
+        <h2 className="threads-section-title threads-categories-title">CATEGORIES</h2>
+        <section className="threads-categories">{CLOTHING_CATEGORIES.map(c => <button key={c.label} onClick={() => route('/identify')}><strong>{c.label}</strong><span>{c.detail}</span></button>)}</section>
+        <section className="threads-brands"><div><h2>Top brands</h2><p>Quick access to fashion brand research</p></div><div className="threads-brand-chips">{BRAND_NAMES.map(brand => <button key={brand} onClick={() => route('/identify')}>{brand}</button>)}</div></section>
+      </div>
+      <nav className="threads-bottom-nav" aria-label="SWISH navigation">
+        <button onClick={() => navigate('/niches')}><Shirt /><span>Fashion</span></button>
+        <button className="threads-scan" onClick={() => route('/identify')} aria-label="Scan item"><ScanLine /></button>
+        <button onClick={() => route('/inventory')}><Package /><span>Stock</span></button>
+        <button onClick={() => route('/ebay')}><Store /><span>eBay</span></button>
+        <button onClick={() => navigate('/settings')} aria-label="Settings"><span className="threads-down">▾</span></button>
+      </nav>
+    </div>;
+  }
+
+  const route = (to: string) => navigate(to);
+  return <div className="niche-workspace space-y-6" style={{ '--workspace-accent': config.accent } as React.CSSProperties}>
+    <div className="flex items-center justify-between gap-3"><Link to="/niches" className="btn-ghost"><ArrowLeft className="w-4 h-4" />All niches</Link><span className="text-xs text-muted-foreground">Specialist workspace</span></div>
+    <section className="workspace-hero">
+      <div className="workspace-heading-icon"><BrandIcon className="w-5 h-5" /></div>
+      <span className="workspace-eyebrow">SWISH SPECIALIST</span>
+      <p className="text-xs uppercase tracking-[.2em] text-muted-foreground mb-2 mt-5">{config.detail}</p><h1 className="text-3xl sm:text-5xl font-extrabold">{config.name}</h1><p className="text-lg sm:text-xl mt-3 text-white/80">{config.tagline}</p>
+      <button className="workspace-primary mt-6" onClick={() => route('/identify')}><Camera className="w-4 h-4" />{config.scan}<span>↗</span></button>
+    </section>
+    <div className="flex items-end justify-between gap-3"><div><h2 className="text-xl font-bold">Your workflow</h2><p className="text-sm text-muted-foreground mt-1">Choose what you want to do next.</p></div><span className="text-xs rounded-full px-3 py-1 border" style={{ borderColor: config.accent, color: config.accent }}>{config.name}</span></div>
+    <section className="workspace-actions">{config.actions.map(action => { const Icon = action.icon; return <Link key={action.label} to={action.to} className="workspace-action" style={{ '--workspace-accent': config.accent } as React.CSSProperties}><span className="workspace-action-icon"><Icon className="w-5 h-5" /></span><span className="font-semibold">{action.label}<span className="workspace-open-arrow"> ↗</span></span><span className="text-xs text-muted-foreground">{action.detail}</span></Link>; })}</section>
+    <div className="swish-card p-4 flex flex-wrap items-center justify-between gap-3"><div><div className="font-semibold text-sm">Need another specialist?</div><p className="text-xs text-muted-foreground mt-1">Switch niches without losing your place.</p></div><Link to="/niches" className="btn-secondary">Browse all niches</Link></div>
+  </div>;
 }

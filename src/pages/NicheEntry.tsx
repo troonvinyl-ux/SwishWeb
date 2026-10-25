@@ -1,61 +1,107 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Sparkles, ArrowUpRight, Coins, Bike, Shirt, Gem, Gamepad2, Hammer, FlaskConical, Monitor, Wrench, BookOpen } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Info, CheckCircle2, Circle, Coins, Bike, Shirt, Wrench, Package, Search, ShieldCheck, Grid3X3, Construction } from 'lucide-react';
 
 type Niche = {
-  id: string; name: string; tagline: string; detail: string; colour: string; glow: string;
-  icon: typeof Coins; hero: string; features: string[]; route: string;
+  id: string;
+  name: string;
+  tagline: string;
+  colour: string;
+  specialistCount: number;
+  marketplaces: string[];
+  acquisitionSources: string[];
+  categories: string[];
+  icon: typeof Coins;
 };
 
+const OWNER_EMAIL = 'troonvinyl@gmail.com';
 const NICHES: Niche[] = [
-  { id:'coins', name:'Coin Flipper', tagline:'History identified. Opportunity realised.', detail:'Ancient, Islamic, world coins and tokens', colour:'#d9ad54', glow:'rgba(217,173,84,.25)', icon:Coins, hero:'https://images.unsplash.com/photo-1624365169364-0640dd10e7b2?auto=format&fit=crop&w=1200&q=85', features:['Identify','Reference','Value','List & sell'], route:'/dashboard' },
-  { id:'cards', name:'Card Flipper', tagline:'Find the rare. Know the value.', detail:'Trading cards, TCG and sports cards', colour:'#45caff', glow:'rgba(69,202,255,.24)', icon:Gamepad2, hero:'https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?auto=format&fit=crop&w=1200&q=85', features:['Identify','Grade','Value','List'], route:'/dashboard' },
-  { id:'antiques', name:'Antique Flipper', tagline:'Old finds. New opportunities.', detail:'Antiques, vintage and collectables', colour:'#cda66a', glow:'rgba(205,166,106,.24)', icon:Gem, hero:'https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?auto=format&fit=crop&w=1200&q=85', features:['Identify','Research','Value','Sell'], route:'/dashboard' },
-  { id:'bikes', name:'Bike Flipper', tagline:'Buy smart. Build better. Sell strong.', detail:'Bicycles, components, repairs and upgrades', colour:'#a4ed38', glow:'rgba(164,237,56,.23)', icon:Bike, hero:'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=1200&q=85', features:['Find','Assess','Upgrade','Profit'], route:'/dashboard' },
-  { id:'mx', name:'Flipper MX', tagline:'Find. Fix. Flip. Repeat.', detail:'Dirt bikes, parts and workshop projects', colour:'#ff7a1a', glow:'rgba(255,122,26,.25)', icon:Wrench, hero:'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1200&q=85', features:['Find','Fix & prep','List','Profit'], route:'/dashboard' },
-  { id:'fossils', name:'Fossil Flipper', tagline:'Discover value in deep time.', detail:'Fossils, minerals and specimens', colour:'#54d6e8', glow:'rgba(84,214,232,.23)', icon:FlaskConical, hero:'https://images.unsplash.com/photo-1564053489984-317bbd824340?auto=format&fit=crop&w=1200&q=85', features:['Identify','Research','Value','Collect'], route:'/dashboard' },
-  { id:'clothing', name:'Clothing Flipper', tagline:'Turn fashion into opportunity.', detail:'Vintage, streetwear, designer and high street', colour:'#ff557e', glow:'rgba(255,85,126,.24)', icon:Shirt, hero:'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=85', features:['Identify','Brands','Style','Sell'], route:'/dashboard' },
-  { id:'beauty', name:'Beauty Flipper', tagline:'Beauty finds. Better margins.', detail:'Cosmetics, fragrances and skincare', colour:'#f58ac1', glow:'rgba(245,138,193,.24)', icon:Sparkles, hero:'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1200&q=85', features:['Identify','Check','Bundle','Sell'], route:'/dashboard' },
-  { id:'tech', name:'Tech Flipper', tagline:'Smarter tech. Better flips.', detail:'Electronics, gaming and consumer tech', colour:'#35c7ff', glow:'rgba(53,199,255,.24)', icon:Monitor, hero:'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=1200&q=85', features:['Identify','Test','Value','Sell'], route:'/dashboard' },
-  { id:'tools', name:'Tool Flipper', tagline:'Know the kit. Know the margin.', detail:'Power tools, trade gear and equipment', colour:'#ffc52e', glow:'rgba(255,197,46,.24)', icon:Hammer, hero:'https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=1200&q=85', features:['Identify','Condition','Value','Sell'], route:'/dashboard' },
+  { id: 'coins', name: 'SWISH Coins', tagline: 'Identify, value and flip coins & collectibles', colour: '#F5C842', specialistCount: 8, marketplaces: ['eBay', 'Etsy', 'Specialist auction houses'], acquisitionSources: ['Auctions', 'Car boot sales', 'eBay'], categories: ['coins', 'islamic silver', 'banknotes', 'gold', '+4 more'], icon: Coins },
+  { id: 'motocross', name: 'SWISH MX', tagline: 'Buy, prep and flip motocross & off-road bikes', colour: '#EF4444', specialistCount: 1, marketplaces: ['eBay', 'Facebook Marketplace', 'Gumtree', 'Autotrader Moto'], acquisitionSources: ['eBay', 'Facebook Marketplace', 'Gumtree'], categories: ['motocross'], icon: Wrench },
+  { id: 'bicycles', name: 'SWISH Bikes', tagline: 'Identify, value and flip bicycles', colour: '#22C55E', specialistCount: 1, marketplaces: ['eBay', 'Facebook Marketplace', 'Gumtree', 'BikeExchange'], acquisitionSources: ['Facebook Marketplace', 'eBay', 'Gumtree'], categories: ['bicycles'], icon: Bike },
+  { id: 'clothing', name: 'Threads Flip', tagline: 'Turn fashion into opportunity.', colour: '#E91E8C', specialistCount: 2, marketplaces: ['eBay', 'Depop', 'Vinted', 'Etsy', 'Facebook Marketplace'], acquisitionSources: ['Charity shops', 'Car boot sales', 'eBay'], categories: ['Vintage', 'Designer', 'Streetwear', 'High Street', 'Sustainable', 'Trainers', 'Accessories', 'Sportswear'], icon: Shirt },
+  { id: 'surplus_flip', name: 'Surplus Flip', tagline: 'Turn job lots and pallet manifests into eBay listings', colour: '#14B8A6', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Job lots', 'Pallets', 'Wholesale manifests'], categories: ['Job lots', 'Pallets', 'Wholesale', 'Returns'], icon: Package },
 ];
 
 export default function NicheEntry() {
-  const [query, setQuery] = useState('');
+  const { user } = useAuth();
+  const isOwner = user?.email?.toLowerCase() === OWNER_EMAIL;
   const navigate = useNavigate();
-  const niches = useMemo(() => NICHES.filter(n => (n.name + ' ' + n.detail).toLowerCase().includes(query.toLowerCase())), [query]);
-  const enter = (niche: Niche) => {
+  const [query, setQuery] = useState('');
+  const [activeId, setActiveId] = useState(() => {
+    const stored = localStorage.getItem('swish_active_niche') || 'coins';
+    return NICHES.some(n => n.id === stored) ? stored : 'coins';
+  });
+  const [enabled, setEnabled] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('swish_enabled_niches');
+      return stored ? (JSON.parse(stored) as string[]).filter(id => NICHES.some(n => n.id === id)) : NICHES.map(n => n.id);
+    } catch {
+      return NICHES.map(n => n.id);
+    }
+  });
+  const niches = useMemo(() => NICHES.filter(n => (n.name + ' ' + n.tagline + ' ' + n.categories.join(' ')).toLowerCase().includes(query.toLowerCase())), [query]);
+
+  const selectNiche = (niche: Niche) => {
+    setActiveId(niche.id);
     localStorage.setItem('swish_active_niche', niche.id);
     localStorage.setItem('swish_active_niche_name', niche.name);
-    navigate(niche.route);
+  };
+  const toggleEnabled = (id: string) => {
+    const next = enabled.includes(id) ? enabled.filter(item => item !== id) : [...enabled, id];
+    if (next.length === 0) return;
+    setEnabled(next);
+    localStorage.setItem('swish_enabled_niches', JSON.stringify(next));
+    if (!next.includes(activeId)) {
+      const replacement = next[0];
+      setActiveId(replacement);
+      localStorage.setItem('swish_active_niche', replacement);
+      localStorage.setItem('swish_active_niche_name', NICHES.find(n => n.id === replacement)?.name || replacement);
+    }
+  };
+  const done = () => {
+    const niche = NICHES.find(n => n.id === activeId) || NICHES[0];
+    localStorage.setItem('swish_active_niche', niche.id);
+    localStorage.setItem('swish_active_niche_name', niche.name);
+    document.documentElement.dataset.niche = niche.id;
+    navigate('/workspace/' + niche.id);
   };
 
   return (
-    <main className="niche-entry min-h-screen -m-4 sm:-m-6 p-4 sm:p-6 lg:p-10">
-      <header className="mx-auto max-w-7xl">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-3">
-            <div className="niche-mark"><Sparkles className="w-6 h-6" /></div>
-            <div><div className="text-2xl font-extrabold tracking-[.18em]">SWISH</div><div className="text-[10px] uppercase tracking-[.28em] text-white/45">Specialist flipping intelligence</div></div>
-          </div>
-          <div className="niche-search"><Search className="w-4 h-4 text-white/45" /><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Find your niche…" aria-label="Find a niche" /></div>
-        </div>
-        <section className="niche-intro mb-7">
-          <p className="text-xs uppercase tracking-[.3em] text-white/45 mb-3">One platform. Specialist tools.</p>
-          <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight max-w-3xl">Choose your <span className="niche-gradient-text">next opportunity.</span></h1>
-          <p className="mt-3 text-sm sm:text-base text-white/55 max-w-2xl">Purpose-built workflows for the things you buy, collect, repair and resell. Pick a specialist workspace to get started.</p>
-        </section>
+    <main className="vertical-page -m-4 sm:-m-6 min-h-screen">
+      <header className="vertical-header">
+        <button className="vertical-back" onClick={() => navigate(-1)} aria-label="Go back">←</button>
+        <div className="vertical-heading"><h1>SWISH Verticals</h1><p>Select your trading niche</p></div>
+        {isOwner ? <button className="vertical-admin" onClick={() => navigate('/master-admin')} aria-label="Open Master Admin"><ShieldCheck className="w-6 h-6" /></button> : <span className="vertical-admin-placeholder" />}
       </header>
-      <section className="mx-auto max-w-7xl grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4" aria-label="Specialist niches">
-        {niches.map(n => { const Icon=n.icon; return <button key={n.id} onClick={()=>enter(n)} className="niche-card text-left" style={{'--niche-accent':n.colour,'--niche-glow':n.glow} as React.CSSProperties}>
-          <div className="niche-card-art" style={{backgroundImage:'linear-gradient(180deg, rgba(5,7,13,.04) 0%, rgba(5,7,13,.32) 34%, rgba(5,7,13,.97) 100%), url("'+n.hero+'")'}}>
-            <div className="niche-card-top"><span className="niche-icon"><Icon className="w-5 h-5" /></span><span className="niche-open">OPEN WORKSPACE <ArrowUpRight className="w-3.5 h-3.5" /></span></div>
-            <div className="niche-card-copy"><div className="niche-eyebrow">{n.detail}</div><h2>{n.name}</h2><p>{n.tagline}</p><div className="niche-features">{n.features.map(f=><span key={f}>{f}</span>)}</div></div>
-          </div>
-        </button>; })}
+      <div className="vertical-info"><Info className="w-4 h-4 shrink-0 mt-0.5" /><span>ONE SWISH ENGINE — tap a niche to switch context. Enable multiple to manage different businesses from one account.</span></div>
+      <section className="vertical-content" aria-label="Trading niches">
+        <div className="vertical-search"><Search className="w-4 h-4" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search niches…" aria-label="Search niches" /></div>
+        <div className="vertical-list">
+          {niches.map(niche => {
+            const Icon = niche.icon;
+            const active = activeId === niche.id;
+            const isEnabled = enabled.includes(niche.id);
+            return <article className={`vertical-card ${active ? 'is-active' : ''}`} key={niche.id} style={{ '--niche-color': niche.colour } as React.CSSProperties}>
+              <button className="vertical-card-main" onClick={() => selectNiche(niche)} aria-label={`Select ${niche.name}`}>
+                <span className="vertical-icon"><Icon className="w-7 h-7" /></span>
+                <span className="vertical-card-copy"><strong>{niche.name}</strong><span>{niche.tagline}</span><span className="vertical-meta"><i>{niche.specialistCount} specialist{niche.specialistCount === 1 ? '' : 's'}</i><i>{niche.marketplaces.length} marketplaces</i></span></span>
+                <span className="vertical-check" aria-hidden="true">{active || isEnabled ? <CheckCircle2 className="w-7 h-7" /> : <Circle className="w-7 h-7" />}</span>
+              </button>
+              <div className="vertical-lower">
+                <div className="vertical-chips">{niche.categories.slice(0, 4).map(item => <span key={item}>{item}</span>)}{niche.categories.length > 4 && <span>+{niche.categories.length - 4} more</span>}</div>
+                <div className="vertical-sources"><Package className="w-3 h-3" />{niche.acquisitionSources.join(' · ')}</div>
+              </div>
+              <div className="vertical-card-actions"><button className="vertical-small-btn" onClick={() => toggleEnabled(niche.id)}>{isEnabled ? '✓ Enabled for this switcher' : '+ Enable niche'}</button>{active && <span className="vertical-active-tag">ACTIVE</span>}</div>
+            </article>;
+          })}
+          {niches.length === 0 && <p className="py-8 text-center text-muted-foreground">No niches match that search.</p>}
+        </div>
+        <div className="vertical-coming"><Construction className="w-5 h-5 shrink-0" /><div><strong>More verticals coming</strong><p>Electronics · Musical instruments · Sports equipment · Golf · Watches · Vinyl records · Comics</p></div></div>
+        <div className="vertical-note"><Grid3X3 className="w-4 h-4 shrink-0" /><div><strong>ONE PLATFORM, MANY NICHES</strong><p>Your inventory, eBay integration, AI engine, valuation and orders share one platform. Switching niche changes the specialist context; existing backend access controls remain authoritative.</p></div></div>
       </section>
-      {niches.length===0 && <p className="text-center text-white/55 py-16">No niches match “{query}”. Try another search.</p>}
-      <footer className="mx-auto max-w-7xl mt-8 flex flex-wrap items-center justify-between gap-3 text-xs text-white/35"><span>SWISH · Specialist workspaces</span><span>Each niche has its own identity. Your workspace data stays scoped.</span></footer>
+      <footer className="vertical-done"><button onClick={done}><CheckCircle2 className="w-5 h-5" />Done — Using {NICHES.find(n => n.id === activeId)?.name || 'SWISH'}</button></footer>
     </main>
   );
 }
