@@ -30,7 +30,7 @@ export default function NicheEntry() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [activeId, setActiveId] = useState(() => {
-    const stored = localStorage.getItem('swish_active_niche') || 'coins';
+    const stored = localStorage.getItem('swish_active_niche') || String(user?.user_metadata?.preferred_niche || 'coins');
     return NICHES.some(n => n.id === stored) ? stored : 'coins';
   });
   const [enabled, setEnabled] = useState<string[]>(() => {

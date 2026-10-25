@@ -17,6 +17,7 @@ interface AuthContextType {
   /** Last-resort manual key — only called from LoginPage when auto-init fails */
   setManualKey: (key: string) => void;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string, niche: string) => Promise<{ error: Error | null; needsEmailConfirmation: boolean }>;
   signOut: () => Promise<void>;
 }
 
@@ -94,6 +95,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error ? new Error(error.message) : null };
   };
 
+  const signUp = async (email: string, password: string, fullName: string, niche: string): Promise<{ error: Error | null; needsEmailConfirmation: boolean }> => {
+    const sb = getSupabaseClient() || await getSupabaseClientAsync();
+    if (!sb) return { error: new Error('Backend not connected'), needsEmailConfirmation: false };
+
+    const { data, error } = await sb.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+      options: {
+        data: {
+          full_name: fullName.trim(),
+          preferred_niche: niche,
+          onboarding_status: 'started',
+          signup_source: 'swish_web',
+        },
+      },
+    });
+    return {
+      error: error ? new Error(error.message) : null,
+      needsEmailConfirmation: !error && !data.session,
+    };
+  };
+
   const signOut = async () => {
     // IMPORTANT: sign out does NOT destroy backend configuration.
     // We only end the user's session. The anon key remains in localStorage
@@ -107,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, connectionStatus, setManualKey, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, connectionStatus, setManualKey, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
