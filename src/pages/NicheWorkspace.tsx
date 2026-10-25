@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useCount } from '@/hooks/useSupabaseQuery';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft, Search, Camera, Package, Tag, ShoppingCart, BarChart3, Wrench, Sparkles, Coins, Bike, Shirt, Lightbulb, Store, ScanLine } from 'lucide-react';
 
 type Action = { label: string; detail: string; icon: typeof Coins; to: string };
@@ -72,16 +73,22 @@ function setActiveNiche(config: WorkspaceConfig) {
 export default function NicheWorkspace() {
   const { niche = 'coins' } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
+  const preferred = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
+  const allowedNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferred) ? preferred : 'coins';
   const config = useMemo(() => CONFIGS[niche] || CONFIGS.coins, [niche]);
   const BrandIcon = config.icon;
   const { data: inventoryCount } = useCount('inventory');
-  useEffect(() => { setActiveNiche(config); }, [config]);
+  useEffect(() => { if (isOwner || niche === allowedNiche) setActiveNiche(config); }, [config, isOwner, niche, allowedNiche]);
+
+  if (!isOwner && niche !== allowedNiche) return <Navigate to={`/workspace/${allowedNiche}`} replace />;
 
   if (config.id === 'clothing') {
     const route = (to: string) => navigate(to);
     return <div className="threads-page">
       <header className="threads-header">
-        <button className="threads-hanger" onClick={() => navigate('/niches')} aria-label="Switch niche"><Shirt /></button>
+        <button className="threads-hanger" onClick={() => navigate('/workspace/clothing')} aria-label="Threads Flip home"><Shirt /></button>
         <div className="threads-brand"><div><span>Threads</span> <b>Flip</b> <i>PRO</i></div><small>IDENTIFY - VALUE - STYLE - SELL</small></div>
         <button className="threads-hanger threads-account" onClick={() => navigate('/settings')} aria-label="Account settings"><Shirt /></button>
       </header>
@@ -113,7 +120,7 @@ export default function NicheWorkspace() {
         <section className="threads-brands"><div><h2>Top brands</h2><p>Quick access to fashion brand research</p></div><div className="threads-brand-chips">{BRAND_NAMES.map(brand => <button key={brand} onClick={() => route('/identify')}>{brand}</button>)}</div></section>
       </div>
       <nav className="threads-bottom-nav" aria-label="SWISH navigation">
-        <button onClick={() => navigate('/niches')}><Shirt /><span>Fashion</span></button>
+        <button onClick={() => navigate('/workspace/clothing')}><Shirt /><span>Fashion</span></button>
         <button className="threads-scan" onClick={() => route('/identify')} aria-label="Scan item"><ScanLine /></button>
         <button onClick={() => route('/inventory')}><Package /><span>Stock</span></button>
         <button onClick={() => route('/ebay')}><Store /><span>eBay</span></button>
@@ -124,7 +131,7 @@ export default function NicheWorkspace() {
 
   const route = (to: string) => navigate(to);
   return <div className="niche-workspace space-y-6" style={{ '--workspace-accent': config.accent } as React.CSSProperties}>
-    <div className="flex items-center justify-between gap-3"><Link to="/niches" className="btn-ghost"><ArrowLeft className="w-4 h-4" />All niches</Link><span className="text-xs text-muted-foreground">Specialist workspace</span></div>
+    <div className="flex items-center justify-between gap-3"><Link to={`/workspace/${config.id}`} className="btn-ghost"><ArrowLeft className="w-4 h-4" />Home</Link><span className="text-xs text-muted-foreground">Specialist workspace</span></div>
     <section className="workspace-hero">
       <div className="workspace-heading-icon"><BrandIcon className="w-5 h-5" /></div>
       <span className="workspace-eyebrow">SWISH SPECIALIST</span>
@@ -133,6 +140,6 @@ export default function NicheWorkspace() {
     </section>
     <div className="flex items-end justify-between gap-3"><div><h2 className="text-xl font-bold">Your workflow</h2><p className="text-sm text-muted-foreground mt-1">Choose what you want to do next.</p></div><span className="text-xs rounded-full px-3 py-1 border" style={{ borderColor: config.accent, color: config.accent }}>{config.name}</span></div>
     <section className="workspace-actions">{config.actions.map(action => { const Icon = action.icon; return <Link key={action.label} to={action.to} className="workspace-action" style={{ '--workspace-accent': config.accent } as React.CSSProperties}><span className="workspace-action-icon"><Icon className="w-5 h-5" /></span><span className="font-semibold">{action.label}<span className="workspace-open-arrow"> ↗</span></span><span className="text-xs text-muted-foreground">{action.detail}</span></Link>; })}</section>
-    <div className="swish-card p-4 flex flex-wrap items-center justify-between gap-3"><div><div className="font-semibold text-sm">Need another specialist?</div><p className="text-xs text-muted-foreground mt-1">Switch niches without losing your place.</p></div><Link to="/niches" className="btn-secondary">Browse all niches</Link></div>
+    <div className="swish-card p-4 flex flex-wrap items-center justify-between gap-3"><div><div className="font-semibold text-sm">Your standalone workspace</div><p className="text-xs text-muted-foreground mt-1">Your product workspace stays separate from other SWISH products.</p></div><Link to="/settings" className="btn-secondary">Account settings</Link></div>
   </div>;
 }
