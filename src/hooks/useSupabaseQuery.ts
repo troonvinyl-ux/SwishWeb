@@ -146,14 +146,17 @@ export function useDelete(table: string) {
 // useCount — COUNT(*) query
 // ---------------------------------------------------------------------------
 
-export function useCount(table: string, filter?: Record<string, unknown>) {
+export function useCount(table: string, filter?: Record<string, unknown>, inFilter?: Record<string, unknown[]>) {
   return useQuery({
-    queryKey: [table, 'count', filter],
+    queryKey: [table, 'count', filter, inFilter],
     retry: false,
     queryFn: async () => {
       const sb = await getClient();
       let q = sb.from(table).select('*', { count: 'exact', head: true });
       if (filter) Object.entries(filter).forEach(([k, v]) => { if (v != null) q = q.eq(k, v); });
+      if (inFilter) Object.entries(inFilter).forEach(([k, values]) => {
+        if (Array.isArray(values) && values.length > 0) q = q.in(k, values);
+      });
       const { count, error } = await q;
       if (error) {
         console.warn(`[SWISH] useCount("${table}") error:`, error.message);
