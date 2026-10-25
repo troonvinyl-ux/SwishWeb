@@ -188,3 +188,64 @@
   .swish-mobile-nav { padding-left: 4px; padding-right: 4px; gap: 1px; }
   .swish-mobile-nav-item { font-size: 9px; }
 }
+
+
+/* Mobile navigation hardening: override generic/global nav rules and keep a single row. */
+@media (max-width: 1023px) {
+  nav.swish-mobile-nav {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    grid-auto-flow: column;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    position: relative;
+    align-self: stretch;
+    margin: 0;
+    padding: 6px 6px max(6px, env(safe-area-inset-bottom));
+    overflow: hidden;
+  }
+  nav.swish-mobile-nav > a.swish-mobile-nav-item {
+    display: flex !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100%;
+    height: 56px;
+    min-height: 56px;
+    margin: 0 !important;
+    padding: 4px 0 !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px;
+    white-space: nowrap;
+    font-size: 10px !important;
+    line-height: 1.15;
+    border: 0;
+    border-radius: 10px;
+    box-sizing: border-box;
+  }
+  nav.swish-mobile-nav > a .swish-mobile-nav-icon {
+    display: flex !important;
+    flex: 0 0 24px;
+    width: 24px !important;
+    height: 24px !important;
+    min-height: 24px;
+    align-items: center;
+    justify-content: center;
+  }
+  nav.swish-mobile-nav > a .swish-mobile-nav-icon svg {
+    display: block;
+    width: 21px !important;
+    height: 21px !important;
+    max-width: 21px;
+    max-height: 21px;
+  }
+  nav.swish-mobile-nav > a.is-primary .swish-mobile-nav-icon {
+    flex-basis: 30px;
+    width: 34px !important;
+    height: 30px !important;
+    min-height: 30px;
+  }
+}
