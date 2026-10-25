@@ -135,7 +135,8 @@ export default function NicheCapture() {
   };
   const save = async () => {
     if (niche === 'coins') { navigate('/identify'); return; }
-    if (!f('title').trim()) { toast.error('Enter an item title before saving'); return; }
+    if (niche === 'clothing' && !clothingIdentified) { toast.error('Photograph the brand label and run Threads Flip identification before saving'); return; }
+    if (!f('title').trim()) { toast.error('The AI needs to identify an item title before saving. Run identification, then review or edit the title.'); return; }
     if (!user?.id) { toast.error('Please sign in before creating inventory'); return; }
     const sb = getSupabaseClient() || await getSupabaseClientAsync();
     if (!sb) { toast.error('Backend not connected'); return; }
@@ -156,7 +157,7 @@ export default function NicheCapture() {
       valuation_mid:f('valuation').trim() ? Number(f('valuation')) : null,
       expected_selling_price:f('sale_price').trim() ? Number(f('sale_price')) : null,
       media:[],
-      warnings:['Manual review required: no verified niche-specific AI identification has been run.'],
+      warnings:niche === 'clothing' && clothingIdentified ? ['AI-generated clothing attributes require user review; authenticity is not guaranteed.'] : ['Manual review required: no verified niche-specific AI identification has been run.'],
       tags:[config.specialistId],
     };
     insert.mutate(row,{onSuccess:async(saved)=>{
@@ -215,18 +216,21 @@ export default function NicheCapture() {
           <button type="button" onClick={identifyClothing} disabled={identifyingClothing||!clothingPhotos.brand} className="w-full rounded-full py-4 font-extrabold disabled:opacity-40" style={{background:'#E91E8C',color:'#0C080C'}}>{identifyingClothing?'Identifying with Threads Flip AI…':'✦ Identify Item'}</button>
           {clothingAiError&&<p role="alert" className="text-sm text-red-400">{clothingAiError}</p>}
         </section>
-        <section className="space-y-4 rounded-3xl border p-4 sm:p-5" style={{background:'#160E16',borderColor:clothingIdentified?'#E91E8C':'#301830'}}>
-          <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" style={{color:'#E91E8C'}}/><h2 className="text-lg font-bold">{clothingIdentified?'2. Review AI suggestions':'2. Item details'}</h2></div>
-          <p className="text-sm" style={{color:'#9A7090'}}>{clothingIdentified?'Check and correct the AI suggestions before saving. Identification is not proof of designer authenticity.':'You can enter details manually, or identify from a brand-label photo to prefill these fields.'}</p>
-          <div><label className="mb-1 block text-sm" style={{color:'#9A7090'}}>Item title *</label><input className="input-field mt-1" value={f('title')} onChange={e=>setF('title',e.target.value)} placeholder="e.g. Vintage Nike track jacket size L"/></div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{config.fields.map(field=><div key={field.key}><label className="mb-1 block text-sm" style={{color:'#9A7090'}}>{field.label}</label>{field.type==='select'?<select className="input-field mt-1" value={f(field.key)} onChange={e=>setF(field.key,e.target.value)}><option value="">Select…</option>{(field.options||[]).map(option=><option key={option} value={option}>{option}</option>)}</select>:<input className="input-field mt-1" type={field.type||'text'} value={f(field.key)} onChange={e=>setF(field.key,e.target.value)} placeholder={field.placeholder||field.label}/>}</div>)}</div>
-          <div><label className="mb-1 block text-sm" style={{color:'#9A7090'}}>Description / evidence</label><textarea className="input-field mt-1" rows={4} value={f('description')} onChange={e=>setF('description',e.target.value)} placeholder="Visible details, label text, condition notes…"/></div>
+        {clothingIdentified ? <section className="space-y-4 rounded-3xl border p-4 sm:p-5" style={{background:'#160E16',borderColor:'#E91E8C'}}>
+          <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" style={{color:'#E91E8C'}}/><h2 className="text-lg font-bold">Review AI-filled details</h2></div>
+          <p className="text-sm" style={{color:'#9A7090'}}>Threads Flip has populated these fields from your photos. Check the suggestions and edit anything that is incorrect before saving. AI identification does not prove designer authenticity.</p>
+          <div><label className="mb-1 block text-sm" style={{color:'#9A7090'}}>Item title *</label><input className="input-field mt-1" value={f('title')} onChange={e=>setF('title',e.target.value)} placeholder="AI-suggested item title"/></div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{config.fields.map(field=><div key={field.key}><label className="mb-1 block text-sm" style={{color:'#9A7090'}}>{field.label}</label>{field.type==='select'?<select className="input-field mt-1" value={f(field.key)} onChange={e=>setF(field.key,e.target.value)}><option value="">Select or confirm…</option>{(field.options||[]).map(option=><option key={option} value={option}>{option}</option>)}</select>:<input className="input-field mt-1" type={field.type||'text'} value={f(field.key)} onChange={e=>setF(field.key,e.target.value)} placeholder={field.placeholder||field.label}/>}</div>)}</div>
+          <div><label className="mb-1 block text-sm" style={{color:'#9A7090'}}>Description / evidence</label><textarea className="input-field mt-1" rows={4} value={f('description')} onChange={e=>setF('description',e.target.value)} placeholder="AI-generated visible details and evidence; edit as needed"/></div>
           {clothingAiResult&&<details className="text-sm" style={{color:'#9A7090'}}><summary className="cursor-pointer">View identification evidence</summary><pre className="mt-2 overflow-auto whitespace-pre-wrap text-xs">{JSON.stringify(clothingAiResult,null,2)}</pre></details>}
-        </section>
+        </section> : <section className="rounded-3xl border p-5" style={{background:'#160E16',borderColor:'#301830'}}>
+          <h2 className="text-lg font-bold">Next: AI fills in the details</h2>
+          <p className="mt-2 text-sm leading-relaxed" style={{color:'#9A7090'}}>Add the required brand-label photo and any optional garment or care-label photos, then tap <strong style={{color:'#E91E8C'}}>Identify Item</strong>. Threads Flip will fill in the item title, brand, garment type, size, colour, fabric, style and condition. You will be able to edit the suggestions before saving — no need to type them all yourself.</p>
+        </section>}
         <section className="space-y-3 rounded-3xl border p-4 sm:p-5" style={{background:'#160E16',borderColor:'#301830'}}>
           <h2 className="text-lg font-bold">3. Purchase and value details</h2><div className="grid grid-cols-1 gap-3 sm:grid-cols-3">{[['cost','Purchase cost (£)'],['valuation','Estimated value (£)'],['sale_price','Planned listing price (£)']].map(([key,label])=><div key={key}><label className="mb-1 block text-sm" style={{color:'#9A7090'}}>{label}</label><input className="input-field mt-1" type="number" min="0" step="0.01" value={f(key)} onChange={e=>setF(key,e.target.value)}/></div>)}</div><p className="text-xs" style={{color:'#9A7090'}}>Values entered here are estimates, not verified sold-comparable valuations.</p>
         </section>
-        <div className="flex flex-wrap justify-between gap-3"><Link to="/inventory" className="btn-secondary"><Package className="h-4 w-4"/>Wardrobe / Inventory</Link><button className="btn-primary" onClick={save} disabled={insert.isPending}><Save className="h-4 w-4"/>{insert.isPending?'Saving…':'Save item for review'}</button></div>
+        <div className="flex flex-wrap justify-between gap-3"><Link to="/inventory" className="btn-secondary"><Package className="h-4 w-4"/>Wardrobe / Inventory</Link><button className="btn-primary" onClick={save} disabled={insert.isPending || !clothingIdentified}><Save className="h-4 w-4"/>{insert.isPending?'Saving…':!clothingIdentified?'Identify photos to continue':'Save item for review'}</button></div>
       </main>
     </div>;
   }
