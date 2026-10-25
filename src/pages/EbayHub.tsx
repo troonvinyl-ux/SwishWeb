@@ -19,6 +19,8 @@ export default function EbayHub() {
   const qc = useQueryClient();
 
   const { data: accounts, isLoading } = useTable('marketplace_connectors', {
+    // Never select credential_ref or any token payload into the browser.
+    select: 'status, seller_account_id, access_token_expires_at, last_sync_at, created_at',
     filter: { marketplace_id: 'ebay' },
     limit: 1,
   });
