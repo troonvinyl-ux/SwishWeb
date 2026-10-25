@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { callEdgeFunction, EdgeFunctionError, getSupabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,6 +14,9 @@ export default function EbayHub() {
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState('');
+  const [tenantId, setTenantId] = useState<string | null>(null);
+  const authWindowRef = useRef<Window | null>(null);
+  const connectedNoticeShown = useRef(false);
   const qc = useQueryClient();
 
   const { data: accounts, isLoading } = useTable('ebay_accounts', { limit: 1 });
@@ -22,10 +25,63 @@ export default function EbayHub() {
     if (accounts && accounts.length > 0) setAccount(accounts[0] as Record<string, unknown>);
   }, [accounts]);
 
+  // The OAuth callback is completed server-side. Mirror the mobile app by
+  // watching the canonical tenant marketplace connector until it becomes connected.
+  useEffect(() => {
+    if (!tenantId || !connecting) return;
+    const sb = getSupabaseClient();
+    if (!sb) return;
+    let stopped = false;
+    let attempts = 0;
+    const refreshConnection = async () => {
+      if (stopped) return;
+      attempts += 1;
+      const { data, error } = await sb
+        .from('marketplace_connectors')
+        .select('status, seller_account_id, access_token_expires_at, last_sync_at')
+        .eq('tenant_id', tenantId)
+        .eq('marketplace_id', 'ebay')
+        .maybeSingle();
+      if (stopped) return;
+      if (!error && data?.status === 'connected') {
+        setAccount(previous => ({
+          ...(previous || {}),
+          status: 'active',
+          username: data.seller_account_id || previous?.username || 'eBay Account',
+          token_expires_at: data.access_token_expires_at || previous?.token_expires_at,
+        }));
+        setConnecting(false);
+        authWindowRef.current = null;
+        await Promise.all([
+          'ebay_accounts', 'marketplace_connectors', 'items', 'listings',
+          'ebay_listings', 'orders', 'ebay_orders', 'sales', 'fees', 'payouts', 'messages',
+        ].map(table => qc.invalidateQueries({ queryKey: [table] })));
+        if (!connectedNoticeShown.current) {
+          connectedNoticeShown.current = true;
+          toast.success('eBay connected successfully');
+        }
+      } else if (attempts >= 200) {
+        setConnecting(false);
+        toast.message('Still waiting for eBay authorisation. If you completed it, refresh the connection status or reconnect.');
+      }
+    };
+    void refreshConnection();
+    const timer = window.setInterval(() => { void refreshConnection(); }, 3000);
+    const onFocus = () => { void refreshConnection(); };
+    window.addEventListener('focus', onFocus);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [tenantId, connecting, qc]);
+
   const handleConnect = async () => {
     setConnecting(true);
+    connectedNoticeShown.current = false;
     // Open a blank tab synchronously so mobile browsers do not block OAuth as a popup.
     const authWindow = window.open('about:blank', '_blank');
+    authWindowRef.current = authWindow;
     try {
       const sb = getSupabaseClient();
       if (!sb || !user) throw new Error('Please sign in again before connecting eBay.');
@@ -37,6 +93,7 @@ export default function EbayHub() {
         .maybeSingle();
       if (membershipError) throw membershipError;
       if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready yet. Please complete account setup first.');
+      setTenantId(membership.tenant_id);
       const { data, error } = await callEdgeFunction<Record<string, unknown>>('swish-ebay-oauth', {
         action: 'start_subscriber_authorization',
         tenantId: membership.tenant_id,
@@ -47,9 +104,13 @@ export default function EbayHub() {
         throw new Error('The existing eBay authorisation service did not return a valid eBay consent URL.');
       }
       if (authWindow) authWindow.location.href = url;
-      else window.location.assign(url);
+      else {
+        // Pop-up blockers can prevent a new tab on mobile; same-tab OAuth remains usable.
+        window.location.assign(url);
+      }
     } catch (error) {
       authWindow?.close();
+      authWindowRef.current = null;
       const msg = error instanceof EdgeFunctionError ? error.displayMessage : error instanceof Error ? error.message : 'Could not start eBay connection';
       toast.error(msg);
       setConnecting(false);
