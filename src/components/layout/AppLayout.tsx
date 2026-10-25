@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { cn } from '@/lib/utils';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const saved = localStorage.getItem('swish_active_niche') || 'coins';
+    const allowed = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'];
+    document.documentElement.dataset.niche = allowed.includes(saved) ? saved : 'coins';
+  }, [location.pathname]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
