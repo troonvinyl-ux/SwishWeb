@@ -13,27 +13,19 @@ export default function EbayListings() {
   const [status, setStatus] = useState('');
   const [syncing, setSyncing] = useState(false);
 
-  const { data, isLoading, error } = useTable('ebay_listings', {
+  const { data, isLoading, error } = useTable('listings', {
     order: { column: 'created_at', ascending: false },
     search: search ? { column: 'title', query: search } : undefined,
-    filter: status ? { status } : undefined,
-  });
-
-  // Fallback to listings table with ebay platform filter
-  const { data: fallback, isLoading: fl } = useTable('listings', {
     filter: status ? { status, platform: 'ebay' } : { platform: 'ebay' },
-    search: search ? { column: 'title', query: search } : undefined,
-    order: { column: 'created_at', ascending: false },
-    enabled: !data || (data as unknown[]).length === 0,
   });
 
-  const items = ((data && (data as unknown[]).length > 0 ? data : fallback) || []) as Record<string, unknown>[];
+  const items = (data || []) as Record<string, unknown>[];
 
   const syncListings = async () => {
     setSyncing(true);
     const { error } = await callEdgeFunction('ebay-sync-listings', {});
     if (error) toast.error(error.message);
-    else { toast.success('Listings synced'); qc.invalidateQueries({ queryKey: ['ebay_listings'] }); qc.invalidateQueries({ queryKey: ['listings'] }); }
+    else { toast.success('Listings synced'); qc.invalidateQueries({ queryKey: ['listings'] }); }
     setSyncing(false);
   };
 
@@ -67,7 +59,7 @@ export default function EbayListings() {
       </div>
 
       <div className="swish-card overflow-hidden">
-        {(isLoading || fl) ? (
+        {isLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading eBay listings…</div>
         ) : error ? (
           <div className="p-8 text-center text-destructive text-sm">{(error as Error).message}</div>
