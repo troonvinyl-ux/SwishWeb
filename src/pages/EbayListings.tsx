@@ -16,7 +16,7 @@ export default function EbayListings() {
   const { data, isLoading, error } = useTable('listings', {
     order: { column: 'created_at', ascending: false },
     search: search ? { column: 'title', query: search } : undefined,
-    filter: status ? { status, platform: 'ebay' } : { platform: 'ebay' },
+    filter: status ? { status } : undefined,
   });
 
   const items = (data || []) as Record<string, unknown>[];
