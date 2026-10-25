@@ -18,6 +18,7 @@ async function getClient() {
 export interface TableOptions {
   select?: string;
   filter?: Record<string, unknown>;
+  inFilter?: Record<string, unknown[]>;
   order?: { column: string; ascending?: boolean };
   limit?: number;
   search?: { column: string; query: string };
@@ -44,6 +45,11 @@ export function useTable(table: string, options?: TableOptions) {
       if (options?.filter) {
         Object.entries(options.filter).forEach(([k, v]) => {
           if (v != null) q = q.eq(k, v);
+        });
+      }
+      if (options?.inFilter) {
+        Object.entries(options.inFilter).forEach(([k, values]) => {
+          if (Array.isArray(values) && values.length > 0) q = q.in(k, values);
         });
       }
       if (options?.search?.query) {
