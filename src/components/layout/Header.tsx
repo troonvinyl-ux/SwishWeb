@@ -39,7 +39,11 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchVal, setSearchVal] = useState('');
 
-  const pageLabel = ROUTE_LABELS[location.pathname] || location.pathname.split('/').filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' › ');
+  const activeNiche = String(localStorage.getItem('swish_active_niche') || 'coins');
+  const identifyLabel: Record<string, string> = { coins: 'Coin Flipper', clothing: 'Threads Flip — Identify', bicycles: 'SWISH Bikes — Identify', motocross: 'SWISH MX — Identify', surplus_flip: 'Surplus Flip — Identify' };
+  const pageLabel = location.pathname === '/identify'
+    ? (identifyLabel[activeNiche] || 'SWISH — Identify')
+    : ROUTE_LABELS[location.pathname] || location.pathname.split('/').filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' › ');
 
   const handleSearch = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && searchVal.trim()) {
