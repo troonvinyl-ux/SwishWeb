@@ -49,7 +49,7 @@ export default function EbayImport() {
     const { data, error } = await callEdgeFunction('ebay-export-csv', { type: importType });
     if (error) { toast.error(error.message); return; }
     const url = (data as Record<string, unknown>)?.url as string;
-    if (url) window.location.assign(url);
+    if (url) window.open(url, '_blank');
     else toast.info('Export triggered — check your email or downloads');
   };
 

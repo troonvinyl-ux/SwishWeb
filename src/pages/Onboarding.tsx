@@ -73,25 +73,10 @@ export default function Onboarding() {
   const connectEbay = async () => {
     setConnecting(true);
     try {
-      const sb = getSupabaseClient();
-      if (!sb || !user) throw new Error('Please sign in again before connecting eBay.');
-      const { data: membership, error: membershipError } = await sb
-        .from('tenant_memberships')
-        .select('tenant_id')
-        .eq('user_id', user.id)
-        .limit(1)
-        .maybeSingle();
-      if (membershipError) throw membershipError;
-      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready yet. Please complete account setup first.');
-      const { data, error } = await callEdgeFunction<Record<string, unknown>>('swish-ebay-oauth', {
-        action: 'start_subscriber_authorization',
-        tenantId: membership.tenant_id,
-      }, sb);
+      const { data, error } = await callEdgeFunction<Record<string, unknown>>('ebay-auth-url', {});
       if (error) throw error;
-      const url = data?.consentUrl;
-      if (typeof url !== 'string' || !url.startsWith('https://auth.ebay.com/')) {
-        throw new Error('The existing eBay authorisation service did not return a valid eBay consent URL.');
-      }
+      const url = data?.url || data?.auth_url || data?.authorization_url;
+      if (typeof url !== 'string' || !url.startsWith('https://')) throw new Error('The existing eBay connection service did not return a valid authorisation link.');
       window.location.assign(url);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not start eBay connection');
