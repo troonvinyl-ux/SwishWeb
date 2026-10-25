@@ -85,14 +85,45 @@ export default function EbayHub() {
     try {
       const sb = getSupabaseClient();
       if (!sb || !user) throw new Error('Please sign in again before connecting eBay.');
-      const { data: membership, error: membershipError } = await sb
+      let { data: membership, error: membershipError } = await sb
         .from('tenant_memberships')
         .select('tenant_id')
         .eq('user_id', user.id)
         .limit(1)
         .maybeSingle();
       if (membershipError) throw membershipError;
-      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready yet. Please complete account setup first.');
+
+      // Web signup may finish before the tenant provisioning trigger has run.
+      // Use the same existing provisioning RPC as the mobile app; never invent
+      // a tenant id or bypass the tenant-membership security boundary.
+      if (!membership?.tenant_id) {
+        const storeName = String(
+          user.user_metadata?.full_name ||
+          user.email?.split('@')[0] ||
+          'My',
+        ).trim() + "'s Store";
+        const slugBase = storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'swish-store';
+        const slug = `${slugBase}-${Date.now().toString(36)}`;
+        const { data: provisionedTenantId, error: provisionError } = await sb.rpc('swish_provision_tenant', {
+          p_user_id: user.id,
+          p_tenant_name: storeName,
+          p_slug: slug,
+        });
+        if (provisionError) throw new Error(`Could not initialise your SWISH workspace: ${provisionError.message}`);
+        const { data: refreshedMembership, error: refreshedMembershipError } = await sb
+          .from('tenant_memberships')
+          .select('tenant_id')
+          .eq('user_id', user.id)
+          .limit(1)
+          .maybeSingle();
+        if (refreshedMembershipError) throw refreshedMembershipError;
+        membership = refreshedMembership?.tenant_id
+          ? refreshedMembership
+          : provisionedTenantId
+            ? { tenant_id: String(provisionedTenantId) }
+            : null;
+      }
+      if (!membership?.tenant_id) throw new Error('Your SWISH workspace could not be initialised. Please complete setup or contact support.');
       setTenantId(membership.tenant_id);
       const { data, error } = await callEdgeFunction<Record<string, unknown>>('swish-ebay-oauth', {
         action: 'start_subscriber_authorization',
