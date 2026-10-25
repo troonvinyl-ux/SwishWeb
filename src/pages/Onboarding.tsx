@@ -69,8 +69,12 @@ export default function Onboarding() {
     }
   };
 
-  const finish = () => {
+  const finish = async () => {
     localStorage.setItem(`swish_onboarding_complete_${user?.id || 'unknown'}`, 'true');
+    const sb = getSupabaseClient();
+    if (sb && user) {
+      try { await sb.auth.updateUser({ data: { onboarding_status: 'complete' } }); } catch { /* local completion remains as a fallback */ }
+    }
     localStorage.setItem('swish_active_niche', productId);
     localStorage.setItem('swish_active_niche_name', product.name);
     document.documentElement.dataset.niche = productId;
@@ -84,7 +88,7 @@ export default function Onboarding() {
   const rows = [
     { id: 'profile', title: 'Confirm your account', detail: 'Use your account name to initialise your SWISH profile.', icon: UserRound, action: saveProfile, label: 'Confirm profile', busy: savingProfile },
     { id: 'ebay', title: 'Connect eBay', detail: 'Authorise the existing eBay integration to sync listings and orders.', icon: Link2, action: connectEbay, label: 'Connect eBay', busy: connecting },
-    { id: 'inventory', title: 'Bring in your stock', detail: 'Import an existing eBay CSV or start with an empty inventory.', icon: Package, action: () => navigate('/ebay/import'), label: 'Open import tools', busy: false },
+    { id: 'inventory', title: 'Bring in your stock', detail: 'Import an existing eBay CSV or start with an empty inventory.', icon: Package, action: () => { updateStep('inventory'); navigate('/ebay/import'); }, label: 'Open import tools', busy: false },
   ];
 
   return <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
