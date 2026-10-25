@@ -11,6 +11,7 @@ import { Loader2 } from 'lucide-react';
 import LoginPage from '@/pages/LoginPage';
 import NicheEntry from '@/pages/NicheEntry';
 import NicheWorkspace from '@/pages/NicheWorkspace';
+import Onboarding from '@/pages/Onboarding';
 import Dashboard from '@/pages/Dashboard';
 import Inventory from '@/pages/Inventory';
 import InventoryItem from '@/pages/InventoryItem';
@@ -62,6 +63,7 @@ function AppRoutes() {
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
   const preferredNiche = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
   const safeNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins';
+  const needsOnboarding = !isOwner && user?.user_metadata?.onboarding_status === 'started';
 
   // Establishing backend connection
   if (connectionStatus === 'initialising') {
@@ -89,13 +91,14 @@ function AppRoutes() {
     <AppLayout>
       <ErrorBoundary name="router">
         <Routes>
-          <Route path="/" element={<Navigate to={`/workspace/${safeNiche}`} replace />} />
-          <Route path="/coins" element={<Navigate to={`/workspace/${safeNiche}`} replace />} />
-          <Route path="/mx" element={<Navigate to={`/workspace/${safeNiche}`} replace />} />
-          <Route path="/bikes" element={<Navigate to={`/workspace/${safeNiche}`} replace />} />
-          <Route path="/threads" element={<Navigate to={`/workspace/${safeNiche}`} replace />} />
-          <Route path="/surplus" element={<Navigate to={`/workspace/${safeNiche}`} replace />} />
-          <Route path="/niches" element={isOwner ? <NicheEntry /> : <Navigate to={`/workspace/${safeNiche}`} replace />} />
+          <Route path="/" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
+          <Route path="/coins" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
+          <Route path="/mx" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
+          <Route path="/bikes" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
+          <Route path="/threads" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
+          <Route path="/surplus" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/niches" element={isOwner ? <NicheEntry /> : <Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
           <Route path="/workspace/:niche" element={<NicheWorkspace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/command-centre" element={<CommandCentre />} />
