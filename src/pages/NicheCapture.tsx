@@ -145,7 +145,6 @@ export default function NicheCapture() {
     insert.mutate(row,{onSuccess:async(saved)=>{
       const id=(saved as Record<string,unknown>)?.id as string;
       if (niche === 'clothing' && id) {
-        const { data: currentUser } = await sb.auth.getUser();
         const photoSlots = [['brand','brand-label'],['garment','garment-front'],['detail','care-label-detail']] as const;
         const mediaUrls: string[] = [];
         for (const [slot, label] of photoSlots) {
