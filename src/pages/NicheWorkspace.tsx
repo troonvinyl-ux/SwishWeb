@@ -136,7 +136,10 @@ export default function NicheWorkspace() {
       <div className="workspace-heading-icon"><BrandIcon className="w-5 h-5" /></div>
       <span className="workspace-eyebrow">SWISH SPECIALIST</span>
       <p className="text-xs uppercase tracking-[.2em] text-muted-foreground mb-2 mt-5">{config.detail}</p><h1 className="text-3xl sm:text-5xl font-extrabold">{config.name}</h1><p className="text-lg sm:text-xl mt-3 text-white/80">{config.tagline}</p>
-      <button className="workspace-primary mt-6" onClick={() => route('/identify')}><Camera className="w-4 h-4" />{config.scan}<span>↗</span></button>
+      <div className="workspace-quick-actions mt-6">
+        <button className="workspace-primary" onClick={() => route('/identify')}><Camera className="w-4 h-4" />{config.scan}<span>↗</span></button>
+        <Link className="workspace-import" to="/ebay/import"><Package className="w-4 h-4" />Import from eBay</Link>
+      </div>
     </section>
     <div className="flex items-end justify-between gap-3"><div><h2 className="text-xl font-bold">Your workflow</h2><p className="text-sm text-muted-foreground mt-1">Choose what you want to do next.</p></div><span className="text-xs rounded-full px-3 py-1 border" style={{ borderColor: config.accent, color: config.accent }}>{config.name}</span></div>
     <section className="workspace-actions">{config.actions.map(action => { const Icon = action.icon; return <Link key={action.label} to={action.to} className="workspace-action" style={{ '--workspace-accent': config.accent } as React.CSSProperties}><span className="workspace-action-icon"><Icon className="w-5 h-5" /></span><span className="font-semibold">{action.label}<span className="workspace-open-arrow"> ↗</span></span><span className="text-xs text-muted-foreground">{action.detail}</span></Link>; })}</section>
