@@ -109,7 +109,8 @@ function AppRoutes() {
           <Route path="/inventory/new" element={<InventoryNew />} />
           <Route path="/inventory/:id" element={<InventoryItem />} />
 
-          <Route path="/identify" element={<Identify />} />
+          <Route path="/identify" element={<Navigate to={safeNiche === 'coins' ? '/identify/coins' : `/scan/${safeNiche === 'bicycles' ? 'bikes' : safeNiche === 'motocross' ? 'mx' : safeNiche}`} replace />} />
+          <Route path="/identify/coins" element={<Identify />} />
           <Route path="/scan/:niche" element={<NicheCapture />} />
           <Route path="/acquisitions" element={<Acquisitions />} />
           <Route path="/opportunities" element={<Opportunities />} />
