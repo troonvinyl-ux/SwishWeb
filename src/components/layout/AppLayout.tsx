@@ -17,9 +17,10 @@ const PRODUCT_NAMES: Record<string, string> = {
 
 function MobileAppNav({ niche }: { niche: string }) {
   const location = useLocation();
+  const capturePath = niche === 'coins' ? '/identify/coins' : niche === 'surplus_flip' ? '/ebay/import' : `/scan/${niche === 'bicycles' ? 'bikes' : niche === 'motocross' ? 'mx' : niche}`;
   const links = [
     { label: 'Home', to: `/workspace/${niche}`, icon: Home },
-    { label: 'Capture', to: niche === 'surplus_flip' ? '/ebay/import' : '/identify', icon: Camera, primary: true },
+    { label: 'Capture', to: capturePath, icon: Camera, primary: true },
     { label: 'Stock', to: '/inventory', icon: Package },
     { label: 'eBay', to: '/ebay', icon: Store },
     { label: 'Account', to: '/settings', icon: UserRound },
@@ -46,7 +47,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const preferred = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
   const niche = VALID_NICHES.includes(preferred) ? preferred : 'coins';
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
-  const isClothingWorkspace = niche === 'clothing' && location.pathname.startsWith('/workspace/clothing');
+  const isClothingWorkspace = niche === 'clothing' && (location.pathname.startsWith('/workspace/clothing') || location.pathname.startsWith('/scan/clothing'));
   const isAdminScreen = isOwner && (location.pathname.startsWith('/master-admin') || location.pathname === '/niches');
 
   useEffect(() => {
