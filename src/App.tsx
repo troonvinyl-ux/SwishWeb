@@ -143,6 +143,8 @@ function AppRoutes() {
           {/* Settings */}
           <Route path="/settings" element={<Settings />} />
           <Route path="/master-admin" element={<MasterAdmin />} />
+          {/* Accept an explicit trailing slash as well on hosts that preserve it. */}
+          <Route path="/master-admin/" element={<MasterAdmin />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
