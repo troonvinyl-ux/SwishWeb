@@ -131,3 +131,60 @@
 :root[data-niche="bicycles"] { --primary: 142 71% 45%; --ring: 142 71% 45%; --swish-gold: 142 71% 45%; --sidebar-primary: 142 71% 45%; --sidebar-ring: 142 71% 45%; }
 :root[data-niche="clothing"] { --background: 300 20% 4%; --foreground: 300 20% 95%; --card: 300 23% 7%; --popover: 300 24% 9%; --primary: 327 82% 52%; --ring: 327 82% 52%; --secondary: 300 20% 12%; --muted: 300 20% 12%; --muted-foreground: 300 12% 56%; --border: 300 18% 15%; --input: 300 18% 15%; --sidebar-background: 300 22% 4%; --sidebar-accent: 300 20% 10%; --sidebar-border: 300 18% 13%; --sidebar-primary: 327 82% 52%; --sidebar-ring: 327 82% 52%; --swish-gold: 327 82% 52%; }
 :root[data-niche="surplus_flip"] { --primary: 166 80% 40%; --ring: 166 80% 40%; --swish-gold: 166 80% 40%; --sidebar-primary: 166 80% 40%; --sidebar-ring: 166 80% 40%; }
+
+
+/* Native-feeling mobile app shell for SWISH Web. */
+.swish-mobile-nav {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 8px 8px max(8px, env(safe-area-inset-bottom));
+  border-top: 1px solid hsl(var(--border));
+  background: hsl(var(--card) / .97);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  z-index: 30;
+}
+.swish-mobile-nav-item {
+  display: flex;
+  min-width: 0;
+  min-height: 54px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 13px;
+  color: hsl(var(--muted-foreground));
+  font-size: 10px;
+  font-weight: 600;
+  -webkit-tap-highlight-color: transparent;
+}
+.swish-mobile-nav-icon {
+  display: flex;
+  width: 26px;
+  height: 25px;
+  align-items: center;
+  justify-content: center;
+}
+.swish-mobile-nav-icon svg { width: 21px; height: 21px; stroke-width: 1.9; }
+.swish-mobile-nav-item.is-active { color: hsl(var(--primary)); background: hsl(var(--primary) / .09); }
+.swish-mobile-nav-item.is-primary { color: hsl(var(--primary-foreground)); }
+.swish-mobile-nav-item.is-primary .swish-mobile-nav-icon {
+  width: 37px;
+  height: 34px;
+  border-radius: 12px;
+  color: hsl(var(--primary-foreground));
+  background: hsl(var(--primary));
+  box-shadow: 0 4px 16px hsl(var(--primary) / .2);
+}
+.swish-mobile-nav-item.is-primary .swish-mobile-nav-icon svg { width: 20px; height: 20px; }
+.swish-mobile-nav-item:active { transform: scale(.97); }
+@media (min-width: 1024px) {
+  .swish-mobile-nav { display: none; }
+}
+@media (max-width: 360px) {
+  .swish-mobile-nav { padding-left: 4px; padding-right: 4px; gap: 1px; }
+  .swish-mobile-nav-item { font-size: 9px; }
+}
