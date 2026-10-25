@@ -18,10 +18,26 @@ export default function EbayHub() {
   const connectedNoticeShown = useRef(false);
   const qc = useQueryClient();
 
-  const { data: accounts, isLoading } = useTable('ebay_accounts', { limit: 1 });
+  const { data: accounts, isLoading } = useTable('marketplace_connectors', {
+    filter: { marketplace_id: 'ebay' },
+    limit: 1,
+  });
 
   useEffect(() => {
-    if (accounts && accounts.length > 0) setAccount(accounts[0] as Record<string, unknown>);
+    const connector = accounts?.[0] as Record<string, unknown> | undefined;
+    if (!connector) {
+      setAccount(null);
+      return;
+    }
+    // The mobile app's canonical connector uses status='connected'; adapt only
+    // the presentation value for this existing web screen.
+    setAccount({
+      ...connector,
+      status: connector.status === 'connected' ? 'active' : connector.status,
+      username: connector.seller_account_id || 'eBay Account',
+      token_expires_at: connector.access_token_expires_at,
+      connected_at: connector.created_at,
+    });
   }, [accounts]);
 
   // The OAuth callback is completed server-side. Mirror the mobile app by
@@ -143,18 +159,43 @@ export default function EbayHub() {
   const handleSync = async () => {
     setSyncing(true);
     setSyncError('');
-    const { data, error } = await callEdgeFunction('ebay-sync', {});
-    if (error) {
-      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
+    try {
+      const sb = getSupabaseClient();
+      if (!sb || !user) throw new Error('Please sign in again before syncing eBay.');
+      const { data: membership, error: membershipError } = await sb
+        .from('tenant_memberships')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      if (membershipError) throw membershipError;
+      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready. Complete setup before syncing eBay.');
+
+      const { data, error } = await callEdgeFunction<Record<string, unknown>>(
+        'swish-ebay-sync',
+        { tenantId: membership.tenant_id, mode: 'full' },
+        sb,
+      );
+      if (error) {
+        const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
+        setSyncError(msg);
+        toast.error(msg);
+      } else {
+        const result = data as Record<string, unknown>;
+        const msg = typeof result?.message === 'string' ? result.message : 'eBay sync complete';
+        await Promise.all([
+          'marketplace_connectors', 'items', 'listings', 'orders', 'sales',
+          'ebay_messages', 'ebay_returns', 'ebay_cases', 'ebay_offers', 'ebay_financials',
+        ].map(table => qc.invalidateQueries({ queryKey: [table] })));
+        toast.success(msg);
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Could not sync eBay. Please try again.';
       setSyncError(msg);
       toast.error(msg);
-    } else {
-      const result = data as Record<string, unknown>;
-      const msg = result?.message as string || 'eBay sync complete';
-      await Promise.all(['ebay_accounts', 'items', 'listings', 'ebay_listings', 'orders', 'ebay_orders', 'sales', 'fees', 'payouts', 'messages'].map(table => qc.invalidateQueries({ queryKey: [table] })));
-      toast.success(msg);
+    } finally {
+      setSyncing(false);
     }
-    setSyncing(false);
   };
 
   const isConnected = account?.status === 'active';
