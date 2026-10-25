@@ -63,11 +63,28 @@ export default function NicheCapture() {
       const selected = labels.filter(([key]) => clothingPhotos[key]);
       const images = await Promise.all(selected.map(async ([key]) => {
         const file = clothingPhotos[key]!;
-        const image = await new Promise<string>((resolve, reject) => {
+        const original = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(String(reader.result));
           reader.onerror = () => reject(new Error('Could not read the selected photo'));
           reader.readAsDataURL(file);
+        });
+        // Match the mobile app's payload discipline: resize to max 1024px and JPEG
+        // quality 0.65 before sending images to the Edge Function.
+        const image = await new Promise<string>((resolve, reject) => {
+          const source = new Image();
+          source.onload = () => {
+            const scale = Math.min(1, 1024 / Math.max(source.naturalWidth, source.naturalHeight));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(source.naturalWidth * scale));
+            canvas.height = Math.max(1, Math.round(source.naturalHeight * scale));
+            const context = canvas.getContext('2d');
+            if (!context) { reject(new Error('Photo compression is unavailable in this browser')); return; }
+            context.drawImage(source, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.65));
+          };
+          source.onerror = () => reject(new Error('Could not prepare the selected photo for identification'));
+          source.src = original;
         });
         return image;
       }));
@@ -93,10 +110,10 @@ export default function NicheCapture() {
       };
       setIfPresent('title', result.canonicalTitle, result.title);
       setIfPresent('brand', attrs.brand, result.brand);
-      setIfPresent('category', attrs.category, attrs.garmentType, result.garmentType);
-      setIfPresent('size', attrs.size, attrs.taggedSize, result.size);
-      setIfPresent('colour', attrs.colour, attrs.color, result.colour);
-      setIfPresent('material', attrs.material, attrs.fabric, result.material);
+      setIfPresent('category', attrs.category, attrs.garmentType, attrs.garment_type, result.garmentType);
+      setIfPresent('size', attrs.size, attrs.taggedSize, attrs.tagged_size, result.size);
+      setIfPresent('colour', attrs.colour, attrs.color, attrs.colour_pattern, result.colour);
+      setIfPresent('material', attrs.material, attrs.fabric, attrs.fibre_composition, result.material);
       setIfPresent('style', attrs.style, attrs.era, result.style);
       setIfPresent('condition', result.condition, attrs.condition);
       setIfPresent('flaws', attrs.flaws, attrs.visibleFlaws, result.conditionNotes);
