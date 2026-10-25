@@ -81,8 +81,9 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
   const [ebayOpen, setEbayOpen] = useState(false);
   const location = useLocation();
-  const activeNicheId = localStorage.getItem('swish_active_niche') || '';
-  const activeNicheName = ({ coins: 'SWISH Coins', motocross: 'SWISH MX', bicycles: 'SWISH Bikes', clothing: 'Threads Flip', surplus_flip: 'Surplus Flip' } as Record<string, string>)[activeNicheId] || 'Choose a niche';
+  const activeNicheId = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
+  const activeNicheName = ({ coins: 'SWISH Coins', motocross: 'SWISH MX', bicycles: 'SWISH Bikes', clothing: 'Threads Flip', surplus_flip: 'Surplus Flip' } as Record<string, string>)[activeNicheId] || 'SWISH';
+  const workspacePath = `/workspace/${(['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(activeNicheId) ? activeNicheId : 'coins')}`;
   void location.pathname;
 
   const handleSignOut = async () => { await signOut(); };
@@ -102,7 +103,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
 
       {/* Active specialist workspace */}
       <div className="px-3 pt-3 pb-1">
-        <Link to="/niches" onClick={onClose} className="flex items-center justify-between gap-2 rounded-lg border border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar-accent))] px-3 py-2.5 hover:border-primary/50 transition-colors">
+        <Link to={isOwner ? "/niches" : workspacePath} onClick={onClose} className="flex items-center justify-between gap-2 rounded-lg border border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar-accent))] px-3 py-2.5 hover:border-primary/50 transition-colors">
           <span className="min-w-0"><span className="block text-[10px] uppercase tracking-wider text-muted-foreground">Specialist workspace</span><span className="block truncate text-xs font-semibold text-foreground">{activeNicheName}</span></span>
           <Sparkles className="w-4 h-4 shrink-0 text-primary" />
         </Link>
