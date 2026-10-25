@@ -1,4 +1,4 @@
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import {
@@ -45,7 +45,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: 'Stock',
     items: [
       { label: 'Inventory', to: '/inventory', icon: Package },
-      { label: 'Coin Flipper', to: '/identify', icon: Coins },
+      { label: 'Identify / Scan', to: '/identify', icon: Coins },
       { label: 'Acquisitions', to: '/acquisitions', icon: ShoppingBag },
       { label: 'Opportunities', to: '/opportunities', icon: Lightbulb },
       { label: 'Review Required', to: '/review-required', icon: AlertCircle },
@@ -80,6 +80,10 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const { user, signOut } = useAuth();
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
   const [ebayOpen, setEbayOpen] = useState(false);
+  const location = useLocation();
+  const activeNicheId = localStorage.getItem('swish_active_niche') || '';
+  const activeNicheName = ({ coins: 'SWISH Coins', motocross: 'SWISH MX', bicycles: 'SWISH Bikes', clothing: 'Threads Flip', surplus_flip: 'Surplus Flip' } as Record<string, string>)[activeNicheId] || 'Choose a niche';
+  void location.pathname;
 
   const handleSignOut = async () => { await signOut(); };
 
@@ -99,7 +103,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       {/* Active specialist workspace */}
       <div className="px-3 pt-3 pb-1">
         <Link to="/niches" onClick={onClose} className="flex items-center justify-between gap-2 rounded-lg border border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar-accent))] px-3 py-2.5 hover:border-primary/50 transition-colors">
-          <span className="min-w-0"><span className="block text-[10px] uppercase tracking-wider text-muted-foreground">Specialist workspace</span><span className="block truncate text-xs font-semibold text-foreground">{({coins:'Coin Flipper',cards:'Card Flipper',antiques:'Antique Flipper',bikes:'Bike Flipper',mx:'Flipper MX',fossils:'Fossil Flipper',clothing:'Clothing Flipper',beauty:'Beauty Flipper',tech:'Tech Flipper',tools:'Tool Flipper'} as Record<string,string>)[localStorage.getItem('swish_active_niche') || ''] || 'Choose a niche'}</span></span>
+          <span className="min-w-0"><span className="block text-[10px] uppercase tracking-wider text-muted-foreground">Specialist workspace</span><span className="block truncate text-xs font-semibold text-foreground">{activeNicheName}</span></span>
           <Sparkles className="w-4 h-4 shrink-0 text-primary" />
         </Link>
       </div>
