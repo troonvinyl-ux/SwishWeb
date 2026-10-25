@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { callEdgeFunction, EdgeFunctionError, getSupabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
