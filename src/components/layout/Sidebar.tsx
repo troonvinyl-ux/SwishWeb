@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Package, Coins, ShoppingBag, Lightbulb, Tag, ShoppingCart,
   Truck, TrendingUp, BarChart3, Wallet, CheckSquare, Terminal, Settings,
-  LogOut, ChevronDown, ChevronRight, Zap, RefreshCw, AlertCircle, ClipboardList, Sparkles
+  LogOut, ChevronDown, ChevronRight, Zap, RefreshCw, AlertCircle, ClipboardList, Sparkles, Crown
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -78,6 +78,7 @@ const NAV_SECTIONS: NavSection[] = [
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const { user, signOut } = useAuth();
+  const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
   const [ebayOpen, setEbayOpen] = useState(false);
 
   const handleSignOut = async () => { await signOut(); };
@@ -159,6 +160,10 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             <Settings className="w-4 h-4 shrink-0" />
             Settings
           </NavLink>
+          {isOwner && <NavLink to="/master-admin" onClick={onClose} className={({ isActive }) => cn('nav-item', isActive && 'active')}>
+            <Crown className="w-4 h-4 shrink-0" />
+            Master Admin
+          </NavLink>}
         </div>
       </nav>
 
