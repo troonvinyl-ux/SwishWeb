@@ -86,7 +86,7 @@ export default function EbayListings() {
                     <td>
                       <div className="flex gap-1">
                         <Link to={`/listings/${l.id}`} className="btn-ghost py-1 px-2 text-xs">Edit</Link>
-                        {l.url && <a href={l.url as string} target="_blank" rel="noopener noreferrer" className="btn-ghost py-1 px-2"><ExternalLink className="w-3 h-3" /></a>}
+                        {l.url && <a href={l.url as string} className="btn-ghost py-1 px-2" aria-label="Open eBay listing in this tab" title="Open eBay listing (use browser Back to return)"><ExternalLink className="w-3 h-3" /></a>}
                       </div>
                     </td>
                   </tr>
