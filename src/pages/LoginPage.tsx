@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useAuth, ConnectionStatus } from '@/contexts/AuthContext';
 import { Zap, Eye, EyeOff, Loader2, Key, WifiOff, UserPlus, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
@@ -103,6 +103,42 @@ export default function LoginPage() {
     }
   };
 
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = verificationCode.replace(/\\D/g, '');
+    if (code.length !== 6) { toast.error('Enter the 6-digit code from your email'); return; }
+    setLoading(true);
+    try {
+      const sb = getSupabaseClient() || await getSupabaseClientAsync();
+      if (!sb) { toast.error('Backend not connected'); return; }
+      const { error } = await sb.auth.verifyOtp({ email: verificationEmail, token: code, type: 'email' });
+      if (error) { toast.error(error.message || 'Verification failed'); return; }
+      localStorage.setItem('swish_active_niche', niche);
+      localStorage.setItem('swish_active_niche_name', product.label);
+      setVerificationPending(false);
+      toast.success('Email verified. Your account is ready.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Verification failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setResendingCode(true);
+    try {
+      const sb = getSupabaseClient() || await getSupabaseClientAsync();
+      if (!sb) { toast.error('Backend not connected'); return; }
+      const { error } = await sb.auth.resend({ type: 'signup', email: verificationEmail });
+      if (error) toast.error(error.message || 'Could not resend verification code');
+      else toast.success('A new verification email has been requested.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not resend verification code');
+    } finally {
+      setResendingCode(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-background flex items-center justify-center p-5 sm:p-6">
       <section className="w-full max-w-md animate-fade-in">
@@ -121,6 +157,25 @@ export default function LoginPage() {
           <button type="button" role="tab" aria-selected={mode === 'signup'} onClick={() => setMode('signup')} className={`rounded-lg py-2.5 text-sm font-semibold flex items-center justify-center gap-2 ${mode === 'signup' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}><UserPlus className="w-4 h-4" />Create account</button>
         </div>}
 
+        {verificationPending ? (
+          <form onSubmit={handleVerifyCode} className="swish-card p-6 space-y-4">
+            <div>
+              <h1 className="text-xl font-bold">Verify your email</h1>
+              <p className="text-sm text-muted-foreground mt-1">Enter the 6-digit verification code sent to <strong>{verificationEmail}</strong>.</p>
+            </div>
+            <div>
+              <label htmlFor="swish-verification-code" className="block text-xs font-medium mb-1.5 text-muted-foreground">Email verification PIN</label>
+              <input id="swish-verification-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={verificationCode} onChange={e => setVerificationCode(e.target.value.replace(/\\D/g, '').slice(0, 6))} className="input-field text-center text-2xl tracking-[0.4em] font-mono" placeholder="000000" required />
+            </div>
+            <button type="submit" disabled={loading || verificationCode.length !== 6} className="btn-primary w-full justify-center py-3">
+              {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Verifying…</> : 'Verify email'}
+            </button>
+            <button type="button" onClick={handleResendCode} disabled={resendingCode || loading} className="w-full text-sm text-muted-foreground hover:text-foreground disabled:opacity-50">
+              {resendingCode ? 'Requesting new code…' : 'Resend verification code'}
+            </button>
+            <button type="button" onClick={() => setVerificationPending(false)} className="w-full text-sm text-muted-foreground hover:text-foreground">Back to sign in</button>
+          </form>
+        ) : (
         <form onSubmit={handleSubmit} className="swish-card p-6 space-y-4">
           <div>
             <h1 className="text-xl font-bold">{mode === 'signup' ? `Create your ${product.label} account` : `Welcome back to ${product.label}`}</h1>
@@ -170,6 +225,7 @@ export default function LoginPage() {
 
           {mode === 'signup' && <p className="text-xs text-muted-foreground text-center leading-relaxed">Creating an account does not automatically grant paid membership. Access is determined by the existing subscription and entitlement rules.</p>}
         </form>
+        )}
 
         <p className="text-center text-xs text-muted-foreground mt-5">{product.label} · secure account access</p>
       </section>
