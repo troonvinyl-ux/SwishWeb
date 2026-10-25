@@ -57,6 +57,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       if (mode === 'signup') {
+        localStorage.setItem('swish_active_niche', niche);
+        localStorage.setItem('swish_active_niche_name', NICHES.find(option => option.id === niche)?.label || niche);
         const result = await signUp(email, password, fullName, niche);
         if (result.error) toast.error(result.error.message || 'Could not create account');
         else if (result.needsEmailConfirmation) {
