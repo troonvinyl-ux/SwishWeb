@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { useCount } from '@/hooks/useSupabaseQuery';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Search, Camera, Package, Tag, ShoppingCart, BarChart3, Wrench, Sparkles, Coins, Bike, Shirt, Lightbulb, Store, ScanLine } from 'lucide-react';
 
@@ -73,6 +74,7 @@ export default function NicheWorkspace() {
   const navigate = useNavigate();
   const config = useMemo(() => CONFIGS[niche] || CONFIGS.coins, [niche]);
   const BrandIcon = config.icon;
+  const { data: inventoryCount } = useCount('inventory');
   useEffect(() => { setActiveNiche(config); }, [config]);
 
   if (config.id === 'clothing') {
@@ -93,7 +95,7 @@ export default function NicheWorkspace() {
           <span className="threads-pro">PRO</span>
         </section>
         <section className="threads-stats" aria-label="Threads Flip summary">
-          <div><strong>—</strong><span>ITEMS IN STOCK</span></div><div><strong>8</strong><span>CATEGORIES</span></div><div><strong className="threads-green">Yes</strong><span>AI POWERED</span></div>
+          <div><strong>{inventoryCount ?? '—'}</strong><span>ITEMS IN STOCK</span></div><div><strong>8</strong><span>CATEGORIES</span></div><div><strong className="threads-green">Yes</strong><span>AI POWERED</span></div>
         </section>
         <h2 className="threads-section-title">TOOLS</h2>
         <section className="threads-tools">
