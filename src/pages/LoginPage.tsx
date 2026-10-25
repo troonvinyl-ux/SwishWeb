@@ -169,7 +169,7 @@ export default function LoginPage() {
           </button>
 
           {mode === 'signup' && <p className="text-xs text-muted-foreground text-center leading-relaxed">Creating an account does not automatically grant paid membership. Access is determined by the existing subscription and entitlement rules.</p>}
-        </form>
+        </form>}
 
         <p className="text-center text-xs text-muted-foreground mt-5">{product.label} · secure account access</p>
       </section>
