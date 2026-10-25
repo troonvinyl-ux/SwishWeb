@@ -109,7 +109,7 @@ function AppRoutes() {
           <Route path="/inventory/new" element={<InventoryNew />} />
           <Route path="/inventory/:id" element={<InventoryItem />} />
 
-          <Route path="/identify" element={<Navigate to={safeNiche === 'coins' ? '/identify/coins' : `/scan/${safeNiche === 'bicycles' ? 'bikes' : safeNiche === 'motocross' ? 'mx' : safeNiche}`} replace />} />
+          <Route path="/identify" element={<Navigate to={(() => { const active = isOwner ? (localStorage.getItem('swish_active_niche') || safeNiche) : safeNiche; return active === 'coins' ? '/identify/coins' : `/scan/${active === 'bicycles' ? 'bikes' : active === 'motocross' ? 'mx' : active}`; })()} replace />} />
           <Route path="/identify/coins" element={<Identify />} />
           <Route path="/scan/:niche" element={<NicheCapture />} />
           <Route path="/acquisitions" element={<Acquisitions />} />
