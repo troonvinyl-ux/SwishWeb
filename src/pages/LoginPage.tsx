@@ -105,7 +105,7 @@ export default function LoginPage() {
 
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    const code = verificationCode.replace(/\\D/g, '');
+    const code = verificationCode.replace(/\D/g, '');
     if (code.length !== 4) { toast.error('Enter the 4-digit PIN from your email'); return; }
     setLoading(true);
     try {
@@ -165,7 +165,7 @@ export default function LoginPage() {
             </div>
             <div>
               <label htmlFor="swish-verification-code" className="block text-xs font-medium mb-1.5 text-muted-foreground">Email verification PIN</label>
-              <input id="swish-verification-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{4}" maxLength={4} value={verificationCode} onChange={e => setVerificationCode(e.target.value.replace(/\\D/g, '').slice(0, 4))} className="input-field text-center text-2xl tracking-[0.4em] font-mono" placeholder="0000" required />
+              <input id="swish-verification-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{4}" maxLength={4} value={verificationCode} onChange={e => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 4))} className="input-field text-center text-2xl tracking-[0.4em] font-mono" placeholder="0000" required />
             </div>
             <button type="submit" disabled={loading || verificationCode.length !== 4} className="btn-primary w-full justify-center py-3">
               {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Verifying…</> : 'Verify email'}
