@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useInsert } from '@/hooks/useSupabaseQuery';
 import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
@@ -36,6 +36,8 @@ export default function NicheCapture() {
   const Icon = config.icon;
   const [form, setForm] = useState<Record<string,string>>({status:'review'});
   const [clothingPhotos, setClothingPhotos] = useState<Record<string, File | null>>({ brand: null, garment: null, detail: null });
+  const clothingFileInputs = useRef<Record<string, HTMLInputElement | null>>({});
+  const clothingCameraInputs = useRef<Record<string, HTMLInputElement | null>>({});
   const [clothingPreviews, setClothingPreviews] = useState<Record<string, string>>({});
   const [identifyingClothing, setIdentifyingClothing] = useState(false);
   const [clothingIdentified, setClothingIdentified] = useState(false);
@@ -204,12 +206,16 @@ export default function NicheCapture() {
           <div className="flex items-center justify-between gap-3"><h2 className="text-lg font-bold">Photos</h2><span className="text-sm" style={{color:'#E91E8C'}}>{Object.values(clothingPhotos).filter(Boolean).length} of 3 added</span></div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {photoSlots.map(slot=><div key={slot.key} className={slot.key==='brand'?'sm:col-span-2':''}>
-              <label className="flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-4 text-center" style={{borderColor:clothingPhotos[slot.key]?'#E91E8C':'#58304F',background:'#1B111B'}}>
+              <div className="flex min-h-56 flex-col items-center justify-center rounded-2xl border-2 border-dashed p-4 text-center" style={{borderColor:clothingPhotos[slot.key]?'#E91E8C':'#58304F',background:'#1B111B'}}>
                 {clothingPreviews[slot.key]?<img src={clothingPreviews[slot.key]} alt={slot.title} className="max-h-60 w-full rounded-xl object-contain"/>:<Camera className="mb-3 h-10 w-10" style={{color:'#E91E8C'}}/>}
                 <span className="mt-2 font-semibold">{slot.title}</span><span className="mt-1 text-xs font-semibold tracking-wider" style={{color:slot.required?'#FF3DAA':'#9A7090'}}>{slot.required?'REQUIRED':'OPTIONAL'}</span><span className="mt-2 text-sm" style={{color:'#9A7090'}}>{slot.hint}</span>
-                <span className="mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold" style={{background:'#E91E8C',color:'#0C080C'}}><ImagePlus className="h-4 w-4"/>{clothingPhotos[slot.key]?'Change photo':'Take photo / choose file'}</span>
-                <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={e=>addClothingPhoto(slot.key,e.target.files?.[0])}/>
-              </label>
+                <div className="mt-4 flex w-full flex-wrap justify-center gap-2">
+                  <button type="button" onClick={()=>clothingCameraInputs.current[slot.key]?.click()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-bold" style={{background:'#E91E8C',color:'#0C080C'}}><Camera className="h-4 w-4"/>Take photo</button>
+                  <button type="button" onClick={()=>clothingFileInputs.current[slot.key]?.click()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold" style={{borderColor:'#58304F',color:'#F5EEF5'}}><ImagePlus className="h-4 w-4"/>Choose file</button>
+                </div>
+                <input ref={el=>{clothingCameraInputs.current[slot.key]=el}} type="file" accept="image/*" capture="environment" className="hidden" onChange={e=>{addClothingPhoto(slot.key,e.target.files?.[0]);e.currentTarget.value='';}}/>
+                <input ref={el=>{clothingFileInputs.current[slot.key]=el}} type="file" accept="image/*" className="hidden" onChange={e=>{addClothingPhoto(slot.key,e.target.files?.[0]);e.currentTarget.value='';}}/>
+              </div>
             </div>)}
           </div>
           <p className="rounded-2xl p-3 text-sm leading-relaxed" style={{background:'#250014',color:'#FF3DAA'}}>Tip: photograph the brand label flat, well-lit and in focus. The care label helps identify fabric and era.</p>
