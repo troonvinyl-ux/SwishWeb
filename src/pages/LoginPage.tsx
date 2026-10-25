@@ -119,7 +119,7 @@ export default function LoginPage() {
         {!verificationPending && <div className="swish-card p-2 grid grid-cols-2 gap-2 mb-4" role="tablist" aria-label="Account access">
           <button type="button" role="tab" aria-selected={mode === 'signin'} onClick={() => setMode('signin')} className={`rounded-lg py-2.5 text-sm font-semibold flex items-center justify-center gap-2 ${mode === 'signin' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}><LogIn className="w-4 h-4" />Sign in</button>
           <button type="button" role="tab" aria-selected={mode === 'signup'} onClick={() => setMode('signup')} className={`rounded-lg py-2.5 text-sm font-semibold flex items-center justify-center gap-2 ${mode === 'signup' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}><UserPlus className="w-4 h-4" />Create account</button>
-        </div>
+        </div>}
 
         <form onSubmit={handleSubmit} className="swish-card p-6 space-y-4">
           <div>
