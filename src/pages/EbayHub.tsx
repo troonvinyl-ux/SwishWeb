@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { callEdgeFunction, EdgeFunctionError } from '@/lib/supabase';
+import { callEdgeFunction, EdgeFunctionError, getSupabaseClient } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { RefreshCw, CheckCircle, AlertCircle, Link2, Link2Off, ExternalLink } from 'lucide-react';
@@ -9,6 +10,7 @@ import { Link } from 'react-router-dom';
 
 export default function EbayHub() {
   const [account, setAccount] = useState<Record<string, unknown> | null>(null);
+  const { user } = useAuth();
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState('');
@@ -22,20 +24,36 @@ export default function EbayHub() {
 
   const handleConnect = async () => {
     setConnecting(true);
-    const { data, error } = await callEdgeFunction('ebay-auth-url', {});
-    if (error) {
-      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
+    // Open a blank tab synchronously so mobile browsers do not block OAuth as a popup.
+    const authWindow = window.open('about:blank', '_blank');
+    try {
+      const sb = getSupabaseClient();
+      if (!sb || !user) throw new Error('Please sign in again before connecting eBay.');
+      const { data: membership, error: membershipError } = await sb
+        .from('tenant_memberships')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      if (membershipError) throw membershipError;
+      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready yet. Please complete account setup first.');
+      const { data, error } = await callEdgeFunction<Record<string, unknown>>('swish-ebay-oauth', {
+        action: 'start_subscriber_authorization',
+        tenantId: membership.tenant_id,
+      }, sb);
+      if (error) throw error;
+      const url = data?.consentUrl;
+      if (typeof url !== 'string' || !url.startsWith('https://auth.ebay.com/')) {
+        throw new Error('The existing eBay authorisation service did not return a valid eBay consent URL.');
+      }
+      if (authWindow) authWindow.location.href = url;
+      else window.location.assign(url);
+    } catch (error) {
+      authWindow?.close();
+      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error instanceof Error ? error.message : 'Could not start eBay connection';
       toast.error(msg);
       setConnecting(false);
-      return;
     }
-    const url = (data as Record<string, unknown>)?.url as string;
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } else {
-      toast.error('No authorization URL returned — check ebay-auth-url Edge Function');
-    }
-    setConnecting(false);
   };
 
   const handleSync = async () => {
