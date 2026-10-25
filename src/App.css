@@ -161,3 +161,26 @@
   .vertical-card-main { flex-wrap:wrap; }
   .vertical-card-copy { flex-basis:calc(100% - 90px); }
 }
+
+
+/* Primary actions shared by each niche-specific product home. */
+.workspace-quick-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.workspace-import {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  min-height:44px;
+  padding:11px 15px;
+  border:1px solid color-mix(in srgb,var(--workspace-accent) 42%,#28242d);
+  border-radius:13px;
+  color:var(--workspace-accent);
+  background:color-mix(in srgb,var(--workspace-accent) 7%,#141217);
+  font-weight:700;
+}
+.workspace-import:hover { background:color-mix(in srgb,var(--workspace-accent) 14%,#141217); }
+@media (max-width: 520px) {
+  .workspace-quick-actions { display:grid; grid-template-columns:1fr; }
+  .workspace-quick-actions .workspace-primary,
+  .workspace-quick-actions .workspace-import { width:100%; min-height:50px; justify-content:center; }
+}
