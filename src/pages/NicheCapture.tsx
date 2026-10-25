@@ -43,6 +43,7 @@ export default function NicheCapture() {
   const [clothingIdentified, setClothingIdentified] = useState(false);
   const [clothingAiResult, setClothingAiResult] = useState<Record<string, unknown> | null>(null);
   const [clothingAiError, setClothingAiError] = useState('');
+  const [generatingClothingCopy, setGeneratingClothingCopy] = useState<'title' | 'description' | null>(null);
   const setF = (key:string,value:string) => setForm(p=>({...p,[key]:value}));
   const f = (key:string) => form[key] || '';
   const addClothingPhoto = (slot: string, file?: File) => {
@@ -111,14 +112,14 @@ export default function NicheCapture() {
         if (value !== undefined) setF(formKey, String(value));
       };
       setIfPresent('title', result.canonicalTitle, result.title);
-      setIfPresent('brand', attrs.brand, result.brand);
+      setIfPresent('brand', attrs.brand, attrs.brand_label, result.brand);
       setIfPresent('category', attrs.category, attrs.garmentType, attrs.garment_type, result.garmentType);
-      setIfPresent('size', attrs.size, attrs.taggedSize, attrs.tagged_size, result.size);
-      setIfPresent('colour', attrs.colour, attrs.color, attrs.colour_pattern, result.colour);
-      setIfPresent('material', attrs.material, attrs.fabric, attrs.fibre_composition, result.material);
-      setIfPresent('style', attrs.style, attrs.era, result.style);
+      setIfPresent('size', attrs.size, attrs.taggedSize, attrs.tagged_size, attrs.labelled_size, result.size);
+      setIfPresent('colour', attrs.colour, attrs.color, attrs.colour_pattern, attrs.color_description, result.colour);
+      setIfPresent('material', attrs.material, attrs.fabric, attrs.fibre_composition, attrs.composition, attrs.fiber_composition, result.material);
+      setIfPresent('style', attrs.style, attrs.era, attrs.era_estimate, result.style);
       setIfPresent('condition', result.condition, attrs.condition);
-      setIfPresent('flaws', attrs.flaws, attrs.visibleFlaws, result.conditionNotes);
+      setIfPresent('flaws', attrs.flaws, attrs.visibleFlaws, attrs.damage_notes, result.conditionNotes);
       const evidence = [
         ...(Array.isArray(result.evidenceSupporting) ? result.evidenceSupporting : []),
         ...(Array.isArray(result.missingInformation) ? result.missingInformation.map((v: unknown) => 'Missing information: '+String(v)) : []),
@@ -133,6 +134,90 @@ export default function NicheCapture() {
       toast.error(message);
     } finally {
       setIdentifyingClothing(false);
+    }
+  };
+  const generateClothingCopy = async (kind: 'title' | 'description') => {
+    if (!clothingIdentified || !clothingAiResult) {
+      toast.error('Identify the garment photos first so AI has evidence to work from.');
+      return;
+    }
+    setGeneratingClothingCopy(kind);
+    setClothingAiError('');
+    try {
+      const labels = [['brand','Brand label'],['garment','Garment front'],['detail','Care label / detail / flaw']] as const;
+      const selected = labels.filter(([key]) => clothingPhotos[key]);
+      const images = await Promise.all(selected.map(async ([key]) => {
+        const file = clothingPhotos[key]!;
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(new Error('Could not read the selected photo'));
+          reader.readAsDataURL(file);
+        });
+        return await new Promise<string>((resolve, reject) => {
+          const source = new Image();
+          source.onload = () => {
+            const scale = Math.min(1, 1024 / Math.max(source.naturalWidth, source.naturalHeight));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(source.naturalWidth * scale));
+            canvas.height = Math.max(1, Math.round(source.naturalHeight * scale));
+            const context = canvas.getContext('2d');
+            if (!context) { reject(new Error('Photo processing is unavailable in this browser')); return; }
+            context.drawImage(source, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.65));
+          };
+          source.onerror = () => reject(new Error('Could not prepare a photo for AI copy generation'));
+          source.src = dataUrl;
+        });
+      }));
+      const sb = getSupabaseClient() || await getSupabaseClientAsync();
+      if (!sb) throw new Error('SWISH backend is not connected. Please reload and try again.');
+      const attributes = Object.fromEntries(config.fields.map(field => [field.key, f(field.key)]).filter((entry) => String(entry[1] ?? '').trim()));
+      const { data, error } = await sb.functions.invoke('swish-identify', {
+        body: {
+          images,
+          imageLabels: selected.map(([, label]) => label),
+          specialistId: 'clothing',
+          acquisitionContext: kind === 'title'
+            ? 'Threads Flip eBay listing copy task. Using only supported evidence in the garment photos and supplied attributes, generate one concise, searchable eBay UK listing title. Include brand, garment type, gender where supported, colour and tagged size when known. Do not invent details or claim authenticity. Return the title in canonicalTitle/title.'
+            : 'Threads Flip eBay listing copy task. Using the garment photos and supplied attributes, write a ready-to-use factual eBay UK description with garment type, brand, tagged size, colour, material only when evidenced, condition and visible flaws. Clearly omit unknown facts. Do not claim designer authenticity. Return the listing copy in description.',
+          knownAttributes: { existingAttributes: { ...attributes, niche: 'clothing', currentTitle: f('title'), currentDescription: f('description'), requestedOutput: kind } },
+        },
+      });
+      if (error) throw new Error(error.message || 'AI listing copy generation failed');
+      const result = (data?.identification || data?.result?.identification || data?.result || data) as Record<string, unknown>;
+      const textValue = kind === 'title'
+        ? result.canonicalTitle ?? result.title ?? (result.attributes as Record<string, unknown> | undefined)?.canonicalTitle
+        : result.description ?? result.listingDescription ?? result.listing_description;
+      if (typeof textValue === 'string' && textValue.trim()) {
+        setF(kind, textValue.trim());
+        toast.success(kind === 'title' ? 'AI listing title generated — check and edit it.' : 'AI listing description generated — check and edit it.');
+      } else if (kind === 'title') {
+        const parts = [f('brand'), f('category'), f('style'), f('colour'), f('size')].filter(Boolean);
+        if (!parts.length) throw new Error('AI did not return a title. Check the garment details and try again.');
+        setF('title', parts.join(' ').slice(0, 80));
+        toast.success('Created a title from the identified garment details. Please review it.');
+      } else {
+        const parts = [
+          f('title'),
+          f('brand') ? 'Brand: ' + f('brand') : '',
+          f('category') ? 'Garment: ' + f('category') : '',
+          f('size') ? 'Tagged size: ' + f('size') : '',
+          f('colour') ? 'Colour: ' + f('colour') : '',
+          f('material') ? 'Material: ' + f('material') : '',
+          f('condition') ? 'Condition: ' + f('condition') : '',
+          f('flaws') ? 'Flaws / wear: ' + f('flaws') : '',
+        ].filter(Boolean);
+        if (parts.length < 2) throw new Error('AI did not return a description. Add or confirm a few details and try again.');
+        setF('description', parts.join('\n\n'));
+        toast.success('Created a draft from the identified details. Please review it.');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not generate listing copy.';
+      setClothingAiError(message);
+      toast.error(message);
+    } finally {
+      setGeneratingClothingCopy(null);
     }
   };
   const save = async () => {
@@ -225,9 +310,17 @@ export default function NicheCapture() {
         {clothingIdentified ? <section className="space-y-4 rounded-3xl border p-4 sm:p-5" style={{background:'#160E16',borderColor:'#E91E8C'}}>
           <div className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5" style={{color:'#E91E8C'}}/><h2 className="text-lg font-bold">Review AI-filled details</h2></div>
           <p className="text-sm" style={{color:'#9A7090'}}>Threads Flip has populated these fields from your photos. Check the suggestions and edit anything that is incorrect before saving. AI identification does not prove designer authenticity.</p>
-          <div><label className="mb-1 block text-sm" style={{color:'#9A7090'}}>Item title *</label><input className="input-field mt-1" value={f('title')} onChange={e=>setF('title',e.target.value)} placeholder="AI-suggested item title"/></div>
+          <div>
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2"><label className="block text-sm" style={{color:'#9A7090'}}>eBay listing title *</label><button type="button" onClick={()=>void generateClothingCopy('title')} disabled={generatingClothingCopy!==null} className="inline-flex min-h-9 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold disabled:opacity-50" style={{borderColor:'#E91E8C',color:'#FF3DAA'}}><Sparkles className="h-4 w-4"/>{generatingClothingCopy==='title'?'Generating…':'Generate with AI'}</button></div>
+            <input className="input-field mt-1" value={f('title')} onChange={e=>setF('title',e.target.value)} placeholder="AI-generated searchable eBay title"/>
+            <p className="mt-1 text-xs" style={{color:'#9A7090'}}>Generate from the photos and confirmed garment details. Review before listing.</p>
+          </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{config.fields.map(field=><div key={field.key}><label className="mb-1 block text-sm" style={{color:'#9A7090'}}>{field.label}</label>{field.type==='select'?<select className="input-field mt-1" value={f(field.key)} onChange={e=>setF(field.key,e.target.value)}><option value="">Select or confirm…</option>{(field.options||[]).map(option=><option key={option} value={option}>{option}</option>)}</select>:<input className="input-field mt-1" type={field.type||'text'} value={f(field.key)} onChange={e=>setF(field.key,e.target.value)} placeholder={field.placeholder||field.label}/>}</div>)}</div>
-          <div><label className="mb-1 block text-sm" style={{color:'#9A7090'}}>Description / evidence</label><textarea className="input-field mt-1" rows={4} value={f('description')} onChange={e=>setF('description',e.target.value)} placeholder="AI-generated visible details and evidence; edit as needed"/></div>
+          <div>
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2"><label className="block text-sm" style={{color:'#9A7090'}}>eBay listing description</label><button type="button" onClick={()=>void generateClothingCopy('description')} disabled={generatingClothingCopy!==null} className="inline-flex min-h-9 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold disabled:opacity-50" style={{borderColor:'#E91E8C',color:'#FF3DAA'}}><Sparkles className="h-4 w-4"/>{generatingClothingCopy==='description'?'Generating…':'Generate with AI'}</button></div>
+            <textarea className="input-field mt-1" rows={5} value={f('description')} onChange={e=>setF('description',e.target.value)} placeholder="Generate an eBay-ready description from your photos and confirmed details, then edit it."/>
+          </div>
+          {clothingAiError&&<p role="alert" className="text-sm text-red-400">{clothingAiError}</p>}
           {clothingAiResult&&<details className="text-sm" style={{color:'#9A7090'}}><summary className="cursor-pointer">View identification evidence</summary><pre className="mt-2 overflow-auto whitespace-pre-wrap text-xs">{JSON.stringify(clothingAiResult,null,2)}</pre></details>}
         </section> : <section className="rounded-3xl border p-5" style={{background:'#160E16',borderColor:'#301830'}}>
           <h2 className="text-lg font-bold">Next: AI fills in the details</h2>
