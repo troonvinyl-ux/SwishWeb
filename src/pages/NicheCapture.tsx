@@ -26,13 +26,27 @@ const CONFIG: Record<string, Config> = {
   beauty: { name:'Beauty Flipper', specialistId:'beauty', description:'Record product identity, volume, packaging and expiry/seal status.', icon:Sparkles, fields:[{key:'brand',label:'Brand',placeholder:'Brand'},{key:'category',label:'Product type',placeholder:'Fragrance, skincare, makeup…'},{key:'model',label:'Product / variant',placeholder:'Product name / shade / scent'},{key:'size',label:'Volume / size',placeholder:'ml / g / unit count'},{key:'batch_code',label:'Batch / lot code',placeholder:'If visible'},{key:'condition',label:'Packaging / seal',type:'select',options:['Sealed new','Open box','Opened / used','Packaging damaged','Expired / unknown']}] },
   tech: { name:'Tech Flipper', specialistId:'tech', description:'Record model, key specifications, testing status and faults.', icon:Monitor, fields:[{key:'brand',label:'Brand',placeholder:'Manufacturer'},{key:'model',label:'Model / SKU',placeholder:'Model number'},{key:'category',label:'Device type',placeholder:'Phone, console, laptop…'},{key:'specs',label:'Key specs',placeholder:'Storage, RAM, generation…'},{key:'condition',label:'Test status',type:'select',options:['Tested working','Partially tested','Untested','Faulty','Parts only']},{key:'issues',label:'Faults / accessories missing',placeholder:'Screen, battery, charger…'}] },
   tools: { name:'Tool Flipper', specialistId:'tools', description:'Record manufacturer, model, power system and tested condition.', icon:Hammer, fields:[{key:'brand',label:'Brand',placeholder:'Manufacturer'},{key:'model',label:'Model / SKU',placeholder:'Model number'},{key:'category',label:'Tool type',placeholder:'Drill, saw, garden tool…'},{key:'power_source',label:'Power source',placeholder:'Mains, battery platform, petrol…'},{key:'condition',label:'Test status',type:'select',options:['Tested working','Partially tested','Untested','Faulty','Parts only']},{key:'issues',label:'Faults / missing accessories',placeholder:'Battery, charger, guards…'}] },
+  surplus_flip: { name:'Surplus Flip', specialistId:'surplus_flip', description:'Identify bulk and surplus stock from photos or manifests, then review product details and quantities.', icon:Package, fields:[{key:'brand',label:'Brand / manufacturer',placeholder:'Brand if visible'},{key:'category',label:'Product type',placeholder:'Product category'},{key:'model',label:'Model / SKU',placeholder:'SKU or model number'},{key:'quantity',label:'Quantity',type:'number'},{key:'condition',label:'Condition',type:'select',options:['New','New other','Used - Like New','Used - Good','Used - Acceptable','For parts / repair']},{key:'lot_reference',label:'Lot / manifest reference',placeholder:'Manifest or batch reference'},{key:'issues',label:'Damage / missing items',placeholder:'Visible faults or missing components…'}] },
+  generic: { name:'SWISH Specialist', specialistId:'curiosities_collectibles', description:'Capture evidence and review the item details before saving.', icon:Package, fields:COMMON },
 };
 export default function NicheCapture() {
-  const { niche = 'coins' } = useParams();
+  const { niche: routeNiche = 'coins' } = useParams();
+  // Normalise every supported entry alias before selecting a workflow. A
+  // Threads route must never fall through to the coin scanner just because
+  // its URL uses a product alias rather than the internal specialist ID.
+  const niche = ['clothing', 'threads', 'threads-flip', 'threads_flip', 'clothes'].includes(routeNiche)
+    ? 'clothing'
+    : ['bikes', 'bicycle', 'bicycles'].includes(routeNiche)
+      ? 'bikes'
+      : ['mx', 'motocross'].includes(routeNiche)
+        ? 'mx'
+        : ['surplus', 'surplus-flip', 'surplus_flip'].includes(routeNiche)
+          ? 'surplus_flip'
+          : routeNiche;
   const navigate = useNavigate();
   const { user } = useAuth();
   const insert = useInsert('items');
-  const config = useMemo(() => CONFIG[niche] || CONFIG.coins, [niche]);
+  const config = useMemo(() => CONFIG[niche] || CONFIG.generic, [niche]);
   const Icon = config.icon;
   const [form, setForm] = useState<Record<string,string>>({status:'review'});
   const [clothingPhotos, setClothingPhotos] = useState<Record<string, File | null>>({ brand: null, garment: null, detail: null });
