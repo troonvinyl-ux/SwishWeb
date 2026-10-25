@@ -200,17 +200,21 @@ export default function NicheCapture() {
           images,
           imageLabels: selected.map(([, label]) => label),
           specialistId: 'clothing',
+          outputMode: 'listing_copy',
           acquisitionContext: kind === 'title'
-            ? 'Threads Flip eBay listing copy task. Using only supported evidence in the garment photos and supplied attributes, generate one concise, searchable eBay UK listing title. Include brand, garment type, gender where supported, colour and tagged size when known. Do not invent details or claim authenticity. Return the title in canonicalTitle/title.'
-            : 'Threads Flip eBay listing copy task. Using the garment photos and supplied attributes, write a ready-to-use factual eBay UK description with garment type, brand, tagged size, colour, material only when evidenced, condition and visible flaws. Clearly omit unknown facts. Do not claim designer authenticity. Return the listing copy in description.',
+            ? 'Threads Flip eBay listing-copy mode. Generate a concise, searchable eBay UK title of no more than 80 characters using only the supplied garment photos and attributes. Include brand, garment type, supported gender category, colour and tagged size where known. Do not invent details or claim authenticity. Put the requested output in listingCopy.title.'
+            : 'Threads Flip eBay listing-copy mode. Write a ready-to-use factual eBay UK description using the garment photos and supplied attributes. Include garment type, brand, tagged size, colour, material only when evidenced, condition and visible flaws. Omit unknown facts and never claim designer authenticity. Put the requested output in listingCopy.description.',
           knownAttributes: { existingAttributes: { ...attributes, niche: 'clothing', currentTitle: f('title'), currentDescription: f('description'), requestedOutput: kind } },
         },
       });
       if (error) throw new Error(error.message || 'AI listing copy generation failed');
       const result = (data?.identification || data?.result?.identification || data?.result || data) as Record<string, unknown>;
+      const listingCopy = result.listingCopy && typeof result.listingCopy === 'object'
+        ? result.listingCopy as Record<string, unknown>
+        : {};
       const textValue = kind === 'title'
-        ? result.canonicalTitle ?? result.title ?? (result.attributes as Record<string, unknown> | undefined)?.canonicalTitle
-        : result.description ?? result.listingDescription ?? result.listing_description;
+        ? listingCopy.title ?? result.canonicalTitle ?? result.title ?? (result.attributes as Record<string, unknown> | undefined)?.canonicalTitle
+        : listingCopy.description ?? result.description ?? result.listingDescription ?? result.listing_description;
       if (typeof textValue === 'string' && textValue.trim()) {
         setF(kind, textValue.trim());
         toast.success(kind === 'title' ? 'AI listing title generated — check and edit it.' : 'AI listing description generated — check and edit it.');
