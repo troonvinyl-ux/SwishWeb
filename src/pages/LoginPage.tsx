@@ -3,6 +3,7 @@ import { useLocation, Link } from 'react-router-dom';
 import { useAuth, ConnectionStatus } from '@/contexts/AuthContext';
 import { Zap, Eye, EyeOff, Loader2, Key, WifiOff, UserPlus, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
+import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 
 const PRODUCTS = {
   '/coins': { id: 'coins', label: 'SWISH Coins', description: 'Identify, value and sell coins and collectibles', accent: '#F5C842' },
@@ -37,6 +38,10 @@ export default function LoginPage() {
   const isRootEntry = location.pathname === '/';
   const product = PRODUCTS[location.pathname as keyof typeof PRODUCTS] || DEFAULT_PRODUCT;
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [verificationPending, setVerificationPending] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [resendingCode, setResendingCode] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -75,8 +80,10 @@ export default function LoginPage() {
         const result = await signUp(email, password, fullName, niche);
         if (result.error) toast.error(result.error.message || 'Could not create account');
         else if (result.needsEmailConfirmation) {
-          toast.success('Account created. Check your email to confirm your address, then sign in.');
-          setMode('signin');
+          setVerificationPending(true);
+          setVerificationEmail(email.trim().toLowerCase());
+          setVerificationCode('');
+          toast.success('Verification code sent. Enter the PIN from your email to verify your account.');
           setPassword('');
           setConfirmPassword('');
         } else {
@@ -109,7 +116,7 @@ export default function LoginPage() {
 
         <ConnectionBanner status={connectionStatus} />
 
-        <div className="swish-card p-2 grid grid-cols-2 gap-2 mb-4" role="tablist" aria-label="Account access">
+        {!verificationPending && <div className="swish-card p-2 grid grid-cols-2 gap-2 mb-4" role="tablist" aria-label="Account access">
           <button type="button" role="tab" aria-selected={mode === 'signin'} onClick={() => setMode('signin')} className={`rounded-lg py-2.5 text-sm font-semibold flex items-center justify-center gap-2 ${mode === 'signin' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}><LogIn className="w-4 h-4" />Sign in</button>
           <button type="button" role="tab" aria-selected={mode === 'signup'} onClick={() => setMode('signup')} className={`rounded-lg py-2.5 text-sm font-semibold flex items-center justify-center gap-2 ${mode === 'signup' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}><UserPlus className="w-4 h-4" />Create account</button>
         </div>
