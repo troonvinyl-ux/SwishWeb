@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useInsert } from '@/hooks/useSupabaseQuery';
 import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Camera, Save, Package, Shirt, Bike, Coins, Wrench, Gamepad2, Gem, FlaskConical, Monitor, Hammer, Sparkles } from 'lucide-react';
+import { ArrowLeft, Save, Package, Shirt, Bike, Coins, Wrench, Gamepad2, Gem, FlaskConical, Monitor, Hammer, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Field = { key: string; label: string; placeholder?: string; type?: 'text' | 'number' | 'select'; options?: string[] };
