@@ -12,7 +12,7 @@ type WorkspaceConfig = {
 
 const CONFIGS: Record<string, WorkspaceConfig> = {
   coins: { id: 'coins', name: 'SWISH Coins', tagline: 'Identify, value and flip coins & collectibles', detail: 'Ancient · Islamic silver · banknotes · gold', accent: '#F5C842', icon: Coins, scan: 'Scan Coin', actions: [
-    { label: 'Scan Coin', detail: 'Identify a coin and check references', icon: Camera, to: '/identify' },
+    { label: 'Scan Coin', detail: 'Identify a coin and check references', icon: Camera, to: '/identify/coins' },
     { label: 'My Stock', detail: 'Review saved coins and references', icon: Package, to: '/inventory' },
     { label: 'Islamic Silver', detail: 'Process specialist silver and countermark batches', icon: Sparkles, to: '/tools/islamic-batch' },
     { label: 'Value Opportunities', detail: 'Review valuations and buying opportunities', icon: BarChart3, to: '/opportunities' },
@@ -20,14 +20,14 @@ const CONFIGS: Record<string, WorkspaceConfig> = {
     { label: 'Orders & Dispatch', detail: 'Manage orders and fulfilment', icon: ShoppingCart, to: '/orders' },
   ] },
   motocross: { id: 'motocross', name: 'SWISH MX', tagline: 'Buy, prep and flip motocross & off-road bikes', detail: 'Motocross · enduro · trail bikes · parts', accent: '#EF4444', icon: Wrench, scan: 'Identify Bike', actions: [
-    { label: 'Identify Bike', detail: 'Start a bike or parts assessment', icon: Camera, to: '/identify' },
+    { label: 'Identify Bike', detail: 'Start a bike or parts assessment', icon: Camera, to: '/scan/mx' },
     { label: 'Workshop Stock', detail: 'Review bikes, parts and projects', icon: Package, to: '/inventory' },
     { label: 'Acquisition Calculator', detail: 'Estimate prep costs and margin', icon: Wrench, to: '/opportunities' },
     { label: 'List & Sell', detail: 'Prepare listings for sale', icon: Tag, to: '/listings' },
     { label: 'Orders & Dispatch', detail: 'Track completed sales', icon: ShoppingCart, to: '/orders' },
   ] },
   bicycles: { id: 'bicycles', name: 'SWISH Bikes', tagline: 'Identify, value and flip bicycles', detail: 'Road · mountain · gravel · hybrid · BMX · e-bikes', accent: '#22C55E', icon: Bike, scan: 'Identify Bike', actions: [
-    { label: 'Identify Bike', detail: 'Assess a bike, frame and components', icon: Camera, to: '/identify' },
+    { label: 'Identify Bike', detail: 'Assess a bike, frame and components', icon: Camera, to: '/scan/bikes' },
     { label: 'My Bikes', detail: 'Review saved bikes and projects', icon: Package, to: '/inventory' },
     { label: 'Parts & Repairs', detail: 'Open bike-flipper specialist tools', icon: Wrench, to: '/tools/bike-flipper' },
     { label: 'Profit Opportunities', detail: 'Compare potential acquisitions', icon: BarChart3, to: '/opportunities' },
@@ -35,16 +35,16 @@ const CONFIGS: Record<string, WorkspaceConfig> = {
     { label: 'Orders & Dispatch', detail: 'Track sales and fulfilment', icon: ShoppingCart, to: '/orders' },
   ] },
   clothing: { id: 'clothing', name: 'Threads Flip', tagline: 'Turn fashion into opportunity.', detail: 'Vintage · designer · streetwear · high street', accent: '#E91E8C', icon: Shirt, scan: 'Scan Item', actions: [
-    { label: 'Scan Item', detail: 'Capture and identify clothing, brand and era', icon: Camera, to: '/identify' },
+    { label: 'Scan Item', detail: 'Capture and identify clothing, brand and era', icon: Camera, to: '/scan/clothing' },
     { label: 'My Wardrobe', detail: 'Review your clothing inventory', icon: Package, to: '/inventory' },
-    { label: 'Brands', detail: 'Explore brands and authentication checks', icon: Shirt, to: '/identify' },
+    { label: 'Brands', detail: 'Explore brands and authentication checks', icon: Shirt, to: '/scan/clothing' },
     { label: 'List & Sell', detail: 'Prepare fashion listings', icon: Tag, to: '/listings' },
     { label: 'Profits', detail: 'Track margins and realised sales', icon: BarChart3, to: '/money' },
     { label: 'Insights', detail: 'Review market and style insights', icon: Lightbulb, to: '/insights' },
   ] },
   surplus_flip: { id: 'surplus_flip', name: 'Surplus Flip', tagline: 'Turn job lots and pallet manifests into eBay listings', detail: 'Job lots · pallets · wholesale · returns', accent: '#14B8A6', icon: Package, scan: 'Match Product', actions: [
     { label: 'Import Manifest', detail: 'Bring a supplier manifest into SWISH', icon: Package, to: '/tools' },
-    { label: 'Match Product Photo', detail: 'Identify product and packaging', icon: Camera, to: '/identify' },
+    { label: 'Match Product Photo', detail: 'Identify product and packaging', icon: Camera, to: '/scan/surplus_flip' },
     { label: 'My Stock', detail: 'Check quantities and saved stock', icon: Package, to: '/inventory' },
     { label: 'Value Opportunities', detail: 'Review margin and buying opportunities', icon: BarChart3, to: '/opportunities' },
     { label: 'List & Sell', detail: 'Prepare marketplace listings', icon: Tag, to: '/listings' },
