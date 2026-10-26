@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { callEdgeFunction, getSupabaseClient } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { ArrowRight, Check, Circle, Link2, Package, UserRound, Sparkles, Loader2, SkipForward } from 'lucide-react';
+import { getHostProduct } from '@/lib/productContext';
 
 const PRODUCTS: Record<string, { name: string; description: string }> = {
   coins: { name: 'SWISH Coins', description: 'Coin identification, references, valuation and selling.' },
@@ -17,8 +18,9 @@ const OWNER_EMAIL = 'troonvinyl@gmail.com';
 export default function Onboarding() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const productId = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
-  const product = PRODUCTS[productId] || PRODUCTS.coins;
+  const hostProduct = getHostProduct();
+  const productId = hostProduct?.id || String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
+  const product = hostProduct ? { name: hostProduct.name, description: hostProduct.description } : (PRODUCTS[productId] || PRODUCTS.coins);
   const storageKey = user ? `swish_onboarding_steps_${user.id}` : 'swish_onboarding_steps';
   const initial = useMemo(() => {
     try { return JSON.parse(localStorage.getItem(storageKey) || '{"profile":false,"ebay":false,"inventory":false}') as Record<string, boolean>; }
@@ -101,16 +103,16 @@ export default function Onboarding() {
   }
 
   const rows = [
-    { id: 'profile', title: 'Confirm your account', detail: 'Use your account name to initialise your SWISH profile.', icon: UserRound, action: saveProfile, label: 'Confirm profile', busy: savingProfile },
-    { id: 'ebay', title: 'Connect eBay', detail: 'Authorise the existing eBay integration to sync listings and orders.', icon: Link2, action: connectEbay, label: 'Connect eBay', busy: connecting },
-    { id: 'inventory', title: 'Bring in your stock', detail: 'Import an existing eBay CSV or start with an empty inventory.', icon: Package, action: () => navigate('/ebay/import'), label: 'Open import tools', busy: false },
+    { id: 'profile', title: 'Confirm your account', detail: 'Check your account details.', icon: UserRound, action: saveProfile, label: 'Confirm profile', busy: savingProfile },
+    { id: 'ebay', title: 'Connect eBay', detail: 'Connect your eBay seller account to publish listings and sync sales.', icon: Link2, action: connectEbay, label: 'Connect eBay', busy: connecting },
+    { id: 'inventory', title: hostProduct?.id === 'clothing' ? 'Add your first clothing item' : hostProduct?.id === 'motocross' || hostProduct?.id === 'bicycles' ? 'Add your first bike or part' : 'Bring in your stock', detail: hostProduct?.id === 'clothing' ? 'Start with photos of a garment; you can import stock later.' : 'Import existing stock or start with your first item.', icon: Package, action: () => navigate(hostProduct?.id === 'clothing' ? '/identify' : '/ebay/import'), label: hostProduct?.id === 'clothing' ? 'Add clothing' : 'Open import tools', busy: false },
   ];
 
   return <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
     <header className="swish-card p-6 sm:p-8 relative overflow-hidden">
       <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-primary/10 blur-2xl" />
       <div className="relative">
-        <div className="text-xs uppercase tracking-[.2em] text-primary font-bold mb-3">Welcome to your standalone workspace</div>
+        <div className="text-xs uppercase tracking-[.2em] text-primary font-bold mb-3">Welcome to your workspace</div>
         <h1 className="text-3xl sm:text-4xl font-extrabold">{product.name}</h1>
         <p className="mt-3 text-muted-foreground max-w-xl">{product.description} Complete these setup steps to get your workspace ready. You can skip any step and return later.</p>
         <div className="mt-6 h-2 rounded-full bg-secondary overflow-hidden"><div className="h-full bg-primary transition-all" style={{ width: `${(completed / 3) * 100}%` }} /></div>
