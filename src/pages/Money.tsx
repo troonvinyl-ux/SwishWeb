@@ -21,19 +21,19 @@ export default function Money() {
     enabled: Boolean(tenantId),
   });
   const { data: ordersData, error: ordersError } = useTable('orders', {
-    filter: { tenant_id: tenantId },
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
     order: { column: 'created_at', ascending: false },
     limit: 500,
     enabled: Boolean(tenantId),
   });
   const { data: feesData } = useTable('fees', {
-    filter: { tenant_id: tenantId },
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
     order: { column: 'created_at', ascending: false },
     limit: 200,
     enabled: Boolean(tenantId),
   });
   const { data: payoutsData } = useTable('payouts', {
-    filter: { tenant_id: tenantId },
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
     order: { column: 'created_at', ascending: false },
     limit: 100,
     enabled: Boolean(tenantId),
