@@ -1,51 +1,47 @@
 import { useState } from 'react';
-import { useTable, useUpdate } from '@/hooks/useSupabaseQuery';
+import { useTable } from '@/hooks/useSupabaseQuery';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { formatCurrency, statusVariant, truncate } from '@/lib/utils';
 import { RefreshCw, TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { callEdgeFunction, EdgeFunctionError } from '@/lib/supabase';
+import { callEdgeFunction, EdgeFunctionError, getSupabaseClientAsync } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 export default function Repricing() {
   const qc = useQueryClient();
   const [repricing, setRepricing] = useState<string | null>(null);
-  const [bulkRunning, setBulkRunning] = useState(false);
+  const [suggestions, setSuggestions] = useState<Record<string, Record<string, unknown>>>({});
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
 
   const { data, isLoading, error } = useTable('listings', {
-    filter: { status: 'active' },
+    filter: { tenant_id: tenantId, status: 'active' },
     order: { column: 'updated_at', ascending: true },
+    enabled: Boolean(tenantId),
   });
 
   const items = (data || []) as Record<string, unknown>[];
 
   const handleReprice = async (listingId: string) => {
+    if (!tenantId) { toast.error('Your SWISH workspace is not ready.'); return; }
     setRepricing(listingId);
-    const { data, error } = await callEdgeFunction('reprice', { listing_id: listingId });
-    if (error) {
-      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
+    try {
+      const sb = await getSupabaseClientAsync();
+      if (!sb) throw new Error('Backend not connected.');
+      const { data, error } = await callEdgeFunction<Record<string, unknown>>('swish-reprice', {
+        listing_id: listingId,
+        tenant_id: tenantId,
+      }, sb);
+      if (error) throw error;
+      const result = (data?.result || data) as Record<string, unknown>;
+      setSuggestions(current => ({ ...current, [listingId]: result }));
+      const suggestedPrice = Number(result?.suggested_price);
+      toast.success(Number.isFinite(suggestedPrice) ? `Suggested price: ${formatCurrency(suggestedPrice)} — review before changing the listing.` : 'Repricing recommendation generated.');
+    } catch (error) {
+      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error instanceof Error ? error.message : 'Could not generate a repricing suggestion.';
       toast.error(msg);
-    } else {
-      const result = data as Record<string, unknown>;
-      const newPrice = result?.new_price || result?.price;
-      toast.success(newPrice ? `Repriced to ${formatCurrency(newPrice as number)}` : 'Repriced successfully');
-      qc.invalidateQueries({ queryKey: ['listings'] });
+    } finally {
+      setRepricing(null);
     }
-    setRepricing(null);
-  };
-
-  const handleBulkReprice = async () => {
-    setBulkRunning(true);
-    const { data, error } = await callEdgeFunction('reprice-all', {});
-    if (error) {
-      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
-      toast.error(msg);
-    } else {
-      const result = data as Record<string, unknown>;
-      const count = result?.repriced || result?.updated || result?.count;
-      toast.success(count !== undefined ? `${count} listings repriced` : 'Bulk reprice complete');
-      qc.invalidateQueries({ queryKey: ['listings'] });
-    }
-    setBulkRunning(false);
   };
 
   return (
@@ -56,18 +52,14 @@ export default function Repricing() {
           <p className="page-subtitle">{items.length} active listing{items.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => qc.invalidateQueries({ queryKey: ['listings'] })} className="btn-ghost" disabled={isLoading}>
+          <button onClick={() => qc.invalidateQueries({ queryKey: ['listings'] })} className="btn-ghost" disabled={isLoading || tenantLoading}>
             <RefreshCw className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={handleBulkReprice} disabled={bulkRunning || items.length === 0} className="btn-primary">
-            <RefreshCw className={`w-3.5 h-3.5 ${bulkRunning ? 'animate-spin' : ''}`} />
-            {bulkRunning ? 'Repricing…' : 'Reprice All'}
           </button>
         </div>
       </div>
 
       <div className="swish-card overflow-hidden">
-        {isLoading ? (
+        {isLoading || tenantLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading listings…</div>
         ) : error ? (
           <div className="p-6 flex gap-3 items-start">
@@ -94,7 +86,8 @@ export default function Repricing() {
               <tbody>
                 {items.map(l => {
                   const current   = l.price as number;
-                  const suggested = (l.suggested_price || l.recommended_price) as number | undefined;
+                  const suggestion = suggestions[l.id as string];
+                  const suggested = (suggestion?.suggested_price || l.suggested_price || l.recommended_price) as number | undefined;
                   const diff      = suggested != null && current != null ? suggested - current : null;
                   return (
                     <tr key={l.id as string}>
@@ -122,10 +115,10 @@ export default function Repricing() {
                       <td>
                         <button
                           onClick={() => handleReprice(l.id as string)}
-                          disabled={repricing === l.id}
+                          disabled={repricing === l.id || !tenantId}
                           className="btn-ghost py-1 px-2 text-xs"
                         >
-                          {repricing === l.id ? 'Repricing…' : 'Reprice'}
+                          {repricing === l.id ? 'Analysing…' : 'Suggest'}
                         </button>
                       </td>
                     </tr>
