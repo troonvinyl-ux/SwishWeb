@@ -1,29 +1,13 @@
-import { useState } from 'react';
-import { useTable, useUpdate } from '@/hooks/useSupabaseQuery';
+import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatCurrency, formatDate, statusVariant, truncate } from '@/lib/utils';
 import { RefreshCw, CheckCircle, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { callEdgeFunction } from '@/lib/supabase';
-import { toast } from 'sonner';
 
 export default function EbayOffers() {
   const qc = useQueryClient();
-  const [processing, setProcessing] = useState<string | null>(null);
 
   const { data, isLoading, error } = useTable('ebay_offers', { order: { column: 'created_at', ascending: false } });
   const items = (data || []) as Record<string, unknown>[];
-
-  const handle = async (offerId: string, action: 'accept' | 'decline' | 'counter', counterPrice?: number) => {
-    setProcessing(offerId);
-    const { error } = await callEdgeFunction('ebay-offer-action', {
-      offer_id: offerId,
-      action,
-      counter_price: counterPrice,
-    });
-    if (error) toast.error(error.message);
-    else { toast.success(`Offer ${action}ed`); qc.invalidateQueries({ queryKey: ['ebay_offers'] }); }
-    setProcessing(null);
-  };
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -37,6 +21,7 @@ export default function EbayOffers() {
         </button>
       </div>
 
+      <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-muted-foreground">Offers already stored in SWISH are shown below. The current backend does not expose a verified accept/decline/counter route, so those controls are disabled rather than sending requests to a missing endpoint.</div>
       <div className="swish-card overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading offers…</div>
@@ -64,10 +49,10 @@ export default function EbayOffers() {
                     <td>
                       {o.status === 'pending' && (
                         <div className="flex gap-1">
-                          <button onClick={() => handle(o.id as string, 'accept')} disabled={processing === o.id} className="btn-ghost py-1 px-2 text-xs text-success">
+                          <button disabled title="Offer actions are not available through the current secure backend" className="btn-ghost py-1 px-2 text-xs text-success opacity-50">
                             <CheckCircle className="w-3 h-3" />
                           </button>
-                          <button onClick={() => handle(o.id as string, 'decline')} disabled={processing === o.id} className="btn-ghost py-1 px-2 text-xs text-destructive">
+                          <button disabled title="Offer actions are not available through the current secure backend" className="btn-ghost py-1 px-2 text-xs text-destructive opacity-50">
                             <X className="w-3 h-3" />
                           </button>
                         </div>
