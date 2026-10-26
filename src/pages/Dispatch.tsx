@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTable, useUpdate } from '@/hooks/useSupabaseQuery';
+import { useTable } from '@/hooks/useSupabaseQuery';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { formatDate, truncate } from '@/lib/utils';
 import { Truck, RefreshCw, CheckCircle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { callEdgeFunction } from '@/lib/supabase';
+import { callEdgeFunction, getSupabaseClientAsync } from '@/lib/supabase';
 
 export default function Dispatch() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const preferredNiche = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins').toLowerCase();
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
   const activeNiche = String((isOwner ? localStorage.getItem('swish_active_niche') : preferredNiche) || preferredNiche).toLowerCase();
@@ -21,32 +23,43 @@ export default function Dispatch() {
     ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic'].includes(activeNiche) ? ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic', 'curiosities_collectibles'] : [];
   const { data, isLoading, error } = useTable('orders', {
     select: '*, items!inner(specialist_id)',
-    filter: { status: 'awaiting_dispatch' },
+    filter: { tenant_id: tenantId, status: 'awaiting_dispatch' },
     inFilter: specialistIds.length ? { 'items.specialist_id': specialistIds } : undefined,
-    enabled: specialistIds.length > 0,
+    enabled: Boolean(tenantId) && specialistIds.length > 0,
     order: { column: 'dispatch_by', ascending: true },
   });
-  const update = useUpdate('orders');
-
   const items = (data || []) as Record<string, unknown>[];
   const [tracking, setTracking] = useState<Record<string, { number: string; carrier: string }>>({});
+  const [dispatching, setDispatching] = useState<string | null>(null);
 
   const handleDispatch = async (orderId: string, orderDbId: string) => {
-    const t = tracking[orderDbId] || {};
-    const { error } = await callEdgeFunction('dispatch-order', {
-      order_id: orderId,
-      tracking_number: t.number,
-      carrier: t.carrier,
-    });
-    if (error) {
-      // fallback: update directly
-      update.mutate({ id: orderDbId, updates: { status: 'dispatched', tracking_number: t.number, carrier: t.carrier, dispatched_at: new Date().toISOString() } }, {
-        onSuccess: () => { toast.success('Marked as dispatched'); qc.invalidateQueries({ queryKey: ['orders'] }); },
-        onError: e => toast.error(e.message),
-      });
-    } else {
-      toast.success('Dispatched via backend');
-      qc.invalidateQueries({ queryKey: ['orders'] });
+    const t = tracking[orderDbId] || { number: '', carrier: '' };
+    if (!tenantId) { toast.error('Your SWISH workspace is not ready.'); return; }
+    if (!orderId) { toast.error('This order has no eBay order ID.'); return; }
+    if (!t.number.trim() || !t.carrier) { toast.error('Enter a tracking number and select a carrier.'); return; }
+
+    setDispatching(orderDbId);
+    try {
+      const sb = await getSupabaseClientAsync();
+      if (!sb) throw new Error('SWISH backend is not connected.');
+      const { error } = await callEdgeFunction('swish-ebay-post-order', {
+        route: 'dispatch',
+        tenantId,
+        orderId,
+        trackingNumber: t.number.trim(),
+        carrier: t.carrier,
+      }, sb);
+      if (error) throw error;
+      toast.success('eBay confirmed dispatch');
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['orders'] }),
+        qc.invalidateQueries({ queryKey: ['ebay_orders'] }),
+      ]);
+    } catch (error) {
+      // Never mark a local order dispatched when eBay has not confirmed success.
+      toast.error(error instanceof Error ? error.message : 'eBay dispatch failed. The order was not marked as dispatched.');
+    } finally {
+      setDispatching(null);
     }
   };
 
@@ -62,7 +75,7 @@ export default function Dispatch() {
         </button>
       </div>
 
-      {isLoading ? (
+      {isLoading || tenantLoading ? (
         <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
       ) : error ? (
         <div className="p-8 text-center text-destructive text-sm">{(error as Error).message}</div>
@@ -110,10 +123,11 @@ export default function Dispatch() {
                       <option value="FedEx">FedEx</option>
                     </select>
                     <button
-                      onClick={() => handleDispatch((o.external_order_id || o.order_id || o.id) as string, o.id as string)}
+                      onClick={() => handleDispatch(String(o.external_order_id || o.order_id || ''), o.id as string)}
+                      disabled={dispatching === o.id}
                       className="btn-primary"
                     >
-                      <Truck className="w-3.5 h-3.5" />Mark Dispatched
+                      <Truck className="w-3.5 h-3.5" />{dispatching === o.id ? 'Sending…' : 'Mark Dispatch'}ed
                     </button>
                   </div>
                 </div>
