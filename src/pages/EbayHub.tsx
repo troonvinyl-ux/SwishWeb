@@ -18,10 +18,36 @@ export default function EbayHub() {
   const connectedNoticeShown = useRef(false);
   const qc = useQueryClient();
 
+  // Resolve the current user's workspace before querying its eBay connector.
+  // This keeps account status tenant-scoped even if a user belongs to multiple
+  // workspaces; RLS remains an additional boundary, not the only filter.
+  useEffect(() => {
+    if (!user) {
+      setTenantId(null);
+      return;
+    }
+    const sb = getSupabaseClient();
+    if (!sb) return;
+    let active = true;
+    const loadTenant = async () => {
+      const { data, error } = await sb
+        .from('tenant_memberships')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      if (!active || error) return;
+      setTenantId(data?.tenant_id ?? null);
+    };
+    void loadTenant();
+    return () => { active = false; };
+  }, [user]);
+
   const { data: accounts, isLoading } = useTable('marketplace_connectors', {
     // Never select credential_ref or any token payload into the browser.
     select: 'status, seller_account_id, access_token_expires_at, last_sync_at, created_at',
-    filter: { marketplace_id: 'ebay' },
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
+    enabled: Boolean(tenantId),
     limit: 1,
   });
 
