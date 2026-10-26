@@ -278,7 +278,7 @@ export default function ListingNew() {
   }, [inv, preFilled]);
 
   // ── SAVE ─────────────────────────────────────────────────────────────────
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!f('title')) { toast.error('Title is required'); return; }
 
     // REQ-LST-001 — warn if no inventory linkage
@@ -290,22 +290,43 @@ export default function ListingNew() {
       if (!confirmed) return;
     }
 
-    const row: Record<string, unknown> = {
-      ...form,
-      status: 'draft',   // REQ-LST-002 — cannot be overridden to 'active' on insert
-      price: parseFloat(form.price as string) || null,
-      quantity: parseInt(form.quantity as string, 10) || 1,
-      images: selectedImages,
-    };
+    try {
+      const sb = await getSupabaseClientAsync();
+      if (!sb) throw new Error('SWISH backend is not connected');
+      if (!user?.id) throw new Error('Sign in again before creating a listing');
+      const { data: membership, error: membershipError } = await sb.from('tenant_memberships')
+        .select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
+      if (membershipError) throw membershipError;
+      const tenantId = String((form.tenant_id as string) || membership?.tenant_id || (inv?.tenant_id as string) || '');
+      if (!tenantId) throw new Error('Your SWISH workspace is not ready');
 
-    insert.mutate(row, {
-      onSuccess: (data) => {
-        toast.success('Draft listing created');
-        const newId = (data as Record<string, unknown>)?.id as string;
-        navigate(newId ? `/listings/${newId}` : '/listings');
-      },
-      onError: (e) => toast.error(e.message),
-    });
+      // Insert only columns in the canonical SWISH listings schema.
+      // Category labels and selected photos are UI data, not listings columns.
+      const row: Record<string, unknown> = {
+        tenant_id: tenantId,
+        item_id: f('item_id') || null,
+        marketplace_id: 'ebay',
+        title: f('title').trim(),
+        description: f('description'),
+        price: parseFloat(form.price as string) || null,
+        status: 'draft',
+        category_id: categorySuggestion?.id || null,
+        floor_price: form.floor_price ?? null,
+        ceiling_price: form.ceiling_price ?? null,
+        shipping_cost: Number(form.shipping_cost || 0),
+      };
+
+      insert.mutate(row, {
+        onSuccess: (data) => {
+          toast.success('Draft listing created');
+          const newId = (data as Record<string, unknown>)?.id as string;
+          navigate(newId ? `/listings/${newId}` : '/listings');
+        },
+        onError: (e) => toast.error(e.message),
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not create listing');
+    }
   };
 
   // Suggest a verified eBay UK leaf category from the item title. This works without photos.
