@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { callEdgeFunction, getSupabaseClient } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { ArrowRight, Check, Circle, Link2, Package, UserRound, Sparkles, Loader2, SkipForward } from 'lucide-react';
 
@@ -26,20 +26,36 @@ export default function Onboarding() {
   }, [storageKey]);
   const [steps, setSteps] = useState<Record<string, boolean>>(initial);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [connecting, setConnecting] = useState(false);
   useEffect(() => {
     const sb = getSupabaseClient();
     if (!sb || !user) return;
     let active = true;
-    sb.from('ebay_accounts').select('id').limit(1).then(({ data, error }) => {
-      if (!active || error || !data?.length) return;
+    const detectConnection = async () => {
+      // Use the same tenant-scoped connector contract as the eBay hub.
+      // Never infer a connection from legacy ebay_accounts rows belonging to
+      // another workspace or from an unscoped table query.
+      const { data: membership, error: membershipError } = await sb
+        .from('tenant_memberships')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      if (!active || membershipError || !membership?.tenant_id) return;
+      const { data: connector, error } = await sb
+        .from('marketplace_connectors')
+        .select('status')
+        .eq('tenant_id', membership.tenant_id)
+        .eq('marketplace_id', 'ebay')
+        .maybeSingle();
+      if (!active || error || connector?.status !== 'connected') return;
       setSteps(current => {
         if (current.ebay) return current;
         const next = { ...current, ebay: true };
         localStorage.setItem(storageKey, JSON.stringify(next));
         return next;
       });
-    });
+    };
+    void detectConnection();
     return () => { active = false; };
   }, [storageKey, user]);
   const completed = Object.values(steps).filter(Boolean).length;
@@ -70,18 +86,12 @@ export default function Onboarding() {
     } finally { setSavingProfile(false); }
   };
 
-  const connectEbay = async () => {
-    setConnecting(true);
-    try {
-      const { data, error } = await callEdgeFunction<Record<string, unknown>>('ebay-auth-url', {});
-      if (error) throw error;
-      const url = data?.url || data?.auth_url || data?.authorization_url;
-      if (typeof url !== 'string' || !url.startsWith('https://')) throw new Error('The existing eBay connection service did not return a valid authorisation link.');
-      window.location.assign(url);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not start eBay connection');
-      setConnecting(false);
-    }
+  const connectEbay = () => {
+    // The eBay hub owns tenant provisioning and calls the canonical
+    // swish-ebay-oauth start_subscriber_authorization route. Keep onboarding
+    // on that single supported path instead of calling the nonexistent
+    // legacy ebay-auth-url function.
+    navigate('/ebay');
   };
 
   const finish = async () => {
@@ -102,7 +112,7 @@ export default function Onboarding() {
 
   const rows = [
     { id: 'profile', title: 'Confirm your account', detail: 'Use your account name to initialise your SWISH profile.', icon: UserRound, action: saveProfile, label: 'Confirm profile', busy: savingProfile },
-    { id: 'ebay', title: 'Connect eBay', detail: 'Authorise the existing eBay integration to sync listings and orders.', icon: Link2, action: connectEbay, label: 'Connect eBay', busy: connecting },
+    { id: 'ebay', title: 'Connect eBay', detail: 'Authorise the existing eBay integration to sync listings and orders.', icon: Link2, action: connectEbay, label: 'Connect eBay', busy: false },
     { id: 'inventory', title: 'Bring in your stock', detail: 'Import an existing eBay CSV or start with an empty inventory.', icon: Package, action: () => navigate('/ebay/import'), label: 'Open import tools', busy: false },
   ];
 
