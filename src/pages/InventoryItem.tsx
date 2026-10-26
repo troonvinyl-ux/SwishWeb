@@ -18,13 +18,105 @@ export default function InventoryItem() {
   const [valuing, setValuing] = useState(false);
 
   const row = item as Record<string, unknown> | null;
+  const attrs = row?.attributes && typeof row.attributes === 'object' && !Array.isArray(row.attributes)
+    ? row.attributes as Record<string, unknown> : {};
+  const specialistId = String(row?.specialist_id || '').toLowerCase();
+  const isClothing = ['clothing', 'trainers_sneakers', 'fashion', 'threads_flip', 'trainers'].includes(specialistId);
+  const isBike = ['bicycles', 'bikes', 'cycling', 'bike_flipper'].includes(specialistId);
+  const isMX = ['motocross', 'mx', 'flipper_mx'].includes(specialistId);
+  const isCoin = !isClothing && !isBike && !isMX;
+  const textValue = (...values: unknown[]) => {
+    const value = values.find(v => v !== null && v !== undefined && String(v).trim() !== '');
+    return value === undefined ? '' : String(value);
+  };
+  // Read the same canonical columns and specialist attributes used by the native app.
+  const fieldValue = (key: string): string => {
+    if (!row) return '';
+    switch (key) {
+      case 'title': return textValue(row.canonical_title, row.title, row.name, row.sku);
+      case 'brand': return textValue(row.manufacturer, attrs.brand, attrs.brand_label, attrs.manufacturer, row.brand);
+      case 'model': return textValue(attrs.model, attrs.model_name, row.model);
+      case 'category': return isClothing
+        ? textValue(attrs.garment_type, attrs.category, row.category)
+        : isBike ? textValue(attrs.bike_type, attrs.frame_type, attrs.category, row.category)
+        : isMX ? textValue(attrs.vehicle_type, attrs.category, row.category)
+        : textValue(attrs.category, attrs.coin_type, row.category);
+      case 'condition': return textValue(row.condition, row.condition_grade, attrs.condition);
+      case 'colour': return textValue(attrs.colour, attrs.color, attrs.color_description, row.colour, row.color);
+      case 'size': return textValue(attrs.size, attrs.labelled_size, attrs.labeled_size, attrs.frame_size, row.size);
+      case 'location': return textValue(attrs.location, row.location, row.storage_location);
+      case 'garment_type': return textValue(attrs.garment_type, attrs.category);
+      case 'era': return textValue(attrs.era, attrs.era_estimate);
+      case 'composition': return textValue(row.material, attrs.composition, attrs.material);
+      case 'made_in': return textValue(row.country_of_origin, attrs.made_in, attrs.country_of_origin, attrs.country);
+      case 'auth_risk': return textValue(attrs.authenticity_risk_level, attrs.authentication_risk_level, attrs.auth_risk);
+      case 'frame_size': return textValue(attrs.frame_size, attrs.size);
+      case 'frame_material': return textValue(row.material, attrs.frame_material);
+      case 'groupset': return textValue(attrs.groupset, attrs.drivetrain);
+      case 'wheel_size': return textValue(attrs.wheel_size);
+      case 'engine_size': return textValue(attrs.engine_size);
+      case 'stroke_type': return textValue(attrs.stroke_type);
+      case 'running_status': return textValue(attrs.rideable_status, attrs.running_status);
+      case 'year': return textValue(row.year_made, attrs.year, attrs.year_made, attrs.year_range);
+      case 'country': return textValue(row.country_of_origin, attrs.country, attrs.country_of_origin);
+      case 'material': return textValue(row.material, attrs.material, attrs.composition);
+      case 'weight': return textValue(row.weight_grams, attrs.weight, attrs.weight_g);
+      case 'diameter': return textValue(row.diameter_mm, attrs.diameter_mm);
+      case 'ruler': return textValue(row.ruler, attrs.ruler, attrs.monarch, attrs.issuer);
+      case 'denomination': return textValue(row.denomination, attrs.denomination);
+      case 'period': return textValue(row.period, attrs.period);
+      case 'mint': return textValue(row.mint, attrs.mint);
+      default: return textValue(row[key], attrs[key]);
+    }
+  };
 
-  const startEdit = () => { setForm(row || {}); setEditing(true); };
+  const startEdit = () => {
+    if (!row) return;
+    setForm({
+      ...row,
+      title: fieldValue('title'), brand: fieldValue('brand'), model: fieldValue('model'),
+      category: fieldValue('category'), condition: fieldValue('condition'), colour: fieldValue('colour'),
+      size: fieldValue('size'), location: fieldValue('location'), garment_type: fieldValue('garment_type'),
+      era: fieldValue('era'), composition: fieldValue('composition'), made_in: fieldValue('made_in'),
+      auth_risk: fieldValue('auth_risk'), description: textValue(row.description),
+      cost_price: textValue(row.acquired_cost, row.cost_price, row.purchase_price),
+      valuation: textValue(row.valuation_mid, row.valuation, row.expected_selling_price),
+      sale_price: textValue(row.expected_selling_price, row.sale_price),
+    });
+    setEditing(true);
+  };
   const cancelEdit = () => { setForm({}); setEditing(false); };
 
   const save = () => {
-    if (!id) return;
-    update.mutate({ id, updates: form }, {
+    if (!id || !row) return;
+    const updates: Record<string, unknown> = {};
+    const nextAttrs: Record<string, unknown> = { ...attrs };
+    if ('title' in form) updates.canonical_title = form.title;
+    if ('description' in form) updates.description = form.description;
+    if ('condition' in form) updates.condition = form.condition;
+    const attributeKeys: Record<string, string> = {
+      brand: 'brand', model: 'model',
+      category: isClothing ? 'garment_type' : 'category',
+      colour: 'colour', size: 'size', location: 'location',
+      garment_type: 'garment_type', era: 'era', composition: 'composition',
+      made_in: 'made_in', auth_risk: 'authenticity_risk_level',
+      frame_size: 'frame_size', frame_material: 'frame_material', groupset: 'groupset',
+      wheel_size: 'wheel_size', engine_size: 'engine_size', stroke_type: 'stroke_type',
+      running_status: 'running_status', year: 'year', country: 'country',
+      material: 'material', weight: 'weight_g', diameter: 'diameter_mm',
+      ruler: 'ruler', denomination: 'denomination', period: 'period', mint: 'mint',
+    };
+    for (const [formKey, attributeKey] of Object.entries(attributeKeys)) {
+      if (formKey in form) nextAttrs[attributeKey] = form[formKey];
+    }
+    if (Object.keys(attributeKeys).some(key => key in form)) updates.attributes = nextAttrs;
+    if ('brand' in form && !row.manufacturer) updates.manufacturer = form.brand;
+    if ('composition' in form && !row.material) updates.material = form.composition;
+    if ('made_in' in form && !row.country_of_origin) updates.country_of_origin = form.made_in;
+    if ('cost_price' in form) updates.acquired_cost = Number(form.cost_price) || 0;
+    if ('valuation' in form) updates.valuation_mid = Number(form.valuation) || 0;
+    if ('sale_price' in form) updates.expected_selling_price = Number(form.sale_price) || 0;
+    update.mutate({ id, updates }, {
       onSuccess: () => { toast.success('Saved'); setEditing(false); refetch(); },
       onError: (e) => toast.error(e.message),
     });
@@ -83,7 +175,7 @@ export default function InventoryItem() {
     );
   }
 
-  const f = (key: string) => editing ? (form[key] as string || '') : (row[key] as string || '');
+  const f = (key: string) => editing ? (form[key] == null ? '' : String(form[key])) : fieldValue(key);
   const setF = (key: string, val: unknown) => setForm(p => ({ ...p, [key]: val }));
 
   return (
@@ -160,19 +252,47 @@ export default function InventoryItem() {
               {[
                 { key: 'title', label: 'Title' },
                 { key: 'brand', label: 'Brand' },
-                { key: 'model', label: 'Model' },
-                { key: 'category', label: 'Category' },
-                { key: 'condition', label: 'Condition' },
-                { key: 'colour', label: 'Colour' },
-                { key: 'size', label: 'Size' },
-                { key: 'location', label: 'Location' },
-              ].map(({ key, label }) => (
+                ...(isClothing ? [
+                  { key: 'garment_type', label: 'Garment Type' },
+                  { key: 'era', label: 'Era' },
+                  { key: 'size', label: 'Size' },
+                  { key: 'composition', label: 'Composition' },
+                  { key: 'colour', label: 'Colour' },
+                  { key: 'made_in', label: 'Made In' },
+                  { key: 'auth_risk', label: 'Auth Risk' },
+                ] : isBike ? [
+                  { key: 'category', label: 'Bike Type' },
+                  { key: 'frame_size', label: 'Frame Size' },
+                  { key: 'frame_material', label: 'Frame Material' },
+                  { key: 'groupset', label: 'Groupset' },
+                  { key: 'wheel_size', label: 'Wheel Size' },
+                  { key: 'year', label: 'Year Range' },
+                  { key: 'country', label: 'Country' },
+                  { key: 'weight', label: 'Weight' },
+                ] : isMX ? [
+                  { key: 'category', label: 'Vehicle Type' },
+                  { key: 'engine_size', label: 'Engine Size' },
+                  { key: 'stroke_type', label: 'Stroke Type' },
+                  { key: 'year', label: 'Year' },
+                  { key: 'running_status', label: 'Running Status' },
+                  { key: 'country', label: 'Country' },
+                ] : [
+                  { key: 'denomination', label: 'Denomination' },
+                  { key: 'ruler', label: 'Ruler' },
+                  { key: 'period', label: 'Period' },
+                  { key: 'mint', label: 'Mint' },
+                  { key: 'year', label: 'Year' },
+                  { key: 'country', label: 'Country' },
+                  { key: 'material', label: 'Material' },
+                  { key: 'diameter', label: 'Diameter' },
+                  { key: 'weight', label: 'Weight' },
+                ] as Array<{key: string; label: string}>).map(({ key, label }) => (
                 <div key={key}>
                   <label className="text-xs text-muted-foreground">{label}</label>
                   {editing ? (
                     <input value={f(key)} onChange={e => setF(key, e.target.value)} className="input-field mt-0.5 text-xs py-1.5" />
                   ) : (
-                    <p className="text-sm mt-0.5">{(row[key] as string) || '—'}</p>
+                    <p className="text-sm mt-0.5">{fieldValue(key) || '—'}</p>
                   )}
                 </div>
               ))}
