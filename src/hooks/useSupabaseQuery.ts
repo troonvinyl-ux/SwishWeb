@@ -173,9 +173,15 @@ export function useDelete(table: string) {
 // useCount — COUNT(*) query
 // ---------------------------------------------------------------------------
 
-export function useCount(table: string, filter?: Record<string, unknown>, inFilter?: Record<string, unknown[]>) {
+export function useCount(
+  table: string,
+  filter?: Record<string, unknown>,
+  inFilter?: Record<string, unknown[]>,
+  enabled = true,
+) {
   return useQuery({
     queryKey: [table, 'count', filter, inFilter],
+    enabled,
     retry: false,
     queryFn: async () => {
       const sb = await getClient();
