@@ -322,13 +322,16 @@ export default function ListingNew() {
         .select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
       if (membershipError) throw membershipError;
       if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready');
-      const { data, error } = await callEdgeFunction('swish-ebay-list', {
+      const { data: payload, error } = await callEdgeFunction<{
+        success?: boolean;
+        error?: string;
+        suggestions?: Array<{ id?: string | number; name?: string; isLeaf?: boolean }>;
+      }>('swish-ebay-list', {
         route: 'get_category_suggestions', tenantId: String(membership.tenant_id), query: title.slice(0, 100),
       });
       if (error) throw error;
-      const payload = data as any;
       const suggestions = Array.isArray(payload?.suggestions) ? payload.suggestions : [];
-      const best = suggestions.find((cat: any) => cat?.id && cat?.name && cat.isLeaf === true);
+      const best = suggestions.find(cat => cat.id !== undefined && cat.id !== '' && !!cat.name && cat.isLeaf === true);
       if (!payload?.success || !best) {
         throw new Error(payload?.error || 'No matching eBay leaf category was found. Try a more descriptive title.');
       }
