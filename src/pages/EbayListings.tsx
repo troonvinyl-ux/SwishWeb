@@ -77,6 +77,8 @@ export default function EbayListings() {
       <div className="swish-card overflow-hidden">
         {isLoading || tenantLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading eBay listings…</div>
+        ) : !tenantId ? (
+          <div className="p-8 text-center text-muted-foreground text-sm">Your SWISH workspace could not be found. Complete setup and try again.</div>
         ) : error ? (
           <div className="p-8 text-center text-destructive text-sm">{(error as Error).message}</div>
         ) : items.length === 0 ? (
