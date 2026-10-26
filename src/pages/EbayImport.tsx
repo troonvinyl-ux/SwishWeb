@@ -120,7 +120,8 @@ export default function EbayImport() {
       const existingById = new Map<string, Record<string, unknown>>();
       for (const listing of existing || []) {
         if (listing.external_listing_id) {
-          const item = listing.items as Record<string, unknown> | null;
+          const joined = listing.items as Record<string, unknown> | Record<string, unknown>[] | null;
+          const item = Array.isArray(joined) ? joined[0] : joined;
           existingById.set(String(listing.external_listing_id), { ...(listing as Record<string, unknown>), existing_specialist_id: item?.specialist_id });
         }
       }
@@ -164,7 +165,7 @@ export default function EbayImport() {
             const { error: itemUpdateError } = await sb.from('items').update({
               canonical_title: title.slice(0, 200), description,
               expected_selling_price: price,
-              attributes: { ebay_category_id: categoryId || null, ebay_category_name: categoryName || null, classification_niche: nicheKey },
+              status: status === 'sold' ? 'sold' : status === 'active' ? 'listed' : 'identified',
               updated_at: new Date().toISOString(),
             }).eq('id', String(prior.item_id)).eq('tenant_id', tenantId);
             if (itemUpdateError) throw itemUpdateError;
@@ -218,7 +219,6 @@ export default function EbayImport() {
 
       const finalResult = { imported, updated, skipped, errors, type: 'listings' };
       setResult(finalResult);
-      await Promise.all(['items', 'listings', 'marketplace_connectors'].map(table => Promise.resolve()));
       toast.success(`Import complete: ${imported} added, ${updated} updated, ${skipped} skipped`);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Import failed.';
@@ -245,7 +245,7 @@ export default function EbayImport() {
       } else if (importType === 'inventory') {
         const { data, error } = await sb.from('items')
           .select('canonical_title,description,specialist_id,status,expected_selling_price,condition,attributes,created_at')
-          .eq('tenant_id', tenantId).in('specialist_id', selectedCategoryIds.length ? [specialistId, ...(specialistId === 'clothing' ? ['trainers_sneakers'] : [])] : [specialistId])
+          .eq('tenant_id', tenantId).in('specialist_id', nicheSpecialistIds)
           .order('created_at', { ascending: false }).limit(5000);
         if (error) throw error;
         rows = (data || []) as Record<string, unknown>[];
