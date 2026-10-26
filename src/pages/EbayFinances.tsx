@@ -8,7 +8,7 @@ import { Wallet, RefreshCw, AlertTriangle } from 'lucide-react';
 
 export default function EbayFinances() {
   const { user } = useAuth();
-  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  const { tenantId } = useCurrentTenantId();
   const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
   const [summaryError, setSummaryError] = useState<string>('');
   const [loading, setLoading] = useState(true);
