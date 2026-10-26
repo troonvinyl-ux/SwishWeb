@@ -23,7 +23,7 @@ export default function Dispatch() {
     ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic'].includes(activeNiche) ? ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic', 'curiosities_collectibles'] : [];
   const { data, isLoading, error } = useTable('orders', {
     select: '*, items!inner(specialist_id)',
-    filter: { tenant_id: tenantId, status: 'awaiting_dispatch' },
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay', status: 'awaiting_dispatch' },
     inFilter: specialistIds.length ? { 'items.specialist_id': specialistIds } : undefined,
     enabled: Boolean(tenantId) && specialistIds.length > 0,
     order: { column: 'dispatch_by', ascending: true },
