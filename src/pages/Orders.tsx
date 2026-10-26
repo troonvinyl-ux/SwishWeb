@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatCurrency, formatDate, formatDateTime, statusVariant, truncate } from '@/lib/utils';
 import { ShoppingCart, RefreshCw, Search } from 'lucide-react';
@@ -7,12 +8,25 @@ import { Link } from 'react-router-dom';
 
 export default function Orders() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const preferredNiche = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins').toLowerCase();
+  const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
+  const activeNiche = String((isOwner ? localStorage.getItem('swish_active_niche') : preferredNiche) || preferredNiche).toLowerCase();
+  const specialistIds: string[] =
+    ['clothing', 'fashion', 'threads', 'threads_flip', 'trainers', 'trainers_sneakers'].includes(activeNiche) ? ['clothing', 'trainers_sneakers'] :
+    ['bicycles', 'bikes', 'cycling', 'bike_flipper'].includes(activeNiche) ? ['bicycles', 'bikes'] :
+    ['motocross', 'mx', 'flipper_mx'].includes(activeNiche) ? ['motocross', 'mx'] :
+    ['surplus_flip', 'surplus-flip', 'surplus_trader', 'catalog_flip', 'catalog_surplus'].includes(activeNiche) ? ['surplus_trader', 'surplus_flip'] :
+    ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic'].includes(activeNiche) ? ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic', 'curiosities_collectibles'] : [];
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
 
   const { data, isLoading, error } = useTable('orders', {
+    select: '*, items!inner(specialist_id)',
     order: { column: 'created_at', ascending: false },
     filter: status ? { status } : undefined,
+    inFilter: specialistIds.length ? { 'items.specialist_id': specialistIds } : undefined,
+    enabled: specialistIds.length > 0,
     search: search ? { column: 'buyer_name', query: search } : undefined,
   });
 
