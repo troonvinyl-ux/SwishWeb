@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { callEdgeFunction, EdgeFunctionError } from '@/lib/supabase';
 import { useTable, useCount } from '@/hooks/useSupabaseQuery';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { formatRelative } from '@/lib/utils';
-import { Terminal, RefreshCw, Zap, Package, Tag, ShoppingCart, AlertTriangle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Terminal, RefreshCw, Zap, ShoppingCart, AlertTriangle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -14,48 +15,62 @@ interface ActionResult {
 
 export default function CommandCentre() {
   const [actionResults, setActionResults] = useState<Record<string, ActionResult>>({});
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
 
   const { data: recentActivity, isLoading: activityLoading } = useTable('activity_log', {
+    filter: { tenant_id: tenantId },
     order: { column: 'created_at', ascending: false },
     limit: 20,
+    enabled: Boolean(tenantId),
   });
-  const { data: invCount } = useCount('inventory');
-  const { data: orderCount } = useCount('orders', { status: 'awaiting_dispatch' });
-  const { data: reviewCount } = useCount('inventory', { status: 'review' });
+  const { data: invCount } = useCount('inventory', { tenant_id: tenantId }, undefined, Boolean(tenantId));
+  const { data: orderCount } = useCount('orders', { tenant_id: tenantId, status: 'awaiting_dispatch' }, undefined, Boolean(tenantId));
+  const { data: reviewCount } = useCount('inventory', { tenant_id: tenantId, status: 'review' }, undefined, Boolean(tenantId));
 
-  const runFunction = async (fn: string, payload: Record<string, unknown> = {}) => {
-    setActionResults(p => ({ ...p, [fn]: { status: 'running' } }));
+  const runFunction = async (actionId: string) => {
+    if (!tenantId) {
+      toast.error('Your SWISH workspace is not ready.');
+      return;
+    }
+    const action = actionId === 'ebay-sync'
+      ? { edgeFunction: 'swish-ebay-sync', payload: { tenantId, mode: 'full' } }
+      : actionId === 'sync-orders'
+        ? { edgeFunction: 'swish-ebay-orders', payload: { tenantId, daysBack: 90, mode: 'both' } }
+        : null;
 
-    const { data, error } = await callEdgeFunction(fn, payload);
+    if (!action) {
+      const message = 'This action is not supported by the current shared backend. No request was sent.';
+      setActionResults(p => ({ ...p, [actionId]: { status: 'error', message } }));
+      toast.message(message);
+      return;
+    }
 
+    setActionResults(p => ({ ...p, [actionId]: { status: 'running' } }));
+    const { data, error } = await callEdgeFunction(action.edgeFunction, action.payload);
     if (error) {
       const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
-      setActionResults(p => ({ ...p, [fn]: { status: 'error', message: msg } }));
+      setActionResults(p => ({ ...p, [actionId]: { status: 'error', message: msg } }));
       toast.error(msg);
-    } else {
-      // Summarise result for display
-      let message = 'Completed successfully';
-      if (data && typeof data === 'object') {
-        const d = data as Record<string, unknown>;
-        if (d.records_imported) message = `Imported: ${d.records_imported}`;
-        else if (d.updated) message = `Updated: ${d.updated}`;
-        else if (d.synced) message = `Synced: ${d.synced}`;
-        else if (d.identified) message = `Identified: ${d.identified}`;
-        else if (d.repriced) message = `Repriced: ${d.repriced}`;
-        else if (d.message) message = d.message as string;
-      }
-      setActionResults(p => ({ ...p, [fn]: { status: 'success', message, data } }));
-      toast.success(`${fn}: ${message}`);
+      return;
     }
+
+    let message = 'Completed successfully';
+    if (data && typeof data === 'object') {
+      const d = data as Record<string, unknown>;
+      if (d.records_imported) message = `Imported: ${d.records_imported}`;
+      else if (d.updated) message = `Updated: ${d.updated}`;
+      else if (d.synced) message = `Synced: ${d.synced}`;
+      else if (d.message) message = d.message as string;
+    }
+    setActionResults(p => ({ ...p, [actionId]: { status: 'success', message, data } }));
+    toast.success(`${actionId}: ${message}`);
   };
 
   const QUICK_ACTIONS = [
-    { fn: 'sync-inventory', label: 'Sync Inventory', icon: Package, description: 'Pull inventory from all connected marketplaces' },
-    { fn: 'sync-orders', label: 'Sync Orders', icon: ShoppingCart, description: 'Import latest orders from all platforms' },
-    { fn: 'sync-listings', label: 'Sync Listings', icon: Tag, description: 'Update listing statuses and data' },
-    { fn: 'reprice-all', label: 'Reprice All', icon: RefreshCw, description: 'Run repricing rules across all active listings' },
-    { fn: 'ebay-sync', label: 'eBay Full Sync', icon: () => <span className="text-xs font-bold text-primary">eB</span>, description: 'Full eBay account synchronisation' },
-    { fn: 'batch-identify', label: 'Batch Identify', icon: Zap, description: 'AI-identify unidentified inventory items' },
+    { fn: 'ebay-sync', label: 'eBay Full Sync', icon: () => <span className="text-xs font-bold text-primary">eB</span>, description: 'Sync eBay inventory and listing status using the shared backend.', supported: true },
+    { fn: 'sync-orders', label: 'Sync eBay Orders', icon: ShoppingCart, description: 'Import eBay orders using the existing orders function.', supported: true },
+    { fn: 'reprice-all', label: 'Reprice All', icon: RefreshCw, description: 'Bulk repricing is not exposed by the current backend.', supported: false },
+    { fn: 'batch-identify', label: 'Batch Identify', icon: Zap, description: 'Batch identification is not exposed by the current backend.', supported: false },
   ];
 
   const getResultIcon = (result: ActionResult) => {
@@ -105,7 +120,7 @@ export default function CommandCentre() {
               <button
                 key={a.fn}
                 onClick={() => runFunction(a.fn)}
-                disabled={isRunning}
+                disabled={isRunning || !a.supported || !tenantId}
                 className="swish-card p-4 text-left hover:border-primary/40 transition-colors disabled:opacity-70"
               >
                 <div className="flex items-center gap-2 mb-1.5">
@@ -132,7 +147,7 @@ export default function CommandCentre() {
       {/* Activity log */}
       <div className="swish-card p-4">
         <h3 className="text-sm font-semibold mb-3">Activity Log</h3>
-        {activityLoading ? (
+        {activityLoading || tenantLoading ? (
           <div className="text-xs text-muted-foreground text-center py-4">Loading…</div>
         ) : (recentActivity || []).length > 0 ? (
           <div className="space-y-1">
