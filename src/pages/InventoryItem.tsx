@@ -304,7 +304,7 @@ export default function InventoryItem() {
           <div>
             <h2 className="text-sm font-semibold">AI identification suggestion — not yet saved</h2>
             <p className="text-sm mt-1">{String(identificationResult.canonicalTitle || identificationResult.title || 'No title returned')}</p>
-            {identificationResult.confidence != null && (
+            {identificationResult.confidence != null && Number.isFinite(Number(identificationResult.confidence)) && (
               <p className="text-xs text-muted-foreground mt-1">
                 Confidence: {Math.round(Math.max(0, Math.min(1, Number(identificationResult.confidence))) * 100)}%
               </p>
