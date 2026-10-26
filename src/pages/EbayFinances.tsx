@@ -1,34 +1,50 @@
 import { useEffect, useState } from 'react';
-import { callEdgeFunction, EdgeFunctionError } from '@/lib/supabase';
+import { callEdgeFunction, EdgeFunctionError, getSupabaseClient } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Wallet, RefreshCw, AlertTriangle } from 'lucide-react';
 
 export default function EbayFinances() {
+  const { user } = useAuth();
   const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
   const [summaryError, setSummaryError] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
-  const { data: payouts } = useTable('ebay_payouts', { order: { column: 'created_at', ascending: false }, limit: 50 });
-  const { data: transactions } = useTable('ebay_transactions', { order: { column: 'created_at', ascending: false }, limit: 50 });
+  const { data: financialRows } = useTable('ebay_financials', { order: { column: 'transaction_date', ascending: false }, limit: 100 });
 
   const loadSummary = async () => {
     setLoading(true);
     setSummaryError('');
-    const { data, error } = await callEdgeFunction('ebay-finances', {});
-    if (error) {
-      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
+    try {
+      const sb = getSupabaseClient();
+      if (!sb || !user) throw new Error('Please sign in again before loading eBay finances.');
+      const { data: membership, error: membershipError } = await sb
+        .from('tenant_memberships')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      if (membershipError) throw membershipError;
+      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready.');
+      const { data, error } = await callEdgeFunction<Record<string, unknown>>('swish-ebay-finances', {
+        tenantId: membership.tenant_id, route: 'get_summary', daysBack: 90,
+      }, sb);
+      if (error) throw error;
+      const apiSummary = (data?.summary || {}) as Record<string, unknown>;
+      setSummary({ ...apiSummary, success: data?.success, financesApiAvailable: data?.financesApiAvailable });
+    } catch (error) {
+      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error instanceof Error ? error.message : 'Could not load eBay finances.';
       setSummaryError(msg);
-    } else {
-      setSummary(data as Record<string, unknown>);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => { loadSummary(); }, []);
 
-  const payoutItems = (payouts || []) as Record<string, unknown>[];
-  const txItems = (transactions || []) as Record<string, unknown>[];
+  const txItems = (financialRows || []) as Record<string, unknown>[];
+  const payoutItems = txItems.filter(t => t.transaction_type === 'PAYOUT');
 
   // Safe value extractor — handles nested { value, currency } objects from eBay API
   const safeVal = (v: unknown): number => {
@@ -65,13 +81,13 @@ export default function EbayFinances() {
       ) : summary ? (
         <div className="swish-card p-5">
           <h3 className="text-sm font-semibold mb-3">Financial Summary</h3>
-          {(summary.available_balance !== undefined || summary.total_revenue !== undefined) ? (
+          {(summary.grossSales !== undefined || summary.netAfterFees !== undefined) ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                { label: 'Available Balance', value: formatCurrency(safeVal(summary.available_balance)) },
-                { label: 'Pending Payout', value: formatCurrency(safeVal(summary.pending_payout)) },
-                { label: 'Total Revenue', value: formatCurrency(safeVal(summary.total_revenue)) },
-                { label: 'Total Fees', value: formatCurrency(safeVal(summary.total_fees)) },
+                { label: 'Gross Sales', value: formatCurrency(safeVal(summary.grossSales)) },
+                { label: 'Payouts', value: formatCurrency(safeVal(summary.payouts)) },
+                { label: 'Actual Fees', value: formatCurrency(safeVal(summary.actualFees)) },
+                { label: 'Net After Fees', value: formatCurrency(safeVal(summary.netAfterFees)) },
               ].map(s => (
                 <div key={s.label} className="stat-card">
                   <div className="stat-value swish-gold text-xl">{s.value}</div>
@@ -100,10 +116,10 @@ export default function EbayFinances() {
               <tbody>
                 {payoutItems.slice(0, 20).map(p => (
                   <tr key={p.id as string}>
-                    <td className="text-xs">{formatDate((p.payout_date || p.created_at) as string)}</td>
-                    <td className="text-xs capitalize">{(p.status || '—') as string}</td>
-                    <td className="text-right text-xs font-semibold swish-gold">{formatCurrency((p.amount || p.payout_amount) as number)}</td>
-                    <td className="text-xs">{(p.method || p.payment_method || '—') as string}</td>
+                    <td className="text-xs">{formatDate((p.transaction_date || p.created_at) as string)}</td>
+                    <td className="text-xs capitalize">{(p.payout_status || '—') as string}</td>
+                    <td className="text-right text-xs font-semibold swish-gold">{formatCurrency(p.amount as number)}</td>
+                    <td className="text-xs">{(p.currency || '—') as string}</td>
                   </tr>
                 ))}
               </tbody>
@@ -127,8 +143,8 @@ export default function EbayFinances() {
                   const amt = Number(t.amount);
                   return (
                     <tr key={t.id as string}>
-                      <td className="text-xs">{formatDate(t.created_at as string)}</td>
-                      <td className="text-xs capitalize">{(t.type || t.transaction_type || '—') as string}</td>
+                      <td className="text-xs">{formatDate((t.transaction_date || t.created_at) as string)}</td>
+                      <td className="text-xs capitalize">{(t.transaction_type || '—') as string}</td>
                       <td className="text-xs text-muted-foreground">{(t.description || '—') as string}</td>
                       <td className={`text-right text-xs font-semibold ${amt >= 0 ? 'swish-gold' : 'text-destructive'}`}>
                         {formatCurrency(amt)}
