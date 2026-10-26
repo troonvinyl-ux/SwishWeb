@@ -2,22 +2,35 @@ import { useTable, useUpdate } from '@/hooks/useSupabaseQuery';
 import { formatCurrency, formatDate, statusVariant, truncate } from '@/lib/utils';
 import { RefreshCw } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { callEdgeFunction } from '@/lib/supabase';
+import { callEdgeFunction, getSupabaseClient } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useState } from 'react';
 
 export default function EbayReturns() {
   const qc = useQueryClient();
-  const [processing, setProcessing] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [syncing, setSyncing] = useState(false);
   const { data, isLoading, error } = useTable('ebay_returns', { order: { column: 'created_at', ascending: false } });
   const items = (data || []) as Record<string, unknown>[];
 
-  const handle = async (returnId: string, action: string) => {
-    setProcessing(returnId);
-    const { error } = await callEdgeFunction('ebay-return-action', { return_id: returnId, action });
-    if (error) toast.error(error.message);
-    else { toast.success(`Return ${action}`); qc.invalidateQueries({ queryKey: ['ebay_returns'] }); }
-    setProcessing(null);
+  const syncReturns = async () => {
+    setSyncing(true);
+    try {
+      const sb = getSupabaseClient();
+      if (!sb || !user) throw new Error('Please sign in again before syncing returns.');
+      const { data: membership, error: membershipError } = await sb.from('tenant_memberships').select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
+      if (membershipError) throw membershipError;
+      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready.');
+      const { error } = await callEdgeFunction('swish-ebay-post-order', { tenantId: membership.tenant_id, route: 'sync_returns' }, sb);
+      if (error) throw error;
+      await qc.invalidateQueries({ queryKey: ['ebay_returns'] });
+      toast.success('eBay returns synced');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not sync eBay returns.');
+    } finally {
+      setSyncing(false);
+    }
   };
 
   return (
@@ -27,11 +40,12 @@ export default function EbayReturns() {
           <h1 className="page-title">eBay Returns</h1>
           <p className="page-subtitle">{items.length} return requests</p>
         </div>
-        <button onClick={() => qc.invalidateQueries({ queryKey: ['ebay_returns'] })} className="btn-ghost">
-          <RefreshCw className="w-3.5 h-3.5" />Refresh
+        <button onClick={() => void syncReturns()} disabled={syncing} className="btn-secondary">
+          <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} />{syncing ? 'Syncing…' : 'Sync from eBay'}
         </button>
       </div>
 
+      <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-muted-foreground">Return records can be synced from eBay. Accept/decline actions are not exposed by the existing secure backend, so SWISH will not report those actions as completed.</div>
       <div className="swish-card overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading returns…</div>
@@ -58,8 +72,7 @@ export default function EbayReturns() {
                     <td className="text-xs text-muted-foreground">{formatDate(r.created_at as string)}</td>
                     <td>
                       <div className="flex gap-1">
-                        <button onClick={() => handle(r.id as string, 'accept')} disabled={processing === r.id} className="btn-ghost py-1 px-2 text-xs text-success">Accept</button>
-                        <button onClick={() => handle(r.id as string, 'decline')} disabled={processing === r.id} className="btn-ghost py-1 px-2 text-xs text-destructive">Decline</button>
+                        <button disabled title="Return actions are not available through the current secure backend" className="btn-ghost py-1 px-2 text-xs opacity-50">Unavailable</button>
                       </div>
                     </td>
                   </tr>
