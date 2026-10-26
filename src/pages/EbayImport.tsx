@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
+import { useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Upload, Download, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
@@ -59,6 +60,7 @@ function downloadCsvOrXlsx(rows: Record<string, unknown>[], name: string) {
 export default function EbayImport() {
   const fileRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
+  const qc = useQueryClient();
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -219,6 +221,7 @@ export default function EbayImport() {
 
       const finalResult = { imported, updated, skipped, errors, type: 'listings' };
       setResult(finalResult);
+      await Promise.all(['items', 'listings'].map(table => qc.invalidateQueries({ queryKey: [table] })));
       toast.success(`Import complete: ${imported} added, ${updated} updated, ${skipped} skipped`);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Import failed.';
