@@ -2,12 +2,14 @@ import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatCurrency } from '@/lib/utils';
 import { Wallet, RefreshCw, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { callEdgeFunction, EdgeFunctionError } from '@/lib/supabase';
+import { callEdgeFunction, EdgeFunctionError, getSupabaseClient } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { useState, useEffect } from 'react';
 import { formatDate } from '@/lib/utils';
 
 export default function Money() {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const [dateRange, setDateRange] = useState('30');
 
   // Read the same canonical sales ledger used by the SWISH app. RLS remains
@@ -34,15 +36,32 @@ export default function Money() {
   const [ebayError, setEbayError] = useState('');
 
   useEffect(() => {
-    callEdgeFunction('ebay-finances-summary', {}).then(({ data, error }) => {
-      if (error) {
-        const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
-        setEbayError(msg);
-      } else if (data) {
-        setEbayBalance(data as Record<string, unknown>);
+    if (!user) return;
+    let cancelled = false;
+    const loadEbayFunds = async () => {
+      try {
+        const sb = getSupabaseClient();
+        if (!sb) throw new Error('Backend not connected.');
+        const { data: membership, error: membershipError } = await sb
+          .from('tenant_memberships')
+          .select('tenant_id')
+          .eq('user_id', user.id)
+          .limit(1)
+          .maybeSingle();
+        if (membershipError) throw membershipError;
+        if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready.');
+        const { data, error } = await callEdgeFunction<Record<string, unknown>>('swish-ebay-finances', {
+          tenantId: membership.tenant_id, route: 'get_funds_summary',
+        }, sb);
+        if (error) throw error;
+        if (!cancelled) setEbayBalance(data as Record<string, unknown>);
+      } catch (error) {
+        if (!cancelled) setEbayError(error instanceof EdgeFunctionError ? error.displayMessage : error instanceof Error ? error.message : 'eBay funds summary unavailable.');
       }
-    });
-  }, []);
+    };
+    void loadEbayFunds();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   const sales    = (salesData || []) as Record<string, unknown>[];
   const orders   = (ordersData || []) as Record<string, unknown>[];
