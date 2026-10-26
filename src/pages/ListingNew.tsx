@@ -386,7 +386,7 @@ export default function ListingNew() {
     else if (title.length > 80) errors.push('eBay listing titles must be 80 characters or fewer.');
     else passes.push('Title is present and within the 80-character limit.');
 
-    if (!f('item_id')) errors.push('Link this listing to a confirmed inventory record before creating it.');
+    if (!f('item_id')) warnings.push('No inventory record is linked; this will be an unlinked draft.');
     else passes.push('Listing is linked to an inventory record.');
 
     if (!Number.isFinite(price) || price <= 0) errors.push('Enter a valid listing price greater than zero.');
