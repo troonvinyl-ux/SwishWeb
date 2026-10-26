@@ -96,7 +96,8 @@ export default function ListingEditor() {
       description: String(form.description || ''),
       price: Number(form.price || 0),
       status: form.status || 'draft',
-      images: selectedImages,
+      // Listing photos live on the linked inventory item's media field in the
+      // canonical SWISH schema. Do not write a non-existent listings.images column.
       category_id: form.category_id || null,
       floor_price: form.floor_price ?? null,
       ceiling_price: form.ceiling_price ?? null,
@@ -163,16 +164,44 @@ export default function ListingEditor() {
 
   const publish = async () => {
     if (!form.id) { toast.error('Save listing first'); return; }
+    if (!user?.id) { toast.error('Sign in again before publishing'); return; }
     setPublishing(true);
-    const { error } = await callEdgeFunction('publish-listing', { listing_id: form.id });
-    if (error) {
-      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
-      toast.error(msg);
-    } else {
+    try {
+      const sb = await getSupabaseClientAsync();
+      if (!sb) throw new Error('SWISH backend is not connected');
+      const { data: membership, error: membershipError } = await sb.from('tenant_memberships')
+        .select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
+      if (membershipError) throw membershipError;
+      const tenantId = String(form.tenant_id || membership?.tenant_id || '');
+      if (!tenantId) throw new Error('Your SWISH workspace is not ready');
+
+      // Use the canonical eBay listing function used by the native app.
+      // The old publish-listing function is not deployed.
+      const { data: result, error } = await callEdgeFunction<Record<string, unknown>>('swish-ebay-list', {
+        route: 'publish',
+        tenantId,
+        listingId: String(form.id),
+        listingType: f('listing_type') || 'FixedPriceItem',
+        auctionDays: Number(f('auction_duration') || 7),
+        startPrice: Number(f('start_price') || form.price || 0),
+        reservePrice: Number(f('reserve_price') || 0) || undefined,
+        categoryId: String(form.category_id || ''),
+        mediaUrls: selectedImages,
+      });
+      if (error) throw error;
+      if (!result || result.success !== true) {
+        const detail = typeof result?.error === 'string' ? result.error : 'The eBay listing was not published.';
+        throw new Error(detail);
+      }
       toast.success('Listing published to eBay');
       setF('status', 'active');
+      setF('external_listing_id', result.externalListingId || '');
+    } catch (e) {
+      const msg = e instanceof EdgeFunctionError ? e.displayMessage : e instanceof Error ? e.message : 'Publishing failed';
+      toast.error(msg);
+    } finally {
+      setPublishing(false);
     }
-    setPublishing(false);
   };
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>;
