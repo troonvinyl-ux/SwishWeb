@@ -3,7 +3,7 @@ import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { formatDate, statusVariant } from '@/lib/utils';
 import { AlertCircle, RefreshCw, Zap } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { callEdgeFunction } from '@/lib/supabase';
+import { callEdgeFunction, EdgeFunctionError } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
