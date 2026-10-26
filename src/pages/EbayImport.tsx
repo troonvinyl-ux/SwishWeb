@@ -24,6 +24,7 @@ const TITLE_PATTERNS: Record<string, RegExp> = {
   bicycles: /\b(bicycle|bikes?|mountain bike|road bike|cycling|bmx|bike frame|bike wheel)\b/i,
   motocross: /\b(motocross|dirt bike|enduro|mx bike|off.?road motorcycle|ktm|husqvarna|crf\d|yz\d|kx\d)\b/i,
   coins: /\b(coin|coins|denarius|dirham|drachm|drachma|tanker|half dirham|silver coin|ancient coin|banknote)\b/i,
+  surplus_flip: /\\b(surplus|pallet|job lot|bulk lot|clearance lot|mixed lot|wholesale lot|manifest|liquidation)\\b/i,
 };
 
 function normaliseKey(value: unknown): string {
