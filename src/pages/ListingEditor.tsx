@@ -1,19 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTableRow, useUpsert } from '@/hooks/useSupabaseQuery';
 import { callEdgeFunction, EdgeFunctionError } from '@/lib/supabase';
-import { ArrowLeft, Save, Zap, Send, Loader2, ImageIcon, CheckCircle, ChevronDown, ChevronRight, AlertTriangle, Upload, X, RotateCw, Sun, Contrast } from 'lucide-react';
+import { ArrowLeft, Save, Zap, Send, Loader2, ImageIcon, CheckCircle, ChevronDown, ChevronRight, AlertTriangle, Upload, X, RotateCw, Sun, Contrast, Sparkles, Tag, Truck, ShoppingBag } from 'lucide-react';
 import { getSupabaseClientAsync } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 export default function ListingEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data, isLoading } = useTableRow('listings', id);
   const upsert = useUpsert('listings');
   const [form, setForm] = useState<Record<string, unknown>>({ platform: 'ebay', status: 'draft' });
   const [preflighting, setPreflighting] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [suggestingCategory, setSuggestingCategory] = useState(false);
+  const [categorySuggestion, setCategorySuggestion] = useState<{ id: string; name: string } | null>(null);
   const [showImages, setShowImages] = useState(true);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [uploadedImages, setUploadedImages] = useState<Array<{ side: string; url: string }>>([]);
@@ -41,6 +45,43 @@ export default function ListingEditor() {
 
   const f = (key: string): string => (form[key] as string) || '';
   const setF = (key: string, val: unknown) => setForm(p => ({ ...p, [key]: val }));
+
+  const suggestCategory = async () => {
+    const title = f('title').trim();
+    if (title.length < 2) { toast.error('Enter an item title before suggesting a category'); return; }
+    if (!user?.id) { toast.error('Sign in again before requesting a category suggestion'); return; }
+    setSuggestingCategory(true);
+    setCategorySuggestion(null);
+    try {
+      const sb = await getSupabaseClientAsync();
+      if (!sb) throw new Error('SWISH backend is not connected');
+      const { data: membership, error: membershipError } = await sb.from('tenant_memberships')
+        .select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
+      if (membershipError) throw membershipError;
+      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready');
+      const { data: payload, error } = await callEdgeFunction<{
+        success?: boolean; error?: string;
+        suggestions?: Array<{ id?: string | number; name?: string; isLeaf?: boolean }>;
+      }>('swish-ebay-list', {
+        route: 'get_category_suggestions',
+        tenantId: String(membership.tenant_id),
+        query: title.slice(0, 100),
+      });
+      if (error) throw error;
+      const suggestions = Array.isArray(payload?.suggestions) ? payload.suggestions : [];
+      const best = suggestions.find(cat => cat.id !== undefined && cat.id !== '' && !!cat.name && cat.isLeaf === true);
+      if (!payload?.success || !best) throw new Error(payload?.error || 'No matching eBay leaf category found. Try a more descriptive title.');
+      const suggestion = { id: String(best.id), name: String(best.name) };
+      setCategorySuggestion(suggestion);
+      setF('category', suggestion.name);
+      setF('category_id', suggestion.id);
+      toast.success('AI suggested an eBay category. Verify it before publishing.');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not suggest an eBay category');
+    } finally {
+      setSuggestingCategory(false);
+    }
+  };
 
   const save = () => {
     upsert.mutate({ ...form, images: selectedImages }, {
@@ -293,66 +334,99 @@ export default function ListingEditor() {
         );
       })()}
       
-      <div className="swish-card p-5 space-y-4">
+      {/* Title and description — aligned with the SWISH mobile editor */}
+      <section className="swish-card p-4 sm:p-5 space-y-4">
+        <div className="flex items-center gap-2 text-sm font-semibold"><span className="rounded-lg bg-primary/15 p-2 text-primary"><ImageIcon className="w-4 h-4" /></span>Title &amp; Description</div>
         <div>
-          <label className="text-xs text-muted-foreground">Title *</label>
-          <input value={f('title')} onChange={e => setF('title', e.target.value)} className="input-field mt-0.5" placeholder="Listing title" />
+          <div className="flex items-center justify-between gap-2">
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Listing title *</label>
+            <span className={`text-xs ${f('title').length > 80 ? 'text-destructive' : 'text-muted-foreground'}`}>{f('title').length}/80</span>
+          </div>
+          <input maxLength={120} value={f('title')} onChange={e => setF('title', e.target.value)} className="input-field mt-1" placeholder="Front-load brand, item type, colour and size" />
+          <p className="mt-1 text-xs text-muted-foreground">Keep the eBay title to 80 characters or fewer.</p>
         </div>
         <div>
-          <label className="text-xs text-muted-foreground">Description</label>
-          <textarea value={f('description')} onChange={e => setF('description', e.target.value)} rows={6} className="input-field mt-0.5" placeholder="Item description" />
+          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subtitle (optional)</label>
+          <input value={f('subtitle')} onChange={e => setF('subtitle', e.target.value)} className="input-field mt-1" placeholder="Optional listing subtitle" />
         </div>
+        <div>
+          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Description</label>
+          <textarea value={f('description')} onChange={e => setF('description', e.target.value)} rows={7} className="input-field mt-1 min-h-40" placeholder="Describe the item, condition, measurements and any flaws. Only include details you can verify." />
+        </div>
+      </section>
+
+      {/* Listing type */}
+      <section className="swish-card p-4 sm:p-5 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-semibold"><span className="rounded-lg bg-primary/15 p-2 text-primary"><ShoppingBag className="w-4 h-4" /></span>Listing Type</div>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs text-muted-foreground">Platform</label>
-            <select value={f('platform')} onChange={e => setF('platform', e.target.value)} className="input-field mt-0.5">
-              <option value="ebay">eBay</option>
-              <option value="amazon">Amazon</option>
-              <option value="depop">Depop</option>
-              <option value="vinted">Vinted</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground">Status</label>
-            <select value={f('status')} onChange={e => setF('status', e.target.value)} className="input-field mt-0.5">
-              <option value="draft">Draft</option>
-              <option value="active">Active</option>
-              <option value="ended">Ended</option>
-              <option value="scheduled">Scheduled</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground">Price (£)</label>
-            <input
-              type="number" step="0.01" min="0"
-              value={f('price')}
-              onChange={e => setF('price', parseFloat(e.target.value) || null)}
-              className="input-field mt-0.5"
-              placeholder="0.00"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground">Condition</label>
-            <select value={f('condition')} onChange={e => setF('condition', e.target.value)} className="input-field mt-0.5">
-              <option value="">Select…</option>
-              <option value="New">New</option>
-              <option value="Used - Like New">Used – Like New</option>
-              <option value="Used - Very Good">Used – Very Good</option>
-              <option value="Used - Good">Used – Good</option>
-              <option value="Used - Acceptable">Used – Acceptable</option>
-              <option value="For parts">For parts</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground">Category</label>
-            <input value={f('category')} onChange={e => setF('category', e.target.value)} className="input-field mt-0.5" placeholder="Category" />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground">Inventory Item ID</label>
-            <input value={f('item_id')} onChange={e => setF('item_id', e.target.value)} className="input-field mt-0.5 font-mono text-xs" placeholder="UUID" />
-          </div>
+          {[
+            { value: 'FixedPriceItem', title: 'Buy It Now', hint: 'Fixed price · Good Till Cancelled' },
+            { value: 'Chinese', title: 'Auction', hint: 'Timed bidding' },
+          ].map(option => {
+            const active = (f('listing_type') || 'FixedPriceItem') === option.value;
+            return <button key={option.value} type="button" onClick={() => setF('listing_type', option.value)} className={`rounded-2xl border p-3 sm:p-4 text-left transition-colors ${active ? 'border-primary bg-primary/10 ring-1 ring-primary/40' : 'border-border bg-secondary/20 hover:border-primary/40'}`}>
+              <span className={`block text-sm font-bold ${active ? 'text-primary' : ''}`}>{option.title}</span>
+              <span className="mt-1 block text-xs text-muted-foreground">{option.hint}</span>
+            </button>;
+          })}
         </div>
-      </div>
+        {f('listing_type') === 'Chinese' && <div>
+          <label className="text-xs text-muted-foreground">Auction duration</label>
+          <select value={f('auction_duration') || '7'} onChange={e => setF('auction_duration', Number(e.target.value))} className="input-field mt-1">
+            {[3,5,7,10].map(days => <option key={days} value={days}>{days} days</option>)}
+          </select>
+        </div>}
+      </section>
+
+      {/* Price and inventory */}
+      <section className="swish-card p-4 sm:p-5 space-y-4">
+        <div className="flex items-center gap-2 text-sm font-semibold"><span className="rounded-lg bg-primary/15 p-2 text-primary"><Tag className="w-4 h-4" /></span>Price &amp; Inventory</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Price (£) *</label><input type="number" step="0.01" min="0" value={f('price')} onChange={e => setF('price', e.target.value === '' ? '' : Number(e.target.value))} className="input-field mt-1" placeholder="0.00" /></div>
+          <div><label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Quantity</label><input type="number" min="1" step="1" value={f('quantity') || '1'} onChange={e => setF('quantity', Number(e.target.value))} className="input-field mt-1" /></div>
+          <div><label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">SKU / SWISH ID</label><input value={f('sku')} onChange={e => setF('sku', e.target.value)} className="input-field mt-1" placeholder="Optional internal reference" /></div>
+          <div><label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Inventory item ID</label><input value={f('item_id')} onChange={e => setF('item_id', e.target.value)} className="input-field mt-1 font-mono text-xs" placeholder="Linked inventory UUID" /></div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><label className="text-xs text-muted-foreground">Platform</label><select value={f('platform')} onChange={e => setF('platform', e.target.value)} className="input-field mt-1"><option value="ebay">eBay</option><option value="amazon">Amazon</option><option value="depop">Depop</option><option value="vinted">Vinted</option></select></div>
+          <div><label className="text-xs text-muted-foreground">Status</label><select value={f('status')} onChange={e => setF('status', e.target.value)} className="input-field mt-1"><option value="draft">Draft</option><option value="active">Active</option><option value="ended">Ended</option><option value="scheduled">Scheduled</option></select></div>
+        </div>
+      </section>
+
+      {/* Shipping and dispatch — preserve Simple Delivery policy */}
+      <section className="swish-card p-4 sm:p-5 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-semibold"><span className="rounded-lg bg-primary/15 p-2 text-primary"><Truck className="w-4 h-4" /></span>Shipping</div>
+        <div className="flex items-start gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3">
+          <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+          <div><p className="text-sm font-semibold">Simple Delivery — Buyer Pays</p><p className="mt-1 text-xs leading-relaxed text-muted-foreground">Use eBay Simple Delivery for shipping. SWISH does not switch this listing to seller-paid, free, or calculated shipping.</p></div>
+        </div>
+        <div>
+          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Dispatch days</label>
+          <div className="mt-2 flex flex-wrap gap-2">{[1,2,3,5,7].map(days => <button key={days} type="button" onClick={() => setF('dispatch_days', days)} className={`rounded-full border px-3 py-2 text-xs font-semibold ${Number(f('dispatch_days') || 3) === days ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'}`}>{days}d</button>)}</div>
+          <p className="mt-1 text-xs text-muted-foreground">Business days to dispatch.</p>
+        </div>
+      </section>
+
+      {/* Category and condition */}
+      <section className="swish-card p-4 sm:p-5 space-y-4">
+        <div className="flex items-center gap-2 text-sm font-semibold"><span className="rounded-lg bg-primary/15 p-2 text-primary"><Tag className="w-4 h-4" /></span>Category &amp; Condition</div>
+        <div>
+          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">eBay category</label>
+          <div className="mt-1 flex flex-col sm:flex-row gap-2">
+            <input value={f('category')} onChange={e => { setF('category', e.target.value); setF('category_id', ''); setCategorySuggestion(null); }} className="input-field min-w-0 flex-1" placeholder="Choose the most specific matching category" />
+            <button type="button" onClick={() => void suggestCategory()} disabled={suggestingCategory} className="btn-secondary shrink-0">
+              {suggestingCategory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {suggestingCategory ? 'Suggesting…' : 'Suggest with AI'}
+            </button>
+          </div>
+          {categorySuggestion && <p className="mt-2 flex items-center gap-2 text-xs text-emerald-400"><CheckCircle className="h-3.5 w-3.5" />Suggested: {categorySuggestion.name} · eBay category {categorySuggestion.id}. Please verify before publishing.</p>}
+          {!f('category') && <p className="mt-2 text-xs text-amber-400">Select or suggest a category before publishing. Category determines required item specifics.</p>}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Condition</label><select value={f('condition')} onChange={e => setF('condition', e.target.value)} className="input-field mt-1"><option value="">Select…</option><option value="New">New</option><option value="Used - Like New">Used – Like New</option><option value="Used - Very Good">Used – Very Good</option><option value="Used - Good">Used – Good</option><option value="Used - Acceptable">Used – Acceptable</option><option value="For parts">For parts</option></select></div>
+          <div><label className="text-xs text-muted-foreground">Condition description / flaws</label><input value={f('condition_description')} onChange={e => setF('condition_description', e.target.value)} className="input-field mt-1" placeholder="Visible wear, defects or notes" /></div>
+        </div>
+      </section>
     </div>
   );
 }
