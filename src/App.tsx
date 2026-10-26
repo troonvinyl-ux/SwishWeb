@@ -2,7 +2,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -61,6 +61,7 @@ const queryClient = new QueryClient({
 
 function AppRoutes() {
   const { connectionStatus, loading, user } = useAuth();
+  const location = useLocation();
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
   const hostProduct = getHostProduct();
   const preferredNiche = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
@@ -91,8 +92,16 @@ function AppRoutes() {
 
   // A product domain cannot be used to silently switch an account's niche.
   // Existing backend entitlement metadata must agree with the requested product.
-  if (hostProduct && !isOwner && preferredNiche !== hostProduct.id) {
+  if (hostProduct && !isOwner && String(user.user_metadata?.preferred_niche || '') !== hostProduct.id) {
     return <main className="min-h-screen flex items-center justify-center bg-background p-6"><section className="max-w-lg rounded-2xl border border-border bg-card p-8 text-center"><h1 className="text-2xl font-bold">Product access needs attention</h1><p className="mt-3 text-sm text-muted-foreground">This account is not currently assigned to {hostProduct.name}. Please contact support to correct the existing product entitlement. No other product workspace has been opened.</p></section></main>;
+  }
+
+  if (hostProduct && !isOwner) {
+    const path = location.pathname;
+    const commonAllowed = path === '/' || path === '/onboarding' || path.startsWith('/workspace/') || path === '/identify' || path.startsWith('/identify/') || path.startsWith('/scan/') || path.startsWith('/inventory') || path.startsWith('/listings') || path.startsWith('/orders') || path.startsWith('/dispatch') || path.startsWith('/repricing') || path.startsWith('/insights') || path.startsWith('/money') || path.startsWith('/ebay') || path.startsWith('/settings') || path === '/404';
+    const coinOnly = path.startsWith('/acquisitions') || path.startsWith('/opportunities') || path.startsWith('/review-required') || path.startsWith('/audit') || path.startsWith('/tools') || path.startsWith('/command-centre') || path.startsWith('/dashboard') || path.startsWith('/tasks');
+    const nonCoin = hostProduct.id !== 'coins';
+    if (!commonAllowed || (nonCoin && coinOnly)) return <Navigate to={`/workspace/${hostProduct.id}`} replace />;
   }
 
   return (
