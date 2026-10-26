@@ -13,6 +13,8 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSupabaseClientAsync } from '@/lib/supabase';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useInsert, useTableRow } from '@/hooks/useSupabaseQuery';
 import { callEdgeFunction } from '@/lib/supabase';
@@ -20,7 +22,7 @@ import {
   ArrowLeft, Save, Zap, Package, AlertTriangle, Info,
   CheckCircle, Scale, Ruler, Globe, Calendar,
   BookOpen, TrendingUp, ChevronDown, ChevronRight, Hash, Layers,
-  ImageIcon, X
+  ImageIcon, X, Sparkles, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
@@ -167,6 +169,7 @@ export default function ListingNew() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const insert = useInsert('listings');
+  const { user } = useAuth();
 
   const [form, setForm] = useState<Record<string, unknown>>(DEFAULT_FORM);
   const [preflighting, setPreflighting] = useState(false);
@@ -177,6 +180,8 @@ export default function ListingNew() {
   const [showImages, setShowImages] = useState(true);
   const [preFilled, setPreFilled] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [suggestingCategory, setSuggestingCategory] = useState(false);
+  const [categorySuggestion, setCategorySuggestion] = useState<{ id: string; name: string } | null>(null);
 
   const setF = (key: string, val: unknown) => setForm(p => ({ ...p, [key]: val }));
   const f = (key: string) => (form[key] as string) || '';
@@ -301,6 +306,42 @@ export default function ListingNew() {
       },
       onError: (e) => toast.error(e.message),
     });
+  };
+
+  // Suggest a verified eBay UK leaf category from the item title. This works without photos.
+  const handleSuggestCategory = async () => {
+    const title = f('title').trim();
+    if (title.length < 2) { toast.error('Enter an item title before suggesting a category'); return; }
+    if (!user?.id) { toast.error('Sign in again before requesting a category suggestion'); return; }
+    setSuggestingCategory(true);
+    setCategorySuggestion(null);
+    try {
+      const sb = await getSupabaseClientAsync();
+      if (!sb) throw new Error('Backend not connected');
+      const { data: membership, error: membershipError } = await sb.from('tenant_memberships')
+        .select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
+      if (membershipError) throw membershipError;
+      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready');
+      const { data, error } = await callEdgeFunction('swish-ebay-list', {
+        route: 'get_category_suggestions', tenantId: String(membership.tenant_id), query: title.slice(0, 100),
+      });
+      if (error) throw error;
+      const payload = data as any;
+      const suggestions = Array.isArray(payload?.suggestions) ? payload.suggestions : [];
+      const best = suggestions.find((cat: any) => cat?.id && cat?.name && cat.isLeaf === true);
+      if (!payload?.success || !best) {
+        throw new Error(payload?.error || 'No matching eBay leaf category was found. Try a more descriptive title.');
+      }
+      const suggestion = { id: String(best.id), name: String(best.name) };
+      setCategorySuggestion(suggestion);
+      setF('category', suggestion.name);
+      setF('category_id', suggestion.id);
+      toast.success('AI suggested an eBay category. Please verify it before publishing.');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not suggest an eBay category');
+    } finally {
+      setSuggestingCategory(false);
+    }
   };
 
   // ── PREFLIGHT ────────────────────────────────────────────────────────────
@@ -611,17 +652,17 @@ export default function ListingNew() {
             </select>
           </div>
 
-          {/* Category */}
-          <div>
+          {/* Category: niche-neutral input with the same AI suggestion flow as the main app */}
+          <div className="space-y-2">
             <label className="text-xs text-muted-foreground">eBay Category</label>
-            <select value={f('category')} onChange={e => setF('category', e.target.value)} className="input-field mt-0.5">
-              <option value="Coins: British">Coins: British</option>
-              <option value="Coins: World">Coins: World</option>
-              <option value="Coins: Ancient">Coins: Ancient</option>
-              <option value="Coins: Errors, Mules & Varieties">Coins: Errors, Mules &amp; Varieties</option>
-              <option value="Coins: Tokens & Medals">Coins: Tokens &amp; Medals</option>
-              <option value="Coins">Coins (other)</option>
-            </select>
+            <div className="flex gap-2">
+              <input value={f('category')} onChange={e => { setF('category', e.target.value); setCategorySuggestion(null); setF('category_id', ''); }} className="input-field mt-0.5 flex-1" placeholder="e.g. Jackets & Coats" />
+              <button type="button" onClick={() => void handleSuggestCategory()} disabled={suggestingCategory} className="btn-secondary shrink-0 mt-0.5">
+                {suggestingCategory ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                {suggestingCategory ? 'Suggesting…' : 'Suggest with AI'}
+              </button>
+            </div>
+            {categorySuggestion && <p className="text-xs text-green-400 flex items-center gap-1.5"><CheckCircle className="w-3 h-3" />Suggested: {categorySuggestion.name} · eBay category {categorySuggestion.id}. Verify before publishing.</p>}
           </div>
         </div>
 
