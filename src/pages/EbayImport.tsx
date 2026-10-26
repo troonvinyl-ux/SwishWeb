@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { getSupabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Upload, Download, RefreshCw, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, Download, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 type ImportResult = { imported: number; updated: number; skipped: number; errors: string[]; type: string };
@@ -72,14 +72,20 @@ export default function EbayImport() {
     return { sb, tenantId: String(membership.tenant_id) };
   };
 
-  const activeNiche = String(
-    user?.user_metadata?.preferred_niche ||
-    localStorage.getItem('swish_active_niche') ||
-    'coins',
-  ).toLowerCase();
+  const preferredNiche = String(user?.user_metadata?.preferred_niche || 'coins').toLowerCase();
+  const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
+  const activeNiche = String((isOwner ? localStorage.getItem('swish_active_niche') : preferredNiche) || preferredNiche).toLowerCase();
   const specialistId = NICHE_SPECIALIST[activeNiche] || 'coins';
-  const categoryNiche = Object.entries(NICHE_CATEGORIES).find(([, ids]) => ids.includes(''))?.[0];
   const selectedCategoryIds = NICHE_CATEGORIES[specialistId] || NICHE_CATEGORIES[activeNiche] || [];
+  const nicheSpecialistIds = specialistId === 'clothing'
+    ? ['clothing', 'trainers_sneakers']
+    : specialistId === 'bicycles'
+      ? ['bicycles', 'bikes']
+      : specialistId === 'motocross'
+        ? ['motocross', 'mx']
+        : specialistId === 'surplus_trader'
+          ? ['surplus_trader', 'surplus_flip']
+          : ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic'];
   const nicheKey = specialistId === 'motocross' ? 'motocross' : specialistId === 'bicycles' ? 'bicycles' : specialistId === 'clothing' ? 'clothing' : 'coins';
 
   const handleFile = (files: FileList | null) => {
@@ -105,13 +111,16 @@ export default function EbayImport() {
       if (rows.length > 5000) throw new Error('Please split files larger than 5,000 rows into smaller imports.');
 
       const { data: existing, error: existingError } = await sb.from('listings')
-        .select('id, item_id, external_listing_id')
+        .select('id, item_id, external_listing_id, items!inner(specialist_id)')
         .eq('tenant_id', tenantId).eq('marketplace_id', 'ebay')
         .not('external_listing_id', 'is', null);
       if (existingError) throw existingError;
       const existingById = new Map<string, Record<string, unknown>>();
       for (const listing of existing || []) {
-        if (listing.external_listing_id) existingById.set(String(listing.external_listing_id), listing as Record<string, unknown>);
+        if (listing.external_listing_id) {
+          const item = listing.items as Record<string, unknown> | null;
+          existingById.set(String(listing.external_listing_id), { ...(listing as Record<string, unknown>), existing_specialist_id: item?.specialist_id });
+        }
       }
 
       let imported = 0, updated = 0, skipped = 0;
@@ -139,6 +148,12 @@ export default function EbayImport() {
 
           const prior = existingById.get(externalId);
           if (prior) {
+            // Never move an existing eBay listing between niches because a CSV
+            // was imported from a different workspace.
+            if (!nicheSpecialistIds.includes(String(prior.existing_specialist_id || ''))) {
+              skipped++;
+              continue;
+            }
             const { error: listingUpdateError } = await sb.from('listings').update({
               title: title.slice(0, 200), description, price, status,
               category_id: categoryId || null, updated_at: new Date().toISOString(),
@@ -219,8 +234,9 @@ export default function EbayImport() {
       let rows: Record<string, unknown>[] = [];
       if (importType === 'listings') {
         const { data, error } = await sb.from('listings')
-          .select('external_listing_id,title,description,price,status,category_id,published_at,created_at')
+          .select('external_listing_id,title,description,price,status,category_id,published_at,created_at,items!inner(specialist_id)')
           .eq('tenant_id', tenantId).eq('marketplace_id', 'ebay')
+          .in('items.specialist_id', nicheSpecialistIds)
           .order('created_at', { ascending: false }).limit(5000);
         if (error) throw error;
         rows = (data || []) as Record<string, unknown>[];
@@ -233,15 +249,17 @@ export default function EbayImport() {
         rows = (data || []) as Record<string, unknown>[];
       } else if (importType === 'orders') {
         const { data, error } = await sb.from('orders')
-          .select('external_order_id,buyer_username,total_amount,fulfilment_status,created_at,dispatched_at')
+          .select('external_order_id,buyer_username,total_amount,fulfilment_status,created_at,dispatched_at,items!inner(specialist_id)')
           .eq('tenant_id', tenantId).eq('marketplace_id', 'ebay')
+          .in('items.specialist_id', nicheSpecialistIds)
           .order('created_at', { ascending: false }).limit(5000);
         if (error) throw error;
         rows = (data || []) as Record<string, unknown>[];
       } else {
         const { data, error } = await sb.from('listings')
-          .select('category_id,title,status')
-          .eq('tenant_id', tenantId).eq('marketplace_id', 'ebay').limit(5000);
+          .select('category_id,title,status,items!inner(specialist_id)')
+          .eq('tenant_id', tenantId).eq('marketplace_id', 'ebay')
+          .in('items.specialist_id', nicheSpecialistIds).limit(5000);
         if (error) throw error;
         const unique = new Map<string, Record<string, unknown>>();
         for (const row of data || []) {
