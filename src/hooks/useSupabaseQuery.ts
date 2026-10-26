@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useId } from 'react';
 import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 
 // ---------------------------------------------------------------------------
@@ -30,6 +31,32 @@ export interface TableOptions {
 // ---------------------------------------------------------------------------
 
 export function useTable(table: string, options?: TableOptions) {
+  const qc = useQueryClient();
+  const syncInstanceId = useId().replace(/[^a-zA-Z0-9-]/g, '');
+  // Keep the web inventory fresh when the native app, another browser, or an
+  // eBay sync updates canonical inventory/listing records in the shared backend.
+  useEffect(() => {
+    if (table !== 'items' && table !== 'listings') return;
+    let active = true;
+    let channel: ReturnType<NonNullable<ReturnType<typeof getSupabaseClient>>['channel']> | null = null;
+    const connect = async () => {
+      const sb = await getClient();
+      if (!active) return;
+      channel = sb.channel(`swish-web-sync-${table}-${syncInstanceId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
+          void qc.invalidateQueries({ queryKey: [table] });
+        })
+        .subscribe();
+    };
+    void connect().catch(error => {
+      console.warn(`[SWISH] Realtime sync unavailable for ${table}:`, error instanceof Error ? error.message : error);
+    });
+    return () => {
+      active = false;
+      if (channel) void getClient().then(sb => sb.removeChannel(channel!)).catch(() => {});
+    };
+  }, [table, qc, syncInstanceId]);
+
   return useQuery({
     queryKey: [table, options],
     enabled: options?.enabled !== false,
