@@ -70,6 +70,33 @@ export default function InventoryItem() {
     }
   };
 
+  const detailFields: Array<{ key: string; label: string }> = [
+    { key: 'title', label: 'Title' },
+    { key: 'brand', label: 'Brand' },
+    { key: 'condition', label: 'Condition' },
+    ...(isClothing ? [
+      { key: 'garment_type', label: 'Garment Type' }, { key: 'era', label: 'Era' },
+      { key: 'size', label: 'Size' }, { key: 'composition', label: 'Composition' },
+      { key: 'colour', label: 'Colour' }, { key: 'made_in', label: 'Made In' },
+      { key: 'auth_risk', label: 'Auth Risk' },
+    ] : isBike ? [
+      { key: 'category', label: 'Bike Type' }, { key: 'frame_size', label: 'Frame Size' },
+      { key: 'frame_material', label: 'Frame Material' }, { key: 'groupset', label: 'Groupset' },
+      { key: 'wheel_size', label: 'Wheel Size' }, { key: 'year', label: 'Year Range' },
+      { key: 'country', label: 'Country' }, { key: 'weight', label: 'Weight' },
+    ] : isMX ? [
+      { key: 'category', label: 'Vehicle Type' }, { key: 'engine_size', label: 'Engine Size' },
+      { key: 'stroke_type', label: 'Stroke Type' }, { key: 'year', label: 'Year' },
+      { key: 'running_status', label: 'Running Status' }, { key: 'country', label: 'Country' },
+    ] : [
+      { key: 'denomination', label: 'Denomination' }, { key: 'ruler', label: 'Ruler' },
+      { key: 'period', label: 'Period' }, { key: 'mint', label: 'Mint' },
+      { key: 'year', label: 'Year' }, { key: 'country', label: 'Country' },
+      { key: 'material', label: 'Material' }, { key: 'diameter', label: 'Diameter' },
+      { key: 'weight', label: 'Weight' },
+    ]),
+  ];
+
   const startEdit = () => {
     if (!row) return;
     setForm({
@@ -249,44 +276,7 @@ export default function InventoryItem() {
           <div className="swish-card p-4">
             <h3 className="text-sm font-semibold mb-3">Item Details</h3>
             <div className="grid grid-cols-2 gap-3">
-              {[
-                { key: 'title', label: 'Title' },
-                { key: 'brand', label: 'Brand' },
-                ...(isClothing ? [
-                  { key: 'garment_type', label: 'Garment Type' },
-                  { key: 'era', label: 'Era' },
-                  { key: 'size', label: 'Size' },
-                  { key: 'composition', label: 'Composition' },
-                  { key: 'colour', label: 'Colour' },
-                  { key: 'made_in', label: 'Made In' },
-                  { key: 'auth_risk', label: 'Auth Risk' },
-                ] : isBike ? [
-                  { key: 'category', label: 'Bike Type' },
-                  { key: 'frame_size', label: 'Frame Size' },
-                  { key: 'frame_material', label: 'Frame Material' },
-                  { key: 'groupset', label: 'Groupset' },
-                  { key: 'wheel_size', label: 'Wheel Size' },
-                  { key: 'year', label: 'Year Range' },
-                  { key: 'country', label: 'Country' },
-                  { key: 'weight', label: 'Weight' },
-                ] : isMX ? [
-                  { key: 'category', label: 'Vehicle Type' },
-                  { key: 'engine_size', label: 'Engine Size' },
-                  { key: 'stroke_type', label: 'Stroke Type' },
-                  { key: 'year', label: 'Year' },
-                  { key: 'running_status', label: 'Running Status' },
-                  { key: 'country', label: 'Country' },
-                ] : [
-                  { key: 'denomination', label: 'Denomination' },
-                  { key: 'ruler', label: 'Ruler' },
-                  { key: 'period', label: 'Period' },
-                  { key: 'mint', label: 'Mint' },
-                  { key: 'year', label: 'Year' },
-                  { key: 'country', label: 'Country' },
-                  { key: 'material', label: 'Material' },
-                  { key: 'diameter', label: 'Diameter' },
-                  { key: 'weight', label: 'Weight' },
-                ] as Array<{key: string; label: string}>).map(({ key, label }) => (
+              {detailFields.map(({ key, label }) => (
                 <div key={key}>
                   <label className="text-xs text-muted-foreground">{label}</label>
                   {editing ? (
