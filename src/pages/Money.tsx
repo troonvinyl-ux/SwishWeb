@@ -2,47 +2,74 @@ import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatCurrency } from '@/lib/utils';
 import { Wallet, RefreshCw, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { callEdgeFunction, EdgeFunctionError } from '@/lib/supabase';
+import { callEdgeFunction, EdgeFunctionError, getSupabaseClientAsync } from '@/lib/supabase';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { useState, useEffect } from 'react';
 import { formatDate } from '@/lib/utils';
 
 export default function Money() {
   const qc = useQueryClient();
   const [dateRange, setDateRange] = useState('30');
+  const { tenantId } = useCurrentTenantId();
 
   // Read the same canonical sales ledger used by the SWISH app. RLS remains
   // enforced by the existing backend; only eBay sales are included here.
   const { data: salesData, error: salesError } = useTable('sales', {
-    filter: { marketplace_id: 'ebay' },
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
     order: { column: 'sold_at', ascending: false },
     limit: 500,
+    enabled: Boolean(tenantId),
   });
   const { data: ordersData, error: ordersError } = useTable('orders', {
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
     order: { column: 'created_at', ascending: false },
     limit: 500,
+    enabled: Boolean(tenantId),
   });
   const { data: feesData } = useTable('fees', {
+    filter: { tenant_id: tenantId },
     order: { column: 'created_at', ascending: false },
     limit: 200,
+    enabled: Boolean(tenantId),
   });
   const { data: payoutsData } = useTable('payouts', {
+    filter: { tenant_id: tenantId },
     order: { column: 'created_at', ascending: false },
     limit: 100,
+    enabled: Boolean(tenantId),
   });
 
   const [ebayBalance, setEbayBalance] = useState<Record<string, unknown> | null>(null);
   const [ebayError, setEbayError] = useState('');
 
   useEffect(() => {
-    callEdgeFunction('ebay-finances-summary', {}).then(({ data, error }) => {
-      if (error) {
-        const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
+    if (!tenantId) {
+      setEbayBalance(null);
+      return;
+    }
+    let active = true;
+    const loadFinanceSummary = async () => {
+      try {
+        const sb = await getSupabaseClientAsync();
+        if (!sb) throw new Error('Backend not connected.');
+        const { data, error } = await callEdgeFunction<Record<string, unknown>>('swish-ebay-finances', {
+          route: 'get_summary',
+          tenantId,
+          daysBack: Math.min(365, Math.max(1, Number.parseInt(dateRange, 10) || 30)),
+        }, sb);
+        if (error) throw error;
+        if (!active) return;
+        setEbayBalance((data?.summary as Record<string, unknown>) || data || null);
+        setEbayError('');
+      } catch (error) {
+        if (!active) return;
+        const msg = error instanceof EdgeFunctionError ? error.displayMessage : error instanceof Error ? error.message : 'eBay financial summary unavailable';
         setEbayError(msg);
-      } else if (data) {
-        setEbayBalance(data as Record<string, unknown>);
       }
-    });
-  }, []);
+    };
+    void loadFinanceSummary();
+    return () => { active = false; };
+  }, [tenantId, dateRange]);
 
   const sales    = (salesData || []) as Record<string, unknown>[];
   const orders   = (ordersData || []) as Record<string, unknown>[];
