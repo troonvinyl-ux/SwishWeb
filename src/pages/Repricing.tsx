@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useTable, useUpdate } from '@/hooks/useSupabaseQuery';
+import { useTable } from '@/hooks/useSupabaseQuery';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { formatCurrency, statusVariant, truncate } from '@/lib/utils';
 import { RefreshCw, TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -9,43 +10,43 @@ import { toast } from 'sonner';
 export default function Repricing() {
   const qc = useQueryClient();
   const [repricing, setRepricing] = useState<string | null>(null);
-  const [bulkRunning, setBulkRunning] = useState(false);
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
 
   const { data, isLoading, error } = useTable('listings', {
-    filter: { status: 'active' },
+    filter: { tenant_id: tenantId, status: 'active' },
+    enabled: Boolean(tenantId),
     order: { column: 'updated_at', ascending: true },
   });
 
   const items = (data || []) as Record<string, unknown>[];
 
   const handleReprice = async (listingId: string) => {
+    if (!tenantId) { toast.error('Your SWISH workspace is not ready.'); return; }
     setRepricing(listingId);
-    const { data, error } = await callEdgeFunction('reprice', { listing_id: listingId });
-    if (error) {
-      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
+    try {
+      const { data, error } = await callEdgeFunction('swish-reprice', {
+        listing_id: listingId,
+        tenant_id: tenantId,
+      });
+      if (error) throw error;
+      const payload = data as Record<string, unknown>;
+      const result = (payload?.result || {}) as Record<string, unknown>;
+      const suggested = Number(result.suggested_price);
+      if (!Number.isFinite(suggested) || suggested <= 0) throw new Error('The repricing service returned no valid suggestion.');
+      // swish-reprice returns a recommendation; it does not apply a new eBay price.
+      qc.setQueriesData({ queryKey: ['listings'] }, (old: unknown) => {
+        if (!Array.isArray(old)) return old;
+        return old.map(row => row && typeof row === 'object' && (row as Record<string, unknown>).id === listingId
+          ? { ...(row as Record<string, unknown>), suggested_price: suggested, reprice_rationale: result.rationale }
+          : row);
+      });
+      toast.success(`Suggested price: ${formatCurrency(suggested)}. No price was changed.`);
+    } catch (error) {
+      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error instanceof Error ? error.message : 'Could not generate a repricing suggestion';
       toast.error(msg);
-    } else {
-      const result = data as Record<string, unknown>;
-      const newPrice = result?.new_price || result?.price;
-      toast.success(newPrice ? `Repriced to ${formatCurrency(newPrice as number)}` : 'Repriced successfully');
-      qc.invalidateQueries({ queryKey: ['listings'] });
+    } finally {
+      setRepricing(null);
     }
-    setRepricing(null);
-  };
-
-  const handleBulkReprice = async () => {
-    setBulkRunning(true);
-    const { data, error } = await callEdgeFunction('reprice-all', {});
-    if (error) {
-      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
-      toast.error(msg);
-    } else {
-      const result = data as Record<string, unknown>;
-      const count = result?.repriced || result?.updated || result?.count;
-      toast.success(count !== undefined ? `${count} listings repriced` : 'Bulk reprice complete');
-      qc.invalidateQueries({ queryKey: ['listings'] });
-    }
-    setBulkRunning(false);
   };
 
   return (
@@ -53,21 +54,21 @@ export default function Repricing() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Repricing</h1>
-          <p className="page-subtitle">{items.length} active listing{items.length !== 1 ? 's' : ''}</p>
+          <p className="page-subtitle">{tenantLoading ? 'Loading workspace…' : `${items.length} active listing${items.length !== 1 ? 's' : ''}`}</p>
+          <p className="text-xs text-muted-foreground mt-1">Suggestions only: SWISH does not change eBay prices automatically.</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => qc.invalidateQueries({ queryKey: ['listings'] })} className="btn-ghost" disabled={isLoading}>
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
-          <button onClick={handleBulkReprice} disabled={bulkRunning || items.length === 0} className="btn-primary">
-            <RefreshCw className={`w-3.5 h-3.5 ${bulkRunning ? 'animate-spin' : ''}`} />
-            {bulkRunning ? 'Repricing…' : 'Reprice All'}
+          <button disabled title="Bulk repricing is not supported by the current shared backend." className="btn-secondary opacity-60 cursor-not-allowed">
+            Reprice All unavailable
           </button>
         </div>
       </div>
 
       <div className="swish-card overflow-hidden">
-        {isLoading ? (
+        {isLoading || tenantLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading listings…</div>
         ) : error ? (
           <div className="p-6 flex gap-3 items-start">
