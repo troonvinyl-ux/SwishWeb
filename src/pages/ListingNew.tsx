@@ -370,29 +370,48 @@ export default function ListingNew() {
 
   // ── PREFLIGHT ────────────────────────────────────────────────────────────
   const handlePreflight = async () => {
-    if (!f('title')) { toast.error('Enter a title before running preflight'); return; }
     setPreflighting(true);
     setPreflightResult(null);
-    const { data, error } = await callEdgeFunction('listing-preflight', {
-      listing_data: { ...form, price: parseFloat(form.price as string) || null },
-    });
-    if (error) {
-      toast.error((error as { displayMessage?: string; message: string }).displayMessage || error.message);
-    } else {
-      const res = data as Record<string, unknown>;
-      setPreflightResult(res);
-      const status = (res?.status || res?.result || '') as string;
-      if (status === 'pass' || status === 'ok') {
-        toast.success('Preflight passed — listing ready to save');
-      } else {
-        const issues = [
-          ...((res?.errors as string[]) || []),
-          ...((res?.warnings as string[]) || []),
-        ];
-        if (issues.length) toast.warning(issues.slice(0, 3).join(' · '));
-        else toast.info('Preflight complete');
-      }
-    }
+    // The authoritative SWISH backend does not expose a listing-preflight Edge
+    // Function. Run transparent local draft checks instead of calling a
+    // nonexistent endpoint or pretending eBay performed a server-side check.
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const passes: string[] = [];
+    const title = f('title').trim();
+    const description = f('description').trim();
+    const price = Number.parseFloat(f('price'));
+
+    if (!title) errors.push('Enter a listing title.');
+    else if (title.length > 80) errors.push('eBay listing titles must be 80 characters or fewer.');
+    else passes.push('Title is present and within the 80-character limit.');
+
+    if (!f('item_id')) errors.push('Link this listing to a confirmed inventory record before creating it.');
+    else passes.push('Listing is linked to an inventory record.');
+
+    if (!Number.isFinite(price) || price <= 0) errors.push('Enter a valid listing price greater than zero.');
+    else passes.push('Listing price is valid.');
+
+    if (!description) warnings.push('Add a description before publishing.');
+    else passes.push('Description is present.');
+
+    if (form.shipping_type !== 'simple_delivery') errors.push('Shipping must use Simple Delivery.');
+    else passes.push('Simple Delivery is selected.');
+
+    if (form.shipping_paid_by !== 'buyer') errors.push('Shipping must be paid by the buyer.');
+    else passes.push('Buyer-pays shipping is selected.');
+
+    const result: Record<string, unknown> = {
+      status: errors.length ? 'fail' : 'pass',
+      mode: 'local_only',
+      errors,
+      warnings,
+      passes,
+      note: 'Local draft checks only. No eBay API preflight was performed.',
+    };
+    setPreflightResult(result);
+    if (errors.length) toast.warning(errors.slice(0, 3).join(' · '));
+    else toast.success('Local draft checks passed. This is not an eBay API validation.');
     setPreflighting(false);
   };
 
@@ -558,7 +577,7 @@ export default function ListingNew() {
             : 'border-warning'
         }`}>
           <p className="font-medium capitalize">
-            Preflight: {(preflightResult.status || preflightResult.result || 'complete') as string}
+            {preflightResult.mode === 'local_only' ? 'Local draft checks only (no eBay API validation)' : `Preflight: ${(preflightResult.status || preflightResult.result || 'complete') as string}`}
           </p>
           {((preflightResult.errors as string[]) || []).map((e, i) => (
             <p key={i} className="text-destructive">✗ {e}</p>
