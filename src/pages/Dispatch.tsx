@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTable, useUpdate } from '@/hooks/useSupabaseQuery';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatDate, truncate } from '@/lib/utils';
 import { Truck, RefreshCw, CheckCircle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { callEdgeFunction } from '@/lib/supabase';
+import { callEdgeFunction, getSupabaseClientAsync } from '@/lib/supabase';
 
 export default function Dispatch() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const preferredNiche = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins').toLowerCase();
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
   const activeNiche = String((isOwner ? localStorage.getItem('swish_active_niche') : preferredNiche) || preferredNiche).toLowerCase();
@@ -21,32 +23,39 @@ export default function Dispatch() {
     ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic'].includes(activeNiche) ? ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic', 'curiosities_collectibles'] : [];
   const { data, isLoading, error } = useTable('orders', {
     select: '*, items!inner(specialist_id)',
-    filter: { status: 'awaiting_dispatch' },
+    filter: { tenant_id: tenantId, status: 'awaiting_dispatch' },
     inFilter: specialistIds.length ? { 'items.specialist_id': specialistIds } : undefined,
-    enabled: specialistIds.length > 0,
+    enabled: Boolean(tenantId) && specialistIds.length > 0,
     order: { column: 'dispatch_by', ascending: true },
   });
-  const update = useUpdate('orders');
 
   const items = (data || []) as Record<string, unknown>[];
   const [tracking, setTracking] = useState<Record<string, { number: string; carrier: string }>>({});
 
-  const handleDispatch = async (orderId: string, orderDbId: string) => {
-    const t = tracking[orderDbId] || {};
-    const { error } = await callEdgeFunction('dispatch-order', {
-      order_id: orderId,
-      tracking_number: t.number,
-      carrier: t.carrier,
-    });
-    if (error) {
-      // fallback: update directly
-      update.mutate({ id: orderDbId, updates: { status: 'dispatched', tracking_number: t.number, carrier: t.carrier, dispatched_at: new Date().toISOString() } }, {
-        onSuccess: () => { toast.success('Marked as dispatched'); qc.invalidateQueries({ queryKey: ['orders'] }); },
-        onError: e => toast.error(e.message),
-      });
-    } else {
-      toast.success('Dispatched via backend');
-      qc.invalidateQueries({ queryKey: ['orders'] });
+  const handleDispatch = async (orderDbId: string) => {
+    const t = tracking[orderDbId] || { number: '', carrier: '' };
+    if (!tenantId) { toast.error('Your SWISH workspace is not ready.'); return; }
+    if (!t.number.trim() || !t.carrier.trim()) {
+      toast.error('Enter the tracking number and carrier before dispatching.');
+      return;
+    }
+    try {
+      const sb = await getSupabaseClientAsync();
+      if (!sb) throw new Error('Backend not connected.');
+      const { error } = await callEdgeFunction('swish-ebay-post-order', {
+        route: 'dispatch',
+        tenantId,
+        orderId: orderDbId,
+        trackingNumber: t.number.trim(),
+        carrier: t.carrier.trim(),
+      }, sb);
+      if (error) throw error;
+      toast.success('eBay confirmed dispatch');
+      await qc.invalidateQueries({ queryKey: ['orders'] });
+    } catch (error) {
+      // Never mark an order dispatched locally when eBay rejects or the
+      // authoritative fulfilment endpoint fails.
+      toast.error(error instanceof Error ? error.message : 'eBay dispatch failed. Order remains awaiting dispatch.');
     }
   };
 
@@ -62,7 +71,7 @@ export default function Dispatch() {
         </button>
       </div>
 
-      {isLoading ? (
+      {isLoading || tenantLoading ? (
         <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
       ) : error ? (
         <div className="p-8 text-center text-destructive text-sm">{(error as Error).message}</div>
@@ -110,7 +119,7 @@ export default function Dispatch() {
                       <option value="FedEx">FedEx</option>
                     </select>
                     <button
-                      onClick={() => handleDispatch((o.external_order_id || o.order_id || o.id) as string, o.id as string)}
+                      onClick={() => handleDispatch(o.id as string)}
                       className="btn-primary"
                     >
                       <Truck className="w-3.5 h-3.5" />Mark Dispatched
