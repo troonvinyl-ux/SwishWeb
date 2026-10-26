@@ -137,9 +137,9 @@ export default function InventoryItem() {
       if (formKey in form) nextAttrs[attributeKey] = form[formKey];
     }
     if (Object.keys(attributeKeys).some(key => key in form)) updates.attributes = nextAttrs;
-    if ('brand' in form && !row.manufacturer) updates.manufacturer = form.brand;
-    if ('composition' in form && !row.material) updates.material = form.composition;
-    if ('made_in' in form && !row.country_of_origin) updates.country_of_origin = form.made_in;
+    if ('brand' in form) updates.manufacturer = form.brand;
+    if ('composition' in form) updates.material = form.composition;
+    if ('made_in' in form) updates.country_of_origin = form.made_in;
     if ('cost_price' in form) updates.acquired_cost = Number(form.cost_price) || 0;
     if ('valuation' in form) updates.valuation_mid = Number(form.valuation) || 0;
     if ('sale_price' in form) updates.expected_selling_price = Number(form.sale_price) || 0;
