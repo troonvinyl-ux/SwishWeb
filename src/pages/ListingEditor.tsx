@@ -207,7 +207,7 @@ export default function ListingEditor() {
   if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm"><Loader2 className="w-5 h-5 animate-spin mx-auto" /></div>;
 
   return (
-    <div className="max-w-2xl space-y-4 animate-fade-in">
+    <div className="w-full max-w-4xl space-y-4 animate-fade-in">
       <div className="flex items-center gap-3 flex-wrap">
         <Link to="/listings" className="btn-ghost py-1.5 px-2"><ArrowLeft className="w-4 h-4" /></Link>
         <h1 className="page-title flex-1">Edit Listing</h1>
@@ -416,7 +416,7 @@ export default function ListingEditor() {
             <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Listing title *</label>
             <span className={`text-xs ${f('title').length > 80 ? 'text-destructive' : 'text-muted-foreground'}`}>{f('title').length}/80</span>
           </div>
-          <input maxLength={120} value={f('title')} onChange={e => setF('title', e.target.value)} className="input-field mt-1" placeholder="Front-load brand, item type, colour and size" />
+          <input maxLength={80} value={f('title')} onChange={e => setF('title', e.target.value)} className="input-field mt-1" placeholder="Front-load brand, item type, colour and size" />
           <p className="mt-1 text-xs text-muted-foreground">Keep the eBay title to 80 characters or fewer.</p>
         </div>
         <div>
