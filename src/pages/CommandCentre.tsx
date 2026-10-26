@@ -3,7 +3,7 @@ import { callEdgeFunction, EdgeFunctionError } from '@/lib/supabase';
 import { useTable, useCount } from '@/hooks/useSupabaseQuery';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { formatRelative } from '@/lib/utils';
-import { Terminal, RefreshCw, Zap, Package, Tag, ShoppingCart, AlertTriangle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Terminal, RefreshCw, Zap, ShoppingCart, AlertTriangle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
