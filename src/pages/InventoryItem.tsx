@@ -15,6 +15,7 @@ export default function InventoryItem() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [identifying, setIdentifying] = useState(false);
+  const [identificationResult, setIdentificationResult] = useState<Record<string, unknown> | null>(null);
   const [valuing, setValuing] = useState(false);
 
   const row = item as Record<string, unknown> | null;
@@ -158,17 +159,52 @@ export default function InventoryItem() {
   };
 
   const handleIdentify = async () => {
-    if (!id) return;
+    if (!id || !row) return;
+    const tenantId = String(row.tenant_id || '');
+    const mediaUrls = Array.isArray(row.media)
+      ? row.media.filter((url): url is string => typeof url === 'string' && url.startsWith('https://'))
+      : [];
+    const fallbackUrls = [row.image_url, row.image_url_1, row.image_url_2]
+      .filter((url): url is string => typeof url === 'string' && url.startsWith('https://'));
+    const existingImageUrls = [...new Set([...mediaUrls, ...fallbackUrls])].slice(0, 6);
+    if (!tenantId) { toast.error('This item is not linked to a SWISH workspace.'); return; }
+    if (existingImageUrls.length === 0) { toast.error('Add a downloadable HTTPS image before re-identifying this item.'); return; }
+
     setIdentifying(true);
-    const { data, error } = await callEdgeFunction('identify', { item_id: id });
-    if (error) {
-      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
+    try {
+      const { data, error } = await callEdgeFunction<Record<string, unknown>>('swish-identify', {
+        tenantId,
+        specialistId: specialistId || 'curiosities_collectibles',
+        existingImageUrls,
+        knownAttributes: attrs,
+      });
+      if (error) throw error;
+      const result = data?.identification;
+      if (!result || typeof result !== 'object' || Array.isArray(result)) {
+        throw new Error('The identification service returned no reviewable candidate.');
+      }
+      setIdentificationResult(result as Record<string, unknown>);
+      toast.success('AI suggestion ready to review. No item fields have been changed.');
+    } catch (error) {
+      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error instanceof Error ? error.message : 'Identification failed';
       toast.error(msg);
-    } else {
-      toast.success('Identification complete');
-      refetch();
+    } finally {
+      setIdentifying(false);
     }
-    setIdentifying(false);
+  };
+
+  const applyIdentificationTitle = () => {
+    if (!id || !identificationResult) return;
+    const suggestedTitle = String(identificationResult.canonicalTitle || identificationResult.title || '').trim();
+    if (!suggestedTitle) { toast.error('This candidate has no supported title to apply.'); return; }
+    update.mutate({ id, updates: { canonical_title: suggestedTitle } }, {
+      onSuccess: () => {
+        setIdentificationResult(null);
+        toast.success('Suggested title saved. Review the remaining attributes before confirming the item.');
+        void refetch();
+      },
+      onError: error => toast.error(error.message),
+    });
   };
 
   const handleValue = async () => {
@@ -262,6 +298,37 @@ export default function InventoryItem() {
           )}
         </div>
       </div>
+
+      {identificationResult && (
+        <div className="swish-card p-4 space-y-3">
+          <div>
+            <h2 className="text-sm font-semibold">AI identification suggestion — not yet saved</h2>
+            <p className="text-sm mt-1">{String(identificationResult.canonicalTitle || identificationResult.title || 'No title returned')}</p>
+            {identificationResult.confidence != null && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Confidence: {Math.round(Math.max(0, Math.min(1, Number(identificationResult.confidence))) * 100)}%
+              </p>
+            )}
+          </div>
+          {Array.isArray(identificationResult.evidenceSupporting) && identificationResult.evidenceSupporting.length > 0 && (
+            <div className="text-xs text-muted-foreground">
+              <strong>Supporting evidence:</strong> {(identificationResult.evidenceSupporting as unknown[]).slice(0, 3).map(String).join(' · ')}
+            </div>
+          )}
+          {Array.isArray(identificationResult.warnings) && identificationResult.warnings.length > 0 && (
+            <div className="text-xs text-warning">
+              {(identificationResult.warnings as unknown[]).slice(0, 3).map(String).join(' · ')}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button onClick={applyIdentificationTitle} disabled={update.isPending} className="btn-primary">
+              {update.isPending ? 'Saving…' : 'Apply suggested title'}
+            </button>
+            <button onClick={() => setIdentificationResult(null)} className="btn-secondary">Dismiss</button>
+          </div>
+          <p className="text-xs text-muted-foreground">Only the title is applied after your confirmation. Other attributes remain unchanged until reviewed.</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Image panel */}
