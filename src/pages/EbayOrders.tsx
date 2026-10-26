@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 export default function EbayOrders() {
   const qc = useQueryClient();
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
-  const { data, isLoading, error } = useTable('ebay_orders', {
+  const { data, isLoading } = useTable('ebay_orders', {
     filter: { tenant_id: tenantId },
     order: { column: 'created_at', ascending: false },
     enabled: Boolean(tenantId),
