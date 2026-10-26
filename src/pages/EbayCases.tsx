@@ -55,7 +55,7 @@ export default function EbayCases() {
       </div>
 
       <div className="swish-card overflow-hidden">
-        {isLoading ? (
+        {isLoading || tenantLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading cases…</div>
         ) : error ? (
           <div className="p-8 text-center text-destructive text-sm">{(error as Error).message}</div>
