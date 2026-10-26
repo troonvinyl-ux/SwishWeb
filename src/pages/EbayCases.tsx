@@ -3,10 +3,9 @@ import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { formatCurrency, formatDate, statusVariant, truncate } from '@/lib/utils';
 import { RefreshCw } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { callEdgeFunction } from '@/lib/supabase';
+import { callEdgeFunction, getSupabaseClientAsync } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useState } from 'react';
-import { getSupabaseClientAsync } from '@/lib/supabase';
 
 export default function EbayCases() {
   const qc = useQueryClient();
