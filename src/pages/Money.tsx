@@ -61,7 +61,7 @@ export default function Money() {
     };
     void loadEbayFunds();
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user]);
 
   const sales    = (salesData || []) as Record<string, unknown>[];
   const orders   = (ordersData || []) as Record<string, unknown>[];
