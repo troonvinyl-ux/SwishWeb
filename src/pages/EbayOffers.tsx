@@ -28,7 +28,7 @@ export default function EbayOffers() {
       </div>
 
       <div className="swish-card overflow-hidden">
-        {isLoading ? (
+        {isLoading || tenantLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading offers…</div>
         ) : error ? (
           <div className="p-8 text-center text-destructive text-sm">{(error as Error).message}</div>
