@@ -11,7 +11,7 @@ type WorkspaceConfig = {
 };
 
 const CONFIGS: Record<string, WorkspaceConfig> = {
-  coins: { id: 'coins', name: 'SWISH Coins', tagline: 'Identify, value and flip coins & collectibles', detail: 'Ancient · Islamic silver · banknotes · gold', accent: '#F5C842', icon: Coins, scan: 'Scan Coin', actions: [
+  coins: { id: 'coins', name: 'Coin Flipper', tagline: 'Identify, value and flip coins & collectibles', detail: 'Ancient · Islamic silver · banknotes · gold', accent: '#F5C842', icon: Coins, scan: 'Scan Coin', actions: [
     { label: 'Scan Coin', detail: 'Identify a coin and check references', icon: Camera, to: '/identify' },
     { label: 'My Stock', detail: 'Review saved coins and references', icon: Package, to: '/inventory' },
     { label: 'Islamic Silver', detail: 'Process specialist silver and countermark batches', icon: Sparkles, to: '/tools/islamic-batch' },
@@ -119,7 +119,7 @@ export default function NicheWorkspace() {
         <section className="threads-categories">{CLOTHING_CATEGORIES.map(c => <button key={c.label} onClick={() => route('/identify')}><strong>{c.label}</strong><span>{c.detail}</span></button>)}</section>
         <section className="threads-brands"><div><h2>Top brands</h2><p>Quick access to fashion brand research</p></div><div className="threads-brand-chips">{BRAND_NAMES.map(brand => <button key={brand} onClick={() => route('/identify')}>{brand}</button>)}</div></section>
       </div>
-      <nav className="threads-bottom-nav" aria-label="SWISH navigation">
+      <nav className="threads-bottom-nav" aria-label="Clothes Flipper navigation">
         <button onClick={() => navigate('/workspace/clothing')}><Shirt /><span>Fashion</span></button>
         <button className="threads-scan" onClick={() => route('/identify')} aria-label="Scan item"><ScanLine /></button>
         <button onClick={() => route('/inventory')}><Package /><span>Stock</span></button>
