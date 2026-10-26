@@ -1,11 +1,15 @@
 import { useTable } from '@/hooks/useSupabaseQuery';
+import { useState } from 'react';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { formatCurrency, formatDate, statusVariant, truncate } from '@/lib/utils';
 import { RefreshCw } from 'lucide-react';
+import { callEdgeFunction, EdgeFunctionError, getSupabaseClientAsync } from '@/lib/supabase';
+import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function EbayOrders() {
   const qc = useQueryClient();
+  const [syncing, setSyncing] = useState(false);
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const { data, isLoading } = useTable('ebay_orders', {
     filter: { tenant_id: tenantId },
@@ -20,15 +24,39 @@ export default function EbayOrders() {
 
   const items = ((data && (data as unknown[]).length > 0 ? data : fallback) || []) as Record<string, unknown>[];
 
+  const syncOrders = async () => {
+    if (!tenantId) { toast.error('Your SWISH workspace is not ready.'); return; }
+    setSyncing(true);
+    try {
+      const sb = await getSupabaseClientAsync();
+      if (!sb) throw new Error('SWISH backend is not connected.');
+      const { error } = await callEdgeFunction('swish-ebay-orders', {
+        tenantId,
+        daysBack: 90,
+        mode: 'both',
+      }, sb);
+      if (error) throw error;
+      toast.success('eBay orders sync completed');
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['ebay_orders'] }),
+        qc.invalidateQueries({ queryKey: ['orders'] }),
+      ]);
+    } catch (error) {
+      toast.error(error instanceof EdgeFunctionError ? error.displayMessage : error instanceof Error ? error.message : 'Could not sync eBay orders');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">eBay Orders</h1>
-          <p className="page-subtitle">{items.length} orders</p>
+          <p className="page-subtitle">{tenantLoading ? 'Loading workspace…' : `${items.length} orders`}</p>
         </div>
-        <button onClick={() => { qc.invalidateQueries({ queryKey: ['ebay_orders'] }); qc.invalidateQueries({ queryKey: ['orders'] }); }} className="btn-ghost">
-          <RefreshCw className="w-3.5 h-3.5" />Refresh
+        <button onClick={syncOrders} disabled={syncing || !tenantId} className="btn-ghost">
+          <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} />{syncing ? 'Syncing…' : 'Sync orders'}
         </button>
       </div>
 
