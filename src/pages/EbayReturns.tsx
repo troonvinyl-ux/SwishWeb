@@ -1,4 +1,5 @@
 import { useTable, useUpdate } from '@/hooks/useSupabaseQuery';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { formatCurrency, formatDate, statusVariant, truncate } from '@/lib/utils';
 import { RefreshCw } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -10,8 +11,13 @@ import { useState } from 'react';
 export default function EbayReturns() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const [syncing, setSyncing] = useState(false);
-  const { data, isLoading, error } = useTable('ebay_returns', { order: { column: 'created_at', ascending: false } });
+  const { data, isLoading, error } = useTable('ebay_returns', {
+    filter: { tenant_id: tenantId },
+    order: { column: 'created_at', ascending: false },
+    enabled: Boolean(tenantId),
+  });
   const items = (data || []) as Record<string, unknown>[];
 
   const syncReturns = async () => {
@@ -47,7 +53,7 @@ export default function EbayReturns() {
 
       <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-muted-foreground">Return records can be synced from eBay. Accept/decline actions are not exposed by the existing secure backend, so SWISH will not report those actions as completed.</div>
       <div className="swish-card overflow-hidden">
-        {isLoading ? (
+        {isLoading || tenantLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading returns…</div>
         ) : error ? (
           <div className="p-8 text-center text-destructive text-sm">{(error as Error).message}</div>

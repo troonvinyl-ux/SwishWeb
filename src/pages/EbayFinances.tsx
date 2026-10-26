@@ -2,16 +2,23 @@ import { useEffect, useState } from 'react';
 import { callEdgeFunction, EdgeFunctionError, getSupabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTable } from '@/hooks/useSupabaseQuery';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Wallet, RefreshCw, AlertTriangle } from 'lucide-react';
 
 export default function EbayFinances() {
   const { user } = useAuth();
+  const { tenantId } = useCurrentTenantId();
   const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
   const [summaryError, setSummaryError] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
-  const { data: financialRows } = useTable('ebay_financials', { order: { column: 'transaction_date', ascending: false }, limit: 100 });
+  const { data: financialRows } = useTable('ebay_financials', {
+    filter: { tenant_id: tenantId },
+    order: { column: 'transaction_date', ascending: false },
+    limit: 100,
+    enabled: Boolean(tenantId),
+  });
 
   const loadSummary = async () => {
     setLoading(true);

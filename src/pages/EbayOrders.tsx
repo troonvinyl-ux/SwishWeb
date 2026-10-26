@@ -1,15 +1,21 @@
 import { useTable } from '@/hooks/useSupabaseQuery';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { formatCurrency, formatDate, statusVariant, truncate } from '@/lib/utils';
 import { RefreshCw } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function EbayOrders() {
   const qc = useQueryClient();
-  const { data, isLoading, error } = useTable('ebay_orders', { order: { column: 'created_at', ascending: false } });
-  const { data: fallback } = useTable('orders', {
-    filter: { platform: 'ebay' },
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  const { data, isLoading } = useTable('ebay_orders', {
+    filter: { tenant_id: tenantId },
     order: { column: 'created_at', ascending: false },
-    enabled: !data || (data as unknown[]).length === 0,
+    enabled: Boolean(tenantId),
+  });
+  const { data: fallback } = useTable('orders', {
+    filter: { tenant_id: tenantId, platform: 'ebay' },
+    order: { column: 'created_at', ascending: false },
+    enabled: Boolean(tenantId) && (!data || (data as unknown[]).length === 0),
   });
 
   const items = ((data && (data as unknown[]).length > 0 ? data : fallback) || []) as Record<string, unknown>[];
@@ -27,7 +33,7 @@ export default function EbayOrders() {
       </div>
 
       <div className="swish-card overflow-hidden">
-        {isLoading ? (
+        {isLoading || tenantLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading eBay orders…</div>
         ) : items.length === 0 ? (
           <div className="p-12 text-center text-muted-foreground text-sm">No eBay orders found</div>

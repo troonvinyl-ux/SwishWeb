@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTable, useUpdate } from '@/hooks/useSupabaseQuery';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { formatRelative, truncate } from '@/lib/utils';
 import { RefreshCw, Mail, MailOpen, Reply } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -10,11 +11,14 @@ import { toast } from 'sonner';
 export default function EbayMessages() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const [selected, setSelected] = useState<Record<string, unknown> | null>(null);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
 
   const { data, isLoading, error } = useTable('ebay_messages', {
+    filter: { tenant_id: tenantId },
+    enabled: Boolean(tenantId),
     order: { column: 'received_at', ascending: false },
   });
 
@@ -105,7 +109,7 @@ export default function EbayMessages() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Message list */}
         <div className="swish-card overflow-hidden">
-          {isLoading ? (
+          {isLoading || tenantLoading ? (
             <div className="p-8 text-center text-muted-foreground text-sm">Loading messages…</div>
           ) : error ? (
             <div className="p-8 text-center text-destructive text-sm">{(error as Error).message}</div>

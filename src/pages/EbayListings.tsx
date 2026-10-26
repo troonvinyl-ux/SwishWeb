@@ -3,8 +3,9 @@ import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatCurrency, formatDate, statusVariant, truncate } from '@/lib/utils';
 import { RefreshCw, Search, ExternalLink, Plus } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { Link } from 'react-router-dom';
-import { callEdgeFunction } from '@/lib/supabase';
+import { callEdgeFunction, getSupabaseClientAsync } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 export default function EbayListings() {
@@ -12,21 +13,36 @@ export default function EbayListings() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [syncing, setSyncing] = useState(false);
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
 
   const { data, isLoading, error } = useTable('listings', {
     order: { column: 'created_at', ascending: false },
     search: search ? { column: 'title', query: search } : undefined,
-    filter: status ? { status } : undefined,
+    filter: { tenant_id: tenantId, ...(status ? { status } : {}) },
+    enabled: Boolean(tenantId),
   });
 
   const items = (data || []) as Record<string, unknown>[];
 
   const syncListings = async () => {
+    if (!tenantId) {
+      toast.error('Your SWISH workspace is not ready. Please retry after signing in.');
+      return;
+    }
     setSyncing(true);
-    const { error } = await callEdgeFunction('ebay-sync-listings', {});
-    if (error) toast.error(error.message);
-    else { toast.success('Listings synced'); qc.invalidateQueries({ queryKey: ['listings'] }); }
-    setSyncing(false);
+    try {
+      const sb = await getSupabaseClientAsync();
+      if (!sb) throw new Error('Backend not connected.');
+      // Use the existing authoritative sync function and its tenant-scoped contract.
+      const { error } = await callEdgeFunction('swish-ebay-sync', { tenantId, mode: 'full' }, sb);
+      if (error) throw error;
+      toast.success('eBay listings sync completed');
+      await qc.invalidateQueries({ queryKey: ['listings'] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not sync eBay listings');
+    } finally {
+      setSyncing(false);
+    }
   };
 
   return (
@@ -34,7 +50,7 @@ export default function EbayListings() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="page-title">eBay Listings</h1>
-          <p className="page-subtitle">{items.length} listings</p>
+          <p className="page-subtitle">{tenantLoading ? 'Loading workspace…' : `${items.length} listings`}</p>
         </div>
         <div className="flex gap-2">
           <button onClick={syncListings} disabled={syncing} className="btn-secondary">
@@ -59,8 +75,10 @@ export default function EbayListings() {
       </div>
 
       <div className="swish-card overflow-hidden">
-        {isLoading ? (
+        {isLoading || tenantLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading eBay listings…</div>
+        ) : !tenantId ? (
+          <div className="p-8 text-center text-muted-foreground text-sm">Your SWISH workspace could not be found. Complete setup and try again.</div>
         ) : error ? (
           <div className="p-8 text-center text-destructive text-sm">{(error as Error).message}</div>
         ) : items.length === 0 ? (
