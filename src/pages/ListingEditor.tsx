@@ -84,7 +84,32 @@ export default function ListingEditor() {
   };
 
   const save = () => {
-    upsert.mutate({ ...form, images: selectedImages }, {
+    // Keep the web editor aligned with the canonical listings schema used by
+    // the SWISH mobile app. UI-only fields (e.g. "category" and "platform")
+    // must never be sent as database columns.
+    const payload: Record<string, unknown> = {
+      id: form.id,
+      tenant_id: form.tenant_id,
+      item_id: form.item_id,
+      marketplace_id: form.marketplace_id || form.platform || 'ebay',
+      title: String(form.title || '').trim(),
+      description: String(form.description || ''),
+      price: Number(form.price || 0),
+      status: form.status || 'draft',
+      images: selectedImages,
+      category_id: form.category_id || null,
+      floor_price: form.floor_price ?? null,
+      ceiling_price: form.ceiling_price ?? null,
+      shipping_cost: form.shipping_cost ?? 0,
+      external_listing_id: form.external_listing_id ?? null,
+      created_at: form.created_at,
+      updated_at: new Date().toISOString(),
+    };
+    // Do not send undefined fields or web-only aliases to PostgREST.
+    Object.keys(payload).forEach(key => {
+      if (payload[key] === undefined) delete payload[key];
+    });
+    upsert.mutate(payload, {
       onSuccess: (saved) => {
         toast.success('Listing saved');
         const savedId = (saved as Record<string, unknown>)?.id as string;
@@ -96,24 +121,44 @@ export default function ListingEditor() {
 
   const preflight = async () => {
     if (!form.id) { toast.error('Save listing first'); return; }
+    if (!user?.id) { toast.error('Sign in again before running preflight'); return; }
     setPreflighting(true);
-    const { data, error } = await callEdgeFunction('listing-preflight', { listing_id: form.id });
-    if (error) {
-      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
-      toast.error(msg);
-    } else {
-      // Display preflight results
-      const result = data as Record<string, unknown>;
-      const status = result?.status || result?.result || 'complete';
-      if (status === 'pass' || status === 'ok') toast.success('Preflight passed — listing is ready to publish');
-      else if (result?.errors || result?.warnings) {
-        const issues = [...(result.errors as string[] || []), ...(result.warnings as string[] || [])];
-        toast.warning(issues.join(' · '));
+    try {
+      const sb = await getSupabaseClientAsync();
+      if (!sb) throw new Error('SWISH backend is not connected');
+      const { data: membership, error: membershipError } = await sb.from('tenant_memberships')
+        .select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
+      if (membershipError) throw membershipError;
+      const tenantId = String(form.tenant_id || membership?.tenant_id || '');
+      if (!tenantId) throw new Error('Your SWISH workspace is not ready');
+
+      // Use the existing, authenticated verification function used by the
+      // native app. There is no deployed "listing-preflight" function.
+      const { data: result, error } = await callEdgeFunction<Record<string, unknown>>('swish-verify', {
+        listing_id: String(form.id),
+        tenant_id: tenantId,
+      });
+      if (error) throw error;
+      if (!result) throw new Error('Preflight returned no verification result');
+
+      const verification = (result.verification || {}) as Record<string, unknown>;
+      const passed = result.passed === true || verification.overall_passed === true;
+      const failures = Array.isArray(verification.failure_reasons) ? verification.failure_reasons as string[] : [];
+      const warnings = Array.isArray(verification.warnings) ? verification.warnings as string[] : [];
+      if (passed && warnings.length === 0) {
+        toast.success('Preflight passed — listing verification is complete');
       } else {
-        toast.success('Preflight check complete');
+        const issues = [...failures, ...warnings];
+        toast[failures.length ? 'error' : 'warning'](
+          issues.length ? issues.join(' · ') : 'Verification completed; review the result before publishing',
+        );
       }
+    } catch (e) {
+      const msg = e instanceof EdgeFunctionError ? e.displayMessage : e instanceof Error ? e.message : 'Preflight failed';
+      toast.error(msg);
+    } finally {
+      setPreflighting(false);
     }
-    setPreflighting(false);
   };
 
   const publish = async () => {
