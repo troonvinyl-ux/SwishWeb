@@ -141,10 +141,10 @@ export default function ListingEditor() {
       if (error) throw error;
       if (!result) throw new Error('Preflight returned no verification result');
 
-      const verification = (result.verification || {}) as Record<string, unknown>;
-      const passed = result.passed === true || verification.overall_passed === true;
-      const failures = Array.isArray(verification.failure_reasons) ? verification.failure_reasons as string[] : [];
-      const warnings = Array.isArray(verification.warnings) ? verification.warnings as string[] : [];
+      // swish-verify returns its verdict and advisories at the top level.
+      const passed = result.passed === true;
+      const failures = Array.isArray(result.failure_reasons) ? result.failure_reasons as string[] : [];
+      const warnings = Array.isArray(result.warnings) ? result.warnings as string[] : [];
       if (passed && warnings.length === 0) {
         toast.success('Preflight passed — listing verification is complete');
       } else {
