@@ -1,4 +1,5 @@
 import { useTable } from '@/hooks/useSupabaseQuery';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { formatCurrency } from '@/lib/utils';
 import { Wallet, RefreshCw, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -8,41 +9,56 @@ import { formatDate } from '@/lib/utils';
 
 export default function Money() {
   const qc = useQueryClient();
+  const { tenantId } = useCurrentTenantId();
   const [dateRange, setDateRange] = useState('30');
 
   // Read the same canonical sales ledger used by the SWISH app. RLS remains
   // enforced by the existing backend; only eBay sales are included here.
   const { data: salesData, error: salesError } = useTable('sales', {
-    filter: { marketplace_id: 'ebay' },
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
+    enabled: Boolean(tenantId),
     order: { column: 'sold_at', ascending: false },
     limit: 500,
   });
   const { data: ordersData, error: ordersError } = useTable('orders', {
+    filter: { tenant_id: tenantId },
     order: { column: 'created_at', ascending: false },
     limit: 500,
+    enabled: Boolean(tenantId),
   });
   const { data: feesData } = useTable('fees', {
+    filter: { tenant_id: tenantId },
     order: { column: 'created_at', ascending: false },
     limit: 200,
+    enabled: Boolean(tenantId),
   });
   const { data: payoutsData } = useTable('payouts', {
+    filter: { tenant_id: tenantId },
     order: { column: 'created_at', ascending: false },
     limit: 100,
+    enabled: Boolean(tenantId),
   });
 
   const [ebayBalance, setEbayBalance] = useState<Record<string, unknown> | null>(null);
   const [ebayError, setEbayError] = useState('');
 
   useEffect(() => {
-    callEdgeFunction('ebay-finances-summary', {}).then(({ data, error }) => {
+    if (!tenantId) return;
+    let active = true;
+    callEdgeFunction('swish-ebay-finances', { tenantId, route: 'get_summary' }).then(({ data, error }) => {
+      if (!active) return;
       if (error) {
         const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
         setEbayError(msg);
       } else if (data) {
         setEbayBalance(data as Record<string, unknown>);
+        setEbayError('');
       }
+    }).catch(() => {
+      if (active) setEbayError('Could not load eBay finances. Please retry.');
     });
-  }, []);
+    return () => { active = false; };
+  }, [tenantId]);
 
   const sales    = (salesData || []) as Record<string, unknown>[];
   const orders   = (ordersData || []) as Record<string, unknown>[];
