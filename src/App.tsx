@@ -47,6 +47,7 @@ import Settings from '@/pages/Settings';
 import MasterAdmin from '@/pages/MasterAdmin';
 import ParityTools from '@/pages/ParityTools';
 import NotFound from '@/pages/NotFound';
+import { getHostProduct } from '@/lib/productContext';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,8 +62,9 @@ const queryClient = new QueryClient({
 function AppRoutes() {
   const { connectionStatus, loading, user } = useAuth();
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
+  const hostProduct = getHostProduct();
   const preferredNiche = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
-  const safeNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins';
+  const safeNiche = hostProduct?.id || (['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins');
   const needsOnboarding = !isOwner && user?.user_metadata?.onboarding_status === 'started';
 
   // Establishing backend connection
@@ -84,8 +86,14 @@ function AppRoutes() {
     );
   }
 
-  // Not signed in — login page handles needs_key state inline
+  // Not signed in — login page is branded from the current product domain.
   if (!user) return <LoginPage />;
+
+  // A product domain cannot be used to silently switch an account's niche.
+  // Existing backend entitlement metadata must agree with the requested product.
+  if (hostProduct && !isOwner && preferredNiche !== hostProduct.id) {
+    return <main className="min-h-screen flex items-center justify-center bg-background p-6"><section className="max-w-lg rounded-2xl border border-border bg-card p-8 text-center"><h1 className="text-2xl font-bold">Product access needs attention</h1><p className="mt-3 text-sm text-muted-foreground">This account is not currently assigned to {hostProduct.name}. Please contact support to correct the existing product entitlement. No other product workspace has been opened.</p></section></main>;
+  }
 
   return (
     <AppLayout>
