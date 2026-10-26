@@ -172,17 +172,31 @@ export default function InventoryItem() {
   };
 
   const handleValue = async () => {
-    if (!id) return;
+    if (!id || !row) return;
+    const tenantId = String(row.tenant_id || '');
+    const title = fieldValue('title').trim();
+    if (!tenantId) { toast.error('This item is not linked to a SWISH workspace.'); return; }
+    if (title.length < 3) { toast.error('Add a title before requesting market valuation.'); return; }
     setValuing(true);
-    const { data, error } = await callEdgeFunction('value', { item_id: id });
-    if (error) {
-      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
+    try {
+      const { error } = await callEdgeFunction('swish-market-value', {
+        tenantId,
+        itemId: id,
+        title,
+        specialistId: specialistId || 'curiosities_collectibles',
+        attributes: attrs,
+        condition: fieldValue('condition'),
+        applyToItem: true,
+      });
+      if (error) throw error;
+      toast.success('Market valuation updated');
+      await refetch();
+    } catch (error) {
+      const msg = error instanceof EdgeFunctionError ? error.displayMessage : error instanceof Error ? error.message : 'Could not update market valuation';
       toast.error(msg);
-    } else {
-      toast.success('Valuation updated');
-      refetch();
+    } finally {
+      setValuing(false);
     }
-    setValuing(false);
   };
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>;
