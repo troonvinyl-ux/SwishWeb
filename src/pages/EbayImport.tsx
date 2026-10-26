@@ -15,8 +15,9 @@ const NICHE_CATEGORIES: Record<string, string[]> = {
 };
 const NICHE_SPECIALIST: Record<string, string> = {
   coins: 'coins', motocross: 'motocross', mx: 'motocross', bicycles: 'bicycles',
-  bikes: 'bicycles', cycling: 'bicycles', clothing: 'clothing', fashion: 'clothing',
-  threads: 'clothing', threads_flip: 'clothing', surplus_flip: 'surplus_trader',
+  bikes: 'bicycles', cycling: 'bicycles', bike_flipper: 'bicycles', clothing: 'clothing', fashion: 'clothing',
+  trainers: 'clothing', trainers_sneakers: 'clothing', threads: 'clothing', threads_flip: 'clothing',
+  flipper_mx: 'motocross', 'surplus-flip': 'surplus_trader', surplus_flip: 'surplus_trader',
 };
 const TITLE_PATTERNS: Record<string, RegExp> = {
   clothing: /\b(jacket|coat|dress|jeans|shirt|trousers|shoes|trainers|hoodie|jumper|sweater|blazer|suit|handbag|skirt|top|cardigan|boots|fashion|vintage clothing)\b/i,
@@ -86,7 +87,7 @@ export default function EbayImport() {
         : specialistId === 'surplus_trader'
           ? ['surplus_trader', 'surplus_flip']
           : ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic'];
-  const nicheKey = specialistId === 'motocross' ? 'motocross' : specialistId === 'bicycles' ? 'bicycles' : specialistId === 'clothing' ? 'clothing' : 'coins';
+  const nicheKey = specialistId === 'motocross' ? 'motocross' : specialistId === 'bicycles' ? 'bicycles' : specialistId === 'clothing' ? 'clothing' : specialistId === 'surplus_trader' ? 'surplus_flip' : 'coins';
 
   const handleFile = (files: FileList | null) => {
     if (!files?.[0]) return;
