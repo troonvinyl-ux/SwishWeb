@@ -27,13 +27,13 @@ export default function Money() {
     enabled: Boolean(tenantId),
   });
   const { data: feesData } = useTable('fees', {
-    filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
+    filter: { tenant_id: tenantId },
     order: { column: 'created_at', ascending: false },
     limit: 200,
     enabled: Boolean(tenantId),
   });
   const { data: payoutsData } = useTable('payouts', {
-    filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
+    filter: { tenant_id: tenantId },
     order: { column: 'created_at', ascending: false },
     limit: 100,
     enabled: Boolean(tenantId),
