@@ -4,45 +4,18 @@ import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatCurrency, formatDate, statusVariant, truncate } from '@/lib/utils';
 import { Package, Search, Plus, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
 
 export default function Inventory() {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('q') || '');
   const [status, setStatus] = useState('');
   const qc = useQueryClient();
 
-  // Match the main app's selected niche and canonical specialist IDs.
-  // Subscribers follow their provisioned niche; the master owner can switch
-  // workspaces using the active-niche selector.
-  const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
-  const preferredNiche = String(user?.user_metadata?.preferred_niche || 'coins').toLowerCase();
-  const activeNiche = String(
-    (isOwner ? localStorage.getItem('swish_active_niche') : preferredNiche) ||
-    localStorage.getItem('swish_active_niche') ||
-    preferredNiche
-  ).toLowerCase();
-  const specialistIds: string[] =
-    ['clothing', 'fashion', 'threads', 'threads_flip', 'trainers', 'trainers_sneakers'].includes(activeNiche)
-      ? ['clothing', 'trainers_sneakers']
-      : ['bicycles', 'bikes', 'cycling', 'bike_flipper'].includes(activeNiche)
-        ? ['bicycles', 'bikes']
-        : ['motocross', 'mx', 'flipper_mx'].includes(activeNiche)
-          ? ['motocross', 'mx']
-          : ['surplus_flip', 'surplus-flip', 'surplus_trader', 'catalog_flip', 'catalog_surplus'].includes(activeNiche)
-            ? ['surplus_trader', 'surplus_flip']
-            : ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic'].includes(activeNiche)
-              ? ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic', 'curiosities_collectibles']
-              : [];
-
   const { data, isLoading, error } = useTable('items', {
     order: { column: 'created_at', ascending: false },
     search: search ? { column: 'canonical_title', query: search } : undefined,
-    filter: { ...(status ? { status } : {}) },
-    inFilter: specialistIds.length ? { specialist_id: specialistIds } : undefined,
-    enabled: specialistIds.length > 0,
+    filter: status ? { status } : undefined,
   });
 
   const items = (data || []) as Record<string, unknown>[];

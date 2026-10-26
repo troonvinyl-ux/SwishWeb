@@ -98,7 +98,7 @@ export default function EbayHub() {
     try {
       const sb = getSupabaseClient();
       if (!sb || !user) throw new Error('Please sign in again before connecting eBay.');
-      const { data: membership, error: membershipError } = await sb
+      let { data: membership, error: membershipError } = await sb
         .from('tenant_memberships')
         .select('tenant_id')
         .eq('user_id', user.id)

@@ -79,20 +79,7 @@ export default function NicheWorkspace() {
   const allowedNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferred) ? preferred : 'coins';
   const config = useMemo(() => CONFIGS[niche] || CONFIGS.coins, [niche]);
   const BrandIcon = config.icon;
-  const inventorySpecialists = config.id === 'clothing'
-    ? ['clothing', 'trainers_sneakers']
-    : config.id === 'bicycles'
-      ? ['bicycles', 'bikes']
-      : config.id === 'motocross'
-        ? ['motocross', 'mx']
-        : config.id === 'surplus_flip'
-          ? ['surplus_trader', 'surplus_flip']
-          : ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic', 'curiosities_collectibles'];
-  const stockStatuses = ['new', 'captured', 'identifying', 'identified', 'researching', 'researched', 'assessing', 'assessed', 'pricing', 'priced', 'listing', 'review_required', 'review', 'error'];
-  const { data: inventoryCount } = useCount('items', undefined, {
-    specialist_id: inventorySpecialists,
-    status: stockStatuses,
-  });
+  const { data: inventoryCount } = useCount('inventory');
   useEffect(() => { if (isOwner || niche === allowedNiche) setActiveNiche(config); }, [config, isOwner, niche, allowedNiche]);
 
   if (!isOwner && niche !== allowedNiche) return <Navigate to={`/workspace/${allowedNiche}`} replace />;
