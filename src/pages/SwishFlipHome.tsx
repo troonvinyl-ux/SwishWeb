@@ -106,9 +106,20 @@ const niches: Niche[] = [
   { name: 'General Collectables', category: 'Specialist Collecting', slug: 'collectables', description: 'Discover value in unusual finds.', icon: Gem },
 ];
 
+const LIVE_NICHE_HOSTS: Record<string, string> = {
+  coins: 'coin.swishflip.co.uk',
+  mx: 'mx.swishflip.co.uk',
+  bikes: 'bikes.swishflip.co.uk',
+  clothes: 'clothes.swishflip.co.uk',
+  threads: 'threads.swishflip.co.uk',
+  surplus: 'surplus.swishflip.co.uk',
+};
+
+// Only link directly to product hosts that the app recognises. The remaining
+// directory entries are planned niches and should not lead visitors to 404 pages.
 const hostFor = (slug: string) => {
-  const hostSlug = slug === 'mx' ? 'mx' : slug === 'bikes' ? 'bikes' : slug;
-  return `https://${hostSlug}.swishflip.co.uk/`;
+  const hostname = LIVE_NICHE_HOSTS[slug];
+  return hostname ? `https://${hostname}/` : `/#explore`;
 };
 
 export default function SwishFlipHome() {
