@@ -70,8 +70,6 @@ export default function NicheCapture() {
   const nicheAllowed = isOwner || (isSupportedNiche && getSpecialistIdsForNiche(canonicalNicheId).some(id => activeSpecialists.includes(id)));
   const insert = useInsert('items', tenantId);
   const config = useMemo(() => CONFIG[niche] || CONFIG.generic, [niche]);
-  if (!isOwner && (tenantLoading || entitlementsLoading)) return <div className="p-8 text-center text-muted-foreground">Checking your SWISH niche access…</div>;
-  if (!nicheAllowed) return <Navigate to="/niches" replace />;
   const Icon = config.icon;
   const [form, setForm] = useState<Record<string,string>>({status:'review'});
   const [clothingPhotos, setClothingPhotos] = useState<Record<string, File | null>>({ brand: null, garment: null, detail: null });
@@ -341,6 +339,9 @@ export default function NicheCapture() {
       navigate(id?'/inventory/'+id:'/inventory');
     },onError:e=>toast.error(e.message)});
   };
+  if (!isOwner && (tenantLoading || entitlementsLoading)) return <div className="p-8 text-center text-muted-foreground">Checking your SWISH niche access…</div>;
+  if (!nicheAllowed) return <Navigate to="/niches" replace />;
+
   if (niche === 'clothing') {
     const photoSlots = [
       { key: 'brand', title: 'Brand Label', required: true, hint: 'Inside neck or waist label — required' },
