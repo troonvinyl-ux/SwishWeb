@@ -165,11 +165,8 @@ export default function ListingEditor() {
     try {
       const sb = await getSupabaseClientAsync();
       if (!sb) throw new Error('SWISH backend is not connected');
-      const { data: membership, error: membershipError } = await sb.from('tenant_memberships')
-        .select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
-      if (membershipError) throw membershipError;
-      const tenantId = String(form.tenant_id || membership?.tenant_id || '');
       if (!tenantId) throw new Error('Your SWISH workspace is not ready');
+      if (form.tenant_id && String(form.tenant_id) !== tenantId) throw new Error('Listing belongs to a different SWISH workspace.');
 
       // Use the canonical eBay listing function used by the native app.
       // The old publish-listing function is not deployed.
