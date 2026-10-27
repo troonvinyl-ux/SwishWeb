@@ -27,13 +27,13 @@ This is the working parity register for `troonvinyl-ux/SWISH` (Expo main app) an
 | Repricing, insights, money, tasks, acquisitions, opportunities, review-required, audit | Existing | Pages exist; calculation and niche isolation parity tests remain required. |
 | eBay hub, listings, orders, messages, offers, returns, cases, finances, analytics, import, logs | Existing | Pages exist; verify each route against the current server Edge Functions and native behaviour. |
 | eBay account connection/admin/category admin/CSV tools | Partial / audit needed | Native has separate screens. Map each action to an existing web page or implement a dedicated page using existing backend routes; do not fake success. |
-| Stock check / stock listing workflows | Gap / audit needed | Native screens exist; web must port checklists, quantity/price edits, safe save and summary. |
+| Stock check / stock listing workflows | Partial | Added a tenant- and niche-scoped stock check table with checkboxes, editable quantity/unit price, checked-stock summary, and save confirmation. The stock listing detail is routed to existing inventory detail; native-specific workflow parity still needs tests. |
 | Deep ID lab, image enhancement, coin flipper commercial score, MX profit tools, surplus auction bid engine, niche-specific home actions | Gap / audit needed | Need function-by-function review of native screens/services before declaring parity. |
 | Master admin and subscription | Existing | Access and entitlements must remain owner/tenant controlled. |
 
 ## Next required work
 
-1. Port stock check and stock-listing flows with safe, tenant-scoped writes.
+1. Finish stock-check parity tests and port any remaining stock-listing-specific actions.
 2. Port native listing preflight with the same checks and the existing server verification functions.
 3. Port Silver Batch persistence/resume, commercial decisions, groups and bulk listing using the existing services/tables/functions.
 4. Port Bike Flipper and motocross/surplus commercial decision screens using the existing decision engines and real data.
