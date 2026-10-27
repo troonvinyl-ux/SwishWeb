@@ -84,7 +84,7 @@ export default function NicheWorkspace() {
   const config = useMemo(() => CONFIGS[niche] || CONFIGS.coins, [niche]);
   const BrandIcon = config.icon;
   const scanRoute = config.id === 'coins' ? '/identify/coins' : `/scan/${config.id === 'bicycles' ? 'bikes' : config.id === 'motocross' ? 'mx' : config.id}`;
-  const { tenantId } = useCurrentTenantId();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const { data: activeSpecialists = [], isLoading: entitlementsLoading } = useQuery({
     queryKey: ['workspace_niche_entitlements', tenantId],
     enabled: Boolean(tenantId) && !isOwner,
@@ -104,10 +104,10 @@ export default function NicheWorkspace() {
   const specialistIds = getSpecialistIdsForNiche((CONFIGS[niche] ? niche : 'coins') as SwishNicheId);
   const { data: inventoryCount } = useCount('items', { tenant_id: tenantId }, { specialist_id: specialistIds }, Boolean(tenantId));
   useEffect(() => {
-    if (entitlementsLoading) return;
+    if (tenantLoading || entitlementsLoading) return;
     if (entitledNiches.includes(niche) && CONFIGS[niche]) setActiveNiche(config);
     else navigate(`/workspace/${entitledNiches[0] || allowedNiche}`, { replace: true });
-  }, [config, isOwner, niche, allowedNiche, entitledNiches.join(','), entitlementsLoading, navigate]);
+  }, [config, isOwner, niche, allowedNiche, entitledNiches.join(','), tenantLoading, entitlementsLoading, navigate]);
 
 
   if (config.id === 'clothing') {
