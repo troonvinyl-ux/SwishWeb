@@ -16,15 +16,18 @@ export default function Orders() {
   const [status, setStatus] = useState('');
 
   const { data, isLoading, error } = useTable('orders', {
-    select: '*, items!inner(specialist_id)',
+    select: '*, items(specialist_id)',
     order: { column: 'created_at', ascending: false },
     filter: { tenant_id: tenantId, ...(status ? { status } : {}) },
-    inFilter: specialistIds.length ? { 'items.specialist_id': specialistIds } : undefined,
     enabled: Boolean(tenantId) && specialistIds.length > 0,
     search: search ? { column: 'buyer_name', query: search } : undefined,
   });
 
-  const items = (data || []) as Record<string, unknown>[];
+  const items = ((data || []) as Record<string, unknown>[]).filter(order => {
+    const linked = order.items as Record<string, unknown> | Record<string, unknown>[] | null;
+    const linkedItems = Array.isArray(linked) ? linked : linked ? [linked] : [];
+    return linkedItems.some(item => specialistIds.includes(String(item.specialist_id || '')));
+  });
 
   return (
     <div className="space-y-4 animate-fade-in">
