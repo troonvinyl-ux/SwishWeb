@@ -34,7 +34,7 @@ export default function Inventory() {
     enabled: Boolean(tenantId) && specialistIds.length > 0,
   });
   const listingsQuery = useTable('listings', {
-    select: '*, items!inner(id, specialist_id, image_url, media, status)',
+    select: '*, items!inner(id, specialist_id)',
     order: { column: 'created_at', ascending: false },
     filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
     inFilter: { 'items.specialist_id': specialistIds },
@@ -67,7 +67,7 @@ export default function Inventory() {
     void qc.invalidateQueries({ queryKey: ['listings'] });
   };
   const itemTitle = (row: Row) => String(row.title || row.listing_title || row.name || row.items?.name || 'Untitled item');
-  const imageFor = (row: Row) => row.image_url || row.items?.image_url || (Array.isArray(row.media) ? row.media[0] : '') || (Array.isArray(row.items?.media) ? row.items.media[0] : '');
+  const imageFor = (row: Row) => row.image_url || row.image || (Array.isArray(row.media) ? row.media[0] : '') || (Array.isArray(row.images) ? row.images[0] : '');
   const openItem = (row: Row) => navigate(row.item_id ? `/listings/${row.id}` : `/inventory/${row.id}`);
 
   return (
