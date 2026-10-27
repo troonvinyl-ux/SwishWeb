@@ -18,7 +18,6 @@ import { getSupabaseClientAsync } from '@/lib/supabase';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useInsert, useTableRow } from '@/hooks/useSupabaseQuery';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
-import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { callEdgeFunction } from '@/lib/supabase';
 import {
   ArrowLeft, Save, Zap, Package, AlertTriangle, Info,
