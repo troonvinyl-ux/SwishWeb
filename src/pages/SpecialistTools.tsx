@@ -5,7 +5,8 @@ import { toast } from 'sonner';
 import { callEdgeFunction } from '@/lib/supabase';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 
-type CoinRow = { id: string; label: string; front?: File; back?: File; weight: string; diameter: string; notes: string; status: 'ready' | 'running' | 'done' | 'error'; result?: any; error?: string };
+type IdentifyResponse = { error?: string; result?: { canonicalTitle?: string; identification?: { title?: string }; title?: string; confidence?: number; identificationState?: string; [key: string]: unknown }; canonicalTitle?: string; identification?: { title?: string }; title?: string; confidence?: number; identificationState?: string; [key: string]: unknown };
+type CoinRow = { id: string; label: string; front?: File; back?: File; weight: string; diameter: string; notes: string; status: 'ready' | 'running' | 'done' | 'error'; result?: IdentifyResponse; error?: string };
 const uid = () => `coin-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const fileData = (file: File) => new Promise<string>((resolve, reject) => {
   const reader = new FileReader();
@@ -37,7 +38,7 @@ export default function SpecialistTools() {
       patch(row.id, { status: 'running', error: undefined });
       try {
         const images = await Promise.all([fileData(row.front!), fileData(row.back!)]);
-        const { data, error } = await callEdgeFunction<any>('swish-islamic-identify', {
+        const { data, error } = await callEdgeFunction<IdentifyResponse>('swish-islamic-identify', {
           images,
           weight: row.weight.trim() ? Number(row.weight) : undefined,
           diameter: row.diameter.trim() ? Number(row.diameter) : undefined,
