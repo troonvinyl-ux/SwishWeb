@@ -25,10 +25,8 @@ export default function EbayReturns() {
     try {
       const sb = getSupabaseClient();
       if (!sb || !user) throw new Error('Please sign in again before syncing returns.');
-      const { data: membership, error: membershipError } = await sb.from('tenant_memberships').select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
-      if (membershipError) throw membershipError;
-      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready.');
-      const { error } = await callEdgeFunction('swish-ebay-post-order', { tenantId: membership.tenant_id, route: 'sync_returns' }, sb);
+      if (!tenantId || tenantLoading) throw new Error('Your SWISH workspace is not ready.');
+      const { error } = await callEdgeFunction('swish-ebay-post-order', { tenantId, route: 'sync_returns' }, sb);
       if (error) throw error;
       await qc.invalidateQueries({ queryKey: ['ebay_returns'] });
       toast.success('eBay returns synced');
