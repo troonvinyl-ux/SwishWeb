@@ -18,6 +18,7 @@ import { getSupabaseClientAsync } from '@/lib/supabase';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useInsert, useTableRow } from '@/hooks/useSupabaseQuery';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { callEdgeFunction } from '@/lib/supabase';
 import {
   ArrowLeft, Save, Zap, Package, AlertTriangle, Info,
@@ -169,7 +170,8 @@ const DEFAULT_FORM: Record<string, unknown> = {
 export default function ListingNew() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const insert = useInsert('listings');
+  const { tenantId } = useCurrentTenantId();
+  const insert = useInsert('listings', tenantId);
   const { user } = useAuth();
 
   const [form, setForm] = useState<Record<string, unknown>>(DEFAULT_FORM);
@@ -193,7 +195,6 @@ export default function ListingNew() {
   const priceParam  = searchParams.get('price') || '';
 
   // Load linked inventory record to extract AI identification data
-  const { tenantId } = useCurrentTenantId();
   const { data: linkedItem } = useTableRow('items', itemIdParam || null, '*', tenantId);
   const inv = linkedItem as Record<string, unknown> | null;
 
