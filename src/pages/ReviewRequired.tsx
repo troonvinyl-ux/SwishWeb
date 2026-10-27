@@ -25,6 +25,19 @@ export default function ReviewRequired() {
   });
 
   const items = (data || []) as Record<string, unknown>[];
+  const imageUrlFor = (item: Record<string, unknown>): string | null => {
+    const candidates = [item.image_url, item.image_url_1, item.image_url_2];
+    if (Array.isArray(item.media)) candidates.push(...item.media);
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.startsWith('https://')) return candidate;
+      if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
+        const media = candidate as Record<string, unknown>;
+        const url = media.url || media.publicUrl || media.public_url || media.src;
+        if (typeof url === 'string' && url.startsWith('https://')) return url;
+      }
+    }
+    return null;
+  };
 
   const reidentify = async (item: Record<string, unknown>) => {
     const id = String(item.id || '');
@@ -87,7 +100,7 @@ export default function ReviewRequired() {
           <h1 className="page-title flex items-center gap-2"><AlertCircle className="w-5 h-5 text-destructive" />Review Required</h1>
           <p className="page-subtitle">{items.length} items need attention</p>
         </div>
-        <button onClick={() => qc.invalidateQueries({ queryKey: ['inventory'] })} className="btn-ghost">
+        <button onClick={() => qc.invalidateQueries({ queryKey: ['items'] })} className="btn-ghost">
           <RefreshCw className="w-3.5 h-3.5" />Refresh
         </button>
       </div>
