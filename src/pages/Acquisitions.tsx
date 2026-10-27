@@ -4,11 +4,13 @@ import { formatCurrency, formatDate, statusVariant } from '@/lib/utils';
 import { ShoppingBag, Plus, RefreshCw, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 
 export default function Acquisitions() {
   const qc = useQueryClient();
-  const { data, isLoading, error } = useTable('acquisitions', { order: { column: 'created_at', ascending: false } });
-  const insert = useInsert('acquisitions');
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  const { data, isLoading, error } = useTable('acquisitions', { filter: { tenant_id: tenantId }, order: { column: 'created_at', ascending: false }, enabled: Boolean(tenantId) });
+  const insert = useInsert('acquisitions', tenantId);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ source: '', platform: '', cost: '', item_count: '', notes: '', status: 'pending' });
 
@@ -78,14 +80,14 @@ export default function Acquisitions() {
             </div>
           </div>
           <div className="flex gap-2 pt-1">
-            <button onClick={handleSubmit} disabled={insert.isPending} className="btn-primary">{insert.isPending ? 'Saving…' : 'Save'}</button>
+            <button onClick={handleSubmit} disabled={insert.isPending || tenantLoading || !tenantId} className="btn-primary">{insert.isPending ? 'Saving…' : 'Save'}</button>
             <button onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
           </div>
         </div>
       )}
 
       <div className="swish-card overflow-hidden">
-        {isLoading ? (
+        {isLoading || tenantLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading acquisitions…</div>
         ) : error ? (
           <div className="p-8 text-center text-destructive text-sm">{(error as Error).message}</div>
