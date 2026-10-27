@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useInsert } from '@/hooks/useSupabaseQuery';
@@ -68,6 +68,7 @@ export default function NicheCapture() {
   });
   const isSupportedNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(canonicalNicheId);
   const nicheAllowed = isOwner || (isSupportedNiche && getSpecialistIdsForNiche(canonicalNicheId).some(id => activeSpecialists.includes(id)));
+  useEffect(() => { if (nicheAllowed) { localStorage.setItem('swish_active_niche', canonicalNicheId); document.documentElement.dataset.niche = canonicalNicheId; } }, [nicheAllowed, canonicalNicheId]);
   const insert = useInsert('items', tenantId);
   const config = useMemo(() => CONFIG[niche] || CONFIG.generic, [niche]);
   const Icon = config.icon;
