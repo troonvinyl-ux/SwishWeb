@@ -82,7 +82,7 @@ export default function NicheEntry() {
         <div className="vertical-heading"><h1>SWISH Verticals</h1><p>Select your trading niche</p></div>
         {isOwner ? <button className="vertical-admin" onClick={() => navigate('/master-admin')} aria-label="Open Master Admin"><ShieldCheck className="w-6 h-6" /></button> : <span className="vertical-admin-placeholder" />}
       </header>
-      <div className="vertical-info"><Info className="w-4 h-4 shrink-0 mt-0.5" /><span>ONE SWISH ENGINE — tap a niche to switch context. Enable multiple to manage different businesses from one account.</span></div>
+      <div className="vertical-info"><Info className="w-4 h-4 shrink-0 mt-0.5" /><span>ONE SWISH ENGINE — switch between the niches included in your subscription. Your eBay connection is shared; inventory and workflows stay niche-scoped.</span></div>
       <section className="vertical-content" aria-label="Trading niches">
         <div className="vertical-search"><Search className="w-4 h-4" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search niches…" aria-label="Search niches" /></div>
         <div className="vertical-list">
@@ -100,7 +100,7 @@ export default function NicheEntry() {
                 <div className="vertical-chips">{niche.categories.slice(0, 4).map(item => <span key={item}>{item}</span>)}{niche.categories.length > 4 && <span>+{niche.categories.length - 4} more</span>}</div>
                 <div className="vertical-sources"><Package className="w-3 h-3" />{niche.acquisitionSources.join(' · ')}</div>
               </div>
-              <div className="vertical-card-actions"><button className="vertical-small-btn" onClick={() => toggleEnabled(niche.id)}>{isOwner ? '✓ Available to owner' : '✓ Included in your subscription'}</button>{active && <span className="vertical-active-tag">ACTIVE</span>}</div>
+              <div className="vertical-card-actions"><button className="vertical-small-btn" onClick={() => toggleEnabled(niche.id)}>{isOwner ? '✓ Available' : '✓ Included'}</button>{active && <span className="vertical-active-tag">ACTIVE</span>}</div>
             </article>;
           })}
           {niches.length === 0 && <p className="py-8 text-center text-muted-foreground">No niches match that search.</p>}
