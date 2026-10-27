@@ -170,7 +170,7 @@
 :root[data-niche="clothing"] { --swish-niche-accent:#E91E8C; --swish-niche-glow:rgba(233,30,140,.10); }
 :root[data-niche="surplus_flip"] { --swish-niche-accent:#14B8A6; --swish-niche-glow:rgba(20,184,166,.10); }
 :root[data-niche] .page-title { text-decoration-color:var(--swish-niche-accent); }
-:root[data-niche] .swish-card { border-color:color-mix(in srgb,var(--swish-niche-accent) 13%,var(--border)); }
+:root[data-niche] .swish-card { border-color:color-mix(in srgb,var(--swish-niche-accent) 13%,#28242d); }
 :root[data-niche] .btn-primary { box-shadow:0 5px 22px var(--swish-niche-glow); }
 :root[data-niche] .swish-mobile-nav-item.is-primary .swish-mobile-nav-icon { color:var(--swish-niche-accent); }
 :root[data-niche="coins"] .niche-workspace { --workspace-accent:#F5C842; }
