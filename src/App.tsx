@@ -58,9 +58,15 @@ const NICHE_HOSTS: Record<string, string> = {
   'surplus.swishflip.co.uk': 'surplus_flip',
 };
 
-const hostname = window.location.hostname.toLowerCase().replace(/^www\\./, '');
+const hostname = window.location.hostname.toLowerCase().replace(/^www\./, '');
 const isSwishFlipMarketingHost = hostname === 'swishflip.co.uk';
 const hostNiche = NICHE_HOSTS[hostname];
+const isUnconfiguredNicheHost = hostname.endsWith('.swishflip.co.uk') && !hostNiche;
+
+function NicheComingSoon() {
+  const label = window.location.hostname.split('.')[0].replace(/[-_]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return <main className="min-h-screen bg-[#080b12] text-white flex items-center justify-center p-6"><section className="max-w-xl rounded-3xl border border-white/10 bg-white/[.04] p-8 text-center"><div className="text-sm font-bold uppercase tracking-[.2em] text-lime-300">SWISHFLIP niche</div><h1 className="mt-4 text-4xl font-black">{label}</h1><p className="mt-4 leading-7 text-slate-300">This specialist entry point is reserved in the SWISHFLIP directory, but this niche workspace has not been activated yet.</p><a href="https://swishflip.co.uk/#explore" className="mt-7 inline-flex rounded-xl bg-lime-300 px-5 py-3 font-bold text-slate-950">Explore available niches</a></section></main>;
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,6 +82,7 @@ function AppRoutes() {
   const { connectionStatus, loading, user } = useAuth();
   // The apex domain is the public discovery splash page and must not depend on backend availability.
   if (isSwishFlipMarketingHost && window.location.pathname === '/') return <SwishFlipHome />;
+  if (isUnconfiguredNicheHost && window.location.pathname === '/') return <NicheComingSoon />;
   // A niche subdomain is a fixed product entry point at its root path.
   // Host context wins over browser-local selection so switching a saved local niche cannot cross product boundaries.
   if (hostNiche && localStorage.getItem('swish_active_niche') !== hostNiche) localStorage.setItem('swish_active_niche', hostNiche);
