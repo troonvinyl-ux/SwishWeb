@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useInsert } from '@/hooks/useSupabaseQuery';
-import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { getActiveNicheId, getDefaultSpecialistForNiche } from '@/lib/niche';
 import { ArrowLeft, Save, Package } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -27,6 +28,8 @@ export default function InventoryNew() {
   const navigate = useNavigate();
   const insert = useInsert('items');
   const { user } = useAuth();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  const activeNiche = getActiveNicheId();
   const [form, setForm] = useState<Record<string, unknown>>(DEFAULT_FORM);
 
   const setF = (key: string, val: unknown) => setForm(p => ({ ...p, [key]: val }));
@@ -35,15 +38,9 @@ export default function InventoryNew() {
   const handleSave = async () => {
     if (!f('title')) { toast.error('Title is required'); return; }
     if (!user?.id) { toast.error('Please sign in before creating inventory'); return; }
-    // Resolve the current user's tenant using the same RLS-protected tenant list
-    // pattern as the mobile app. Never accept tenant_id from form input.
-    const sb = getSupabaseClient() || await getSupabaseClientAsync();
-    if (!sb) { toast.error('Backend not connected'); return; }
-    const { data: tenants, error: tenantError } = await sb.from('tenants').select('id').order('created_at', { ascending: true }).limit(1);
-    if (tenantError || !tenants?.[0]?.id) {
-      toast.error(tenantError?.message || 'No workspace found for this account');
-      return;
-    }
+    // Tenant identity comes from the existing membership-based hook, not an
+    // arbitrary first row in tenants. Keep creation disabled until it resolves.
+    if (!tenantId || tenantLoading) { toast.error('Your SWISH workspace is not ready.'); return; }
     const numeric = (key: string) => {
       const raw = f(key).trim();
       if (!raw) return null;
@@ -52,10 +49,10 @@ export default function InventoryNew() {
     };
     const title = f('title').trim();
     const row: Record<string, unknown> = {
-      tenant_id: tenants[0].id,
+      tenant_id: tenantId,
       canonical_title: title,
       description: f('description').trim(),
-      specialist_id: 'curiosities_collectibles',
+      specialist_id: getDefaultSpecialistForNiche(activeNiche),
       status: f('status') || 'new',
       disposition_decision: 'pending',
       condition: f('condition'),
@@ -91,7 +88,7 @@ export default function InventoryNew() {
           <h1 className="page-title">New Inventory Item</h1>
           <p className="page-subtitle">Add a new item to your SWISH inventory</p>
         </div>
-        <button onClick={handleSave} disabled={insert.isPending} className="btn-primary">
+        <button onClick={handleSave} disabled={insert.isPending || tenantLoading || !tenantId} className="btn-primary">
           <Save className="w-3.5 h-3.5" />{insert.isPending ? 'Creating…' : 'Create Item'}
         </button>
       </div>
