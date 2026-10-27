@@ -68,14 +68,7 @@ export default function EbayMessages() {
     try {
       const sb = getSupabaseClient();
       if (!sb || !user) throw new Error('Please sign in again before syncing messages.');
-      const { data: membership, error: membershipError } = await sb
-        .from('tenant_memberships')
-        .select('tenant_id')
-        .eq('user_id', user.id)
-        .limit(1)
-        .maybeSingle();
-      if (membershipError) throw membershipError;
-      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready.');
+      if (!tenantId || tenantLoading) throw new Error('Your SWISH workspace is not ready.');
       const { error } = await callEdgeFunction('swish-ebay-messages', {
         route: 'sync_messages', tenantId, daysBack: 30,
       }, sb);
@@ -94,7 +87,7 @@ export default function EbayMessages() {
           <h1 className="page-title">eBay Messages</h1>
           <p className="page-subtitle">{unread} unread · {items.length} total</p>
         </div>
-        <button onClick={() => void syncMessages()} className="btn-secondary">
+        <button onClick={() => void syncMessages()} disabled={!tenantId || tenantLoading} className="btn-secondary">
           <RefreshCw className="w-3.5 h-3.5" />Sync from eBay
         </button>
       </div>
