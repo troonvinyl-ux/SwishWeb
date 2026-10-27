@@ -93,6 +93,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     document.documentElement.dataset.niche = niche;
+    document.title = `${PRODUCT_NAMES[niche] || 'SWISH'} | SWISH`;
+    const theme = document.querySelector('meta[name="theme-color"]');
+    if (theme) theme.setAttribute('content', niche === 'coins' ? '#0D0B10' : niche === 'motocross' ? '#160D10' : niche === 'bicycles' ? '#0D1712' : niche === 'clothing' ? '#0C080C' : '#0D1716');
   }, [niche, location.pathname]);
 
   if (!isOwner && (tenantLoading || entitlementsLoading)) {
