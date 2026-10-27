@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatCurrency, formatDate, formatDateTime, statusVariant, truncate } from '@/lib/utils';
 import { ShoppingCart, RefreshCw, Search } from 'lucide-react';
