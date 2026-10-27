@@ -30,7 +30,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useTable } from '@/hooks/useSupabaseQuery';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
-import { getActiveNicheId, getSpecialistIdsForNiche } from '@/lib/niche';
+import { getSpecialistIdsForNiche } from '@/lib/niche';
 import { formatCurrency } from '@/lib/utils';
 import {
   Camera, Upload, X, Zap, Loader2, AlertCircle, CheckCircle, Tag,
