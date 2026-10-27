@@ -120,12 +120,14 @@ export function useTableRow(table: string, id: string | null | undefined, select
 // Mutation hooks
 // ---------------------------------------------------------------------------
 
-export function useInsert(table: string) {
+export function useInsert(table: string, tenantId?: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (row: Record<string, unknown>) => {
       const sb = await getClient();
-      const { data, error } = await sb.from(table).insert(row).select().single();
+      if (tenantId !== undefined && !tenantId) throw new Error('Your SWISH workspace is not ready.');
+      const safeRow = tenantId !== undefined ? { ...row, tenant_id: tenantId } : row;
+      const { data, error } = await sb.from(table).insert(safeRow).select().single();
       if (error) throw new Error(error.message);
       return data;
     },
