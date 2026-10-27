@@ -3,23 +3,26 @@ import { formatDateTime, statusVariant } from '@/lib/utils';
 import { RefreshCw, Terminal } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 
 export default function EbayLogs() {
   const qc = useQueryClient();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const [level, setLevel] = useState('');
 
   const { data, isLoading, error } = useTable('ebay_logs', {
     order: { column: 'created_at', ascending: false },
     limit: 100,
-    filter: level ? { level } : undefined,
+    filter: { tenant_id: tenantId, ...(level ? { level } : {}) },
+    enabled: Boolean(tenantId),
   });
 
   // fallback to generic logs table
   const { data: fallback } = useTable('logs', {
     order: { column: 'created_at', ascending: false },
     limit: 100,
-    filter: { source: 'ebay' },
-    enabled: !data || (data as unknown[]).length === 0,
+    filter: { tenant_id: tenantId, source: 'ebay' },
+    enabled: Boolean(tenantId) && (!data || (data as unknown[]).length === 0),
   });
 
   const items = ((data && (data as unknown[]).length > 0 ? data : fallback) || []) as Record<string, unknown>[];
@@ -52,7 +55,7 @@ export default function EbayLogs() {
       </div>
 
       <div className="swish-card font-mono text-xs">
-        {isLoading ? (
+        {isLoading || tenantLoading ? (
           <div className="p-8 text-center text-muted-foreground">Loading logs…</div>
         ) : items.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">No logs found</div>
