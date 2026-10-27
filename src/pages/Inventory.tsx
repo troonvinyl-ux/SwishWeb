@@ -4,6 +4,8 @@ import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatCurrency, formatDate, statusVariant, truncate } from '@/lib/utils';
 import { Package, Search, Plus, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { getActiveNicheId, getSpecialistIdsForNiche } from '@/lib/niche';
 
 export default function Inventory() {
   const navigate = useNavigate();
@@ -11,11 +13,16 @@ export default function Inventory() {
   const [search, setSearch] = useState(searchParams.get('q') || '');
   const [status, setStatus] = useState('');
   const qc = useQueryClient();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  const niche = getActiveNicheId();
+  const specialistIds = getSpecialistIdsForNiche(niche);
 
   const { data, isLoading, error } = useTable('items', {
     order: { column: 'created_at', ascending: false },
     search: search ? { column: 'canonical_title', query: search } : undefined,
-    filter: status ? { status } : undefined,
+    filter: { tenant_id: tenantId, ...(status ? { status } : {}) },
+    inFilter: { specialist_id: specialistIds },
+    enabled: Boolean(tenantId) && specialistIds.length > 0,
   });
 
   const items = (data || []) as Record<string, unknown>[];
@@ -72,7 +79,7 @@ export default function Inventory() {
 
       {/* Table */}
       <div className="swish-card overflow-hidden">
-        {isLoading ? (
+        {isLoading || tenantLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading inventory…</div>
         ) : error ? (
           <div className="p-8 text-center space-y-2">
