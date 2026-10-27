@@ -43,9 +43,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const { user } = useAuth();
-  const preferred = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
-  const niche = VALID_NICHES.includes(preferred) ? preferred : 'coins';
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
+  // The owner can switch between all niche skins; subscriber accounts remain
+  // anchored to their assigned preferred niche rather than browser storage.
+  const preferred = String((isOwner ? localStorage.getItem('swish_active_niche') : user?.user_metadata?.preferred_niche) || localStorage.getItem('swish_active_niche') || 'coins');
+  const niche = VALID_NICHES.includes(preferred) ? preferred : 'coins';
   const isClothingWorkspace = niche === 'clothing' && location.pathname.startsWith('/workspace/clothing');
   const isAdminScreen = isOwner && (location.pathname.startsWith('/master-admin') || location.pathname === '/niches');
 
