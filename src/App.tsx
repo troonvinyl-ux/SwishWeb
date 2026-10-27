@@ -84,8 +84,8 @@ function AppRoutes() {
     '/surplus': 'surplus_flip',
   }[location.pathname as '/coins' | '/mx' | '/bikes' | '/clothes' | '/threads' | '/surplus'];
   const safeNiche = hostProduct?.id || routeProduct || (['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins');
-  const entryWorkspace = needsOnboarding ? '/onboarding' : `/workspace/${safeNiche}`;
   const needsOnboarding = !isOwner && user?.user_metadata?.onboarding_status === 'started';
+  const entryWorkspace = needsOnboarding ? '/onboarding' : `/workspace/${safeNiche}`;
 
   // Establishing backend connection
   if (connectionStatus === 'initialising') {
