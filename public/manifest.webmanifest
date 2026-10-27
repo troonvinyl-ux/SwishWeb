@@ -1,0 +1,25 @@
+{
+  "name": "SWISH — Resale Management",
+  "short_name": "SWISH",
+  "description": "Niche-aware resale, inventory and eBay management.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0D0B10",
+  "theme_color": "#0D0B10",
+  "icons": [
+    {
+      "src": "/swish-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/swish-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
