@@ -1,4 +1,6 @@
 import { useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 import { useCount } from '@/hooks/useSupabaseQuery';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,14 +24,14 @@ const CONFIGS: Record<string, WorkspaceConfig> = {
     { label: 'Orders & Dispatch', detail: 'Manage orders and fulfilment', icon: ShoppingCart, to: '/orders' },
   ] },
   motocross: { id: 'motocross', name: 'SWISH MX', tagline: 'Buy, prep and flip motocross & off-road bikes', detail: 'Motocross · enduro · trail bikes · parts', accent: '#EF4444', icon: Wrench, scan: 'Identify Bike', actions: [
-    { label: 'Identify Bike', detail: 'Start a bike or parts assessment', icon: Camera, to: scanRoute },
+    { label: 'Identify Bike', detail: 'Start a bike or parts assessment', icon: Camera, to: '/identify' },
     { label: 'Workshop Stock', detail: 'Review bikes, parts and projects', icon: Package, to: '/inventory' },
     { label: 'Acquisition Calculator', detail: 'Estimate prep costs and margin', icon: Wrench, to: '/opportunities' },
     { label: 'List & Sell', detail: 'Prepare listings for sale', icon: Tag, to: '/listings' },
     { label: 'Orders & Dispatch', detail: 'Track completed sales', icon: ShoppingCart, to: '/orders' },
   ] },
   bicycles: { id: 'bicycles', name: 'SWISH Bikes', tagline: 'Identify, value and flip bicycles', detail: 'Road · mountain · gravel · hybrid · BMX · e-bikes', accent: '#22C55E', icon: Bike, scan: 'Identify Bike', actions: [
-    { label: 'Identify Bike', detail: 'Assess a bike, frame and components', icon: Camera, to: scanRoute },
+    { label: 'Identify Bike', detail: 'Assess a bike, frame and components', icon: Camera, to: '/identify' },
     { label: 'My Bikes', detail: 'Review saved bikes and projects', icon: Package, to: '/inventory' },
     { label: 'Parts & Repairs', detail: 'Open bike-flipper specialist tools', icon: Wrench, to: '/tools/bike-flipper' },
     { label: 'Profit Opportunities', detail: 'Compare potential acquisitions', icon: BarChart3, to: '/opportunities' },
@@ -37,7 +39,7 @@ const CONFIGS: Record<string, WorkspaceConfig> = {
     { label: 'Orders & Dispatch', detail: 'Track sales and fulfilment', icon: ShoppingCart, to: '/orders' },
   ] },
   clothing: { id: 'clothing', name: 'Threads Flip', tagline: 'Turn fashion into opportunity.', detail: 'Vintage · designer · streetwear · high street', accent: '#E91E8C', icon: Shirt, scan: 'Scan Item', actions: [
-    { label: 'Scan Item', detail: 'Capture and identify clothing, brand and era', icon: Camera, to: scanRoute },
+    { label: 'Scan Item', detail: 'Capture and identify clothing, brand and era', icon: Camera, to: '/identify' },
     { label: 'My Wardrobe', detail: 'Review your clothing inventory', icon: Package, to: '/inventory' },
     { label: 'Brands', detail: 'Explore brands and authentication checks', icon: Shirt, to: '/identify' },
     { label: 'List & Sell', detail: 'Prepare fashion listings', icon: Tag, to: '/listings' },
@@ -83,12 +85,29 @@ export default function NicheWorkspace() {
   const BrandIcon = config.icon;
   const scanRoute = config.id === 'coins' ? '/identify/coins' : `/scan/${config.id === 'bicycles' ? 'bikes' : config.id === 'motocross' ? 'mx' : config.id}`;
   const { tenantId } = useCurrentTenantId();
+  const { data: activeSpecialists = [], isLoading: entitlementsLoading } = useQuery({
+    queryKey: ['workspace_niche_entitlements', tenantId],
+    enabled: Boolean(tenantId) && !isOwner,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const sb = getSupabaseClient() || await getSupabaseClientAsync();
+      if (!sb || !tenantId) return [] as string[];
+      const { data, error } = await sb.from('tenants').select('active_specialists').eq('id', tenantId).maybeSingle();
+      if (error) throw error;
+      const raw = data?.active_specialists;
+      if (Array.isArray(raw)) return raw.map(String);
+      if (typeof raw === 'string') { try { const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed.map(String) : []; } catch { return []; } }
+      return [] as string[];
+    },
+  });
+  const entitledNiches = isOwner ? Object.keys(CONFIGS) : Object.keys(CONFIGS).filter(id => getSpecialistIdsForNiche(id as SwishNicheId).some(specialist => activeSpecialists.includes(specialist)));
   const specialistIds = getSpecialistIdsForNiche((CONFIGS[niche] ? niche : 'coins') as SwishNicheId);
   const { data: inventoryCount } = useCount('items', { tenant_id: tenantId }, { specialist_id: specialistIds }, Boolean(tenantId));
   useEffect(() => {
-    if (isOwner || niche === allowedNiche) setActiveNiche(config);
-    else navigate(`/workspace/${allowedNiche}`, { replace: true });
-  }, [config, isOwner, niche, allowedNiche, navigate]);
+    if (entitlementsLoading) return;
+    if (entitledNiches.includes(niche) && CONFIGS[niche]) setActiveNiche(config);
+    else navigate(`/workspace/${entitledNiches[0] || allowedNiche}`, { replace: true });
+  }, [config, isOwner, niche, allowedNiche, entitledNiches.join(','), entitlementsLoading, navigate]);
 
   if (!isOwner && niche !== allowedNiche) return <Navigate to={`/workspace/${allowedNiche}`} replace />;
 
