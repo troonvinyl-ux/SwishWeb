@@ -311,7 +311,7 @@ export default function NicheCapture() {
           if (publicUrl?.publicUrl) mediaUrls.push(publicUrl.publicUrl);
         }
         if (mediaUrls.length) {
-          const { error: mediaError } = await sb.from('items').update({ media: mediaUrls }).eq('id',id).eq('tenant_id',tenants[0].id);
+          const { error: mediaError } = await sb.from('items').update({ media: mediaUrls }).eq('id',id).eq('tenant_id',tenantId);
           if (mediaError) toast.error('Item saved, but photo links could not be attached: '+mediaError.message);
         }
       }
