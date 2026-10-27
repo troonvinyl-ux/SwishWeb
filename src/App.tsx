@@ -82,7 +82,7 @@ function AppRoutes() {
   const { connectionStatus, loading, user } = useAuth();
   // The apex domain is the public discovery splash page and must not depend on backend availability.
   if (isSwishFlipMarketingHost && window.location.pathname === '/') return <SwishFlipHome />;
-  if (isUnconfiguredNicheHost && window.location.pathname === '/') return <NicheComingSoon />;
+  if (isUnconfiguredNicheHost) return <NicheComingSoon />;
   // A niche subdomain is a fixed product entry point at its root path.
   // Host context wins over browser-local selection so switching a saved local niche cannot cross product boundaries.
   if (hostNiche && localStorage.getItem('swish_active_niche') !== hostNiche) localStorage.setItem('swish_active_niche', hostNiche);
