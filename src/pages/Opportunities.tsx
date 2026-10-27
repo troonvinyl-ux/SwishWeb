@@ -2,10 +2,12 @@ import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatCurrency, formatDate, truncate } from '@/lib/utils';
 import { Lightbulb, RefreshCw, ExternalLink } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 
 export default function Opportunities() {
   const qc = useQueryClient();
-  const { data, isLoading, error } = useTable('opportunities', { order: { column: 'created_at', ascending: false } });
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  const { data, isLoading, error } = useTable('opportunities', { filter: { tenant_id: tenantId }, order: { column: 'created_at', ascending: false }, enabled: Boolean(tenantId) });
   const items = (data || []) as Record<string, unknown>[];
 
   return (
@@ -21,7 +23,7 @@ export default function Opportunities() {
       </div>
 
       <div className="swish-card overflow-hidden">
-        {isLoading ? (
+        {isLoading || tenantLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading opportunities…</div>
         ) : error ? (
           <div className="p-8 text-center text-destructive text-sm">{(error as Error).message}</div>
