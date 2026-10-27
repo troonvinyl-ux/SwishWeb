@@ -85,7 +85,10 @@ export default function NicheWorkspace() {
   const { tenantId } = useCurrentTenantId();
   const specialistIds = getSpecialistIdsForNiche((CONFIGS[niche] ? niche : 'coins') as SwishNicheId);
   const { data: inventoryCount } = useCount('items', { tenant_id: tenantId }, { specialist_id: specialistIds }, Boolean(tenantId));
-  useEffect(() => { if (isOwner || niche === allowedNiche) setActiveNiche(config); }, [config, isOwner, niche, allowedNiche]);
+  useEffect(() => {
+    if (isOwner || niche === allowedNiche) setActiveNiche(config);
+    else navigate(`/workspace/${allowedNiche}`, { replace: true });
+  }, [config, isOwner, niche, allowedNiche, navigate]);
 
   if (!isOwner && niche !== allowedNiche) return <Navigate to={`/workspace/${allowedNiche}`} replace />;
 
