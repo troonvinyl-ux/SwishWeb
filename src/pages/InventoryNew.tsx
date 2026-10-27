@@ -26,7 +26,7 @@ const DEFAULT_FORM = {
 
 export default function InventoryNew() {
   const navigate = useNavigate();
-  const insert = useInsert('items', tenantId);
+  const insert = useInsert('items');
   const { user } = useAuth();
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const activeNiche = getActiveNicheId();

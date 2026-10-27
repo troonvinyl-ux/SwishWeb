@@ -1,6 +1,4 @@
 import { useTable } from '@/hooks/useSupabaseQuery';
-import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
-import { getActiveNicheId, getSpecialistIdsForNiche } from '@/lib/niche';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { TrendingUp, RefreshCw } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -26,26 +24,10 @@ const CustomTooltip = ({ active, payload, label }: Record<string, unknown>) => {
 
 export default function Insights() {
   const qc = useQueryClient();
-  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
-  const specialistIds = getSpecialistIdsForNiche(getActiveNicheId());
-  const { data: ordersData } = useTable('orders', {
-    select: '*, items(specialist_id)',
-    filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
-    order: { column: 'created_at', ascending: false }, limit: 100,
-    enabled: Boolean(tenantId) && specialistIds.length > 0,
-  });
-  const { data: inventoryData } = useTable('items', {
-    filter: { tenant_id: tenantId },
-    inFilter: { specialist_id: specialistIds },
-    limit: 100,
-    enabled: Boolean(tenantId) && specialistIds.length > 0,
-  });
+  const { data: ordersData } = useTable('orders', { order: { column: 'created_at', ascending: false }, limit: 100 });
+  const { data: inventoryData } = useTable('inventory', { limit: 100 });
 
-  const orders = ((ordersData || []) as Record<string, unknown>[]).filter(order => {
-    const linked = order.items as Record<string, unknown> | Record<string, unknown>[] | null;
-    const linkedItems = Array.isArray(linked) ? linked : linked ? [linked] : [];
-    return linkedItems.some(item => specialistIds.includes(String(item.specialist_id || '')));
-  });
+  const orders = (ordersData || []) as Record<string, unknown>[];
   const inventory = (inventoryData || []) as Record<string, unknown>[];
 
   // Aggregate orders by date for chart
@@ -76,13 +58,12 @@ export default function Insights() {
           <h1 className="page-title">Insights</h1>
           <p className="page-subtitle">Performance analytics from your real data</p>
         </div>
-        <button onClick={() => { qc.invalidateQueries({ queryKey: ['orders'] }); qc.invalidateQueries({ queryKey: ['items'] }); }} className="btn-ghost">
+        <button onClick={() => { qc.invalidateQueries({ queryKey: ['orders'] }); qc.invalidateQueries({ queryKey: ['inventory'] }); }} className="btn-ghost">
           <RefreshCw className="w-3.5 h-3.5" />Refresh
         </button>
       </div>
 
       {/* Summary stats */}
-      {tenantLoading ? <p className="text-sm text-muted-foreground">Loading workspace…</p> : null}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: 'Total Revenue', value: formatCurrency(totalRevenue) },

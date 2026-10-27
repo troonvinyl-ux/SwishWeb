@@ -124,13 +124,15 @@ export default function EbayHub() {
     try {
       const sb = getSupabaseClient();
       if (!sb || !user) throw new Error('Please sign in again before connecting eBay.');
-      const { data: membership, error: membershipError } = await sb
+      const { data: initialMembership, error: membershipError } = await sb
         .from('tenant_memberships')
         .select('tenant_id')
         .eq('user_id', user.id)
         .limit(1)
         .maybeSingle();
       if (membershipError) throw membershipError;
+
+      let membership = initialMembership;
 
       // Web signup may finish before the tenant provisioning trigger has run.
       // Use the same existing provisioning RPC as the mobile app; never invent

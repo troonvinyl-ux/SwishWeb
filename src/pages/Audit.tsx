@@ -4,29 +4,21 @@ import { formatDate, formatCurrency } from '@/lib/utils';
 import { ClipboardList, RefreshCw, Search } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
-import { getActiveNicheId, getSpecialistIdsForNiche } from '@/lib/niche';
 
 export default function Audit() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
-  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
-  const specialistIds = getSpecialistIdsForNiche(getActiveNicheId());
 
   const { data, isLoading, error } = useTable('audit_log', {
-    filter: { tenant_id: tenantId },
     order: { column: 'created_at', ascending: false },
     limit: 100,
-    enabled: Boolean(tenantId),
   });
 
-  // Fallback inventory view remains scoped to the same tenant and niche.
-  const { data: invData } = useTable('items', {
-    filter: { tenant_id: tenantId },
-    inFilter: { specialist_id: specialistIds },
+  // fallback to inventory with all statuses
+  const { data: invData } = useTable('inventory', {
     order: { column: 'updated_at', ascending: false },
     limit: 100,
-    enabled: Boolean(tenantId) && specialistIds.length > 0 && (!data || (data as unknown[]).length === 0),
+    enabled: !data || (data as unknown[]).length === 0,
   });
 
   const useAuditLog = data && (data as unknown[]).length > 0;
@@ -41,7 +33,7 @@ export default function Audit() {
           <h1 className="page-title flex items-center gap-2"><ClipboardList className="w-5 h-5 swish-gold" />Audit</h1>
           <p className="page-subtitle">{useAuditLog ? 'Audit log' : 'Inventory audit'} · {filtered.length} records</p>
         </div>
-        <button onClick={() => { qc.invalidateQueries({ queryKey: ['audit_log'] }); qc.invalidateQueries({ queryKey: ['items'] }); }} className="btn-ghost">
+        <button onClick={() => { qc.invalidateQueries({ queryKey: ['audit_log'] }); qc.invalidateQueries({ queryKey: ['inventory'] }); }} className="btn-ghost">
           <RefreshCw className="w-3.5 h-3.5" />Refresh
         </button>
       </div>
@@ -52,7 +44,7 @@ export default function Audit() {
       </div>
 
       <div className="swish-card overflow-hidden">
-        {isLoading || tenantLoading ? (
+        {isLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
@@ -84,7 +76,7 @@ export default function Audit() {
                       </>
                     ) : (
                       <>
-                        <td className="text-xs font-medium">{(r.canonical_title || r.title || r.name || 'Untitled') as string}</td>
+                        <td className="text-xs font-medium">{(r.title || r.name || 'Untitled') as string}</td>
                         <td className="text-xs font-mono text-muted-foreground">{(r.sku || '—') as string}</td>
                         <td className="text-xs capitalize">{(r.status || '—') as string}</td>
                         <td className="text-right text-xs swish-gold">{formatCurrency((r.valuation || r.sale_price) as number)}</td>

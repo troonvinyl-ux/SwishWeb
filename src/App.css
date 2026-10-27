@@ -161,30 +161,3 @@
   .vertical-card-main { flex-wrap:wrap; }
   .vertical-card-copy { flex-basis:calc(100% - 90px); }
 }
-
-
-/* SWISH niche skins: one engine, distinct visual identities per specialist. */
-:root[data-niche="coins"] { --swish-niche-accent:#F5C842; --swish-niche-glow:rgba(245,200,66,.10); }
-:root[data-niche="motocross"] { --swish-niche-accent:#EF4444; --swish-niche-glow:rgba(239,68,68,.10); }
-:root[data-niche="bicycles"] { --swish-niche-accent:#22C55E; --swish-niche-glow:rgba(34,197,94,.10); }
-:root[data-niche="clothing"] { --swish-niche-accent:#E91E8C; --swish-niche-glow:rgba(233,30,140,.10); }
-:root[data-niche="surplus_flip"] { --swish-niche-accent:#14B8A6; --swish-niche-glow:rgba(20,184,166,.10); }
-:root[data-niche] .page-title { text-decoration-color:var(--swish-niche-accent); }
-:root[data-niche] .swish-card { border-color:color-mix(in srgb,var(--swish-niche-accent) 13%,#28242d); }
-:root[data-niche] .btn-primary { box-shadow:0 5px 22px var(--swish-niche-glow); }
-:root[data-niche] .swish-mobile-nav-item.is-primary .swish-mobile-nav-icon { color:var(--swish-niche-accent); }
-:root[data-niche="coins"] .niche-workspace { --workspace-accent:#F5C842; }
-:root[data-niche="motocross"] .niche-workspace { --workspace-accent:#EF4444; }
-:root[data-niche="bicycles"] .niche-workspace { --workspace-accent:#22C55E; }
-:root[data-niche="clothing"] .niche-workspace { --workspace-accent:#E91E8C; }
-:root[data-niche="surplus_flip"] .niche-workspace { --workspace-accent:#14B8A6; }
-
-
-/* Specialist workspace treatments */
-.niche-workspace.niche-coins .workspace-hero { background:radial-gradient(ellipse at top right,rgba(245,200,66,.13),transparent 52%),linear-gradient(135deg,#17150d,#0d0b10); }
-.niche-workspace.niche-motocross .workspace-hero { background:linear-gradient(115deg,rgba(239,68,68,.16),transparent 62%),repeating-linear-gradient(135deg,rgba(239,68,68,.035) 0 2px,transparent 2px 14px),#100d10; border-radius:12px; }
-.niche-workspace.niche-motocross .workspace-action { border-radius:12px; }
-.niche-workspace.niche-bicycles .workspace-hero { background:radial-gradient(ellipse at 85% 20%,rgba(34,197,94,.15),transparent 48%),linear-gradient(135deg,#0d1712,#0d0b10); }
-.niche-workspace.niche-bicycles .workspace-action { border-radius:24px; }
-.niche-workspace.niche-surplus_flip .workspace-hero { background:linear-gradient(90deg,rgba(20,184,166,.13) 1px,transparent 1px),linear-gradient(rgba(20,184,166,.13) 1px,transparent 1px),linear-gradient(135deg,#0d1716,#0d0b10); background-size:24px 24px,24px 24px,auto; }
-.niche-workspace.niche-surplus_flip .workspace-action { border-style:dashed; }

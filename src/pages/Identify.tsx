@@ -30,7 +30,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useTable } from '@/hooks/useSupabaseQuery';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
-import { getSpecialistIdsForNiche } from '@/lib/niche';
+import { getActiveNicheId, getSpecialistIdsForNiche } from '@/lib/niche';
 import { formatCurrency } from '@/lib/utils';
 import {
   Camera, Upload, X, Zap, Loader2, AlertCircle, CheckCircle, Tag,
@@ -289,11 +289,7 @@ export default function Identify() {
     },
   });
   const coinAllowed = isOwner || getSpecialistIdsForNiche('coins').some(id => activeSpecialists.includes(id));
-  const specialistIds = getSpecialistIdsForNiche('coins');
-  useEffect(() => {
-    localStorage.setItem('swish_active_niche', 'coins');
-    document.documentElement.dataset.niche = 'coins';
-  }, []);
+  const specialistIds = getSpecialistIdsForNiche(getActiveNicheId());
   const { data: inventoryResults } = useTable('items', {
     filter: { tenant_id: tenantId },
     inFilter: { specialist_id: specialistIds },

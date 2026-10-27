@@ -12,8 +12,8 @@ export default function InventoryItem() {
   const navigate = useNavigate();
   const { tenantId } = useCurrentTenantId();
   const { data: item, isLoading, error, refetch } = useTableRow('items', id, '*', tenantId);
-  const update = useUpdate('items', tenantId);
-  const del = useDelete('items', tenantId);
+  const update = useUpdate('items');
+  const del = useDelete('items');
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Record<string, unknown>>({});
   const [identifying, setIdentifying] = useState(false);

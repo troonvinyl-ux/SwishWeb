@@ -22,7 +22,7 @@ export default function EbayListings() {
     select: '*, items!inner(specialist_id)',
     order: { column: 'created_at', ascending: false },
     search: search ? { column: 'title', query: search } : undefined,
-    filter: { tenant_id: tenantId, marketplace_id: 'ebay', ...(status ? { status } : {}) },
+    filter: { tenant_id: tenantId, ...(status ? { status } : {}) },
     inFilter: { 'items.specialist_id': specialistIds },
     enabled: Boolean(tenantId) && specialistIds.length > 0,
   });

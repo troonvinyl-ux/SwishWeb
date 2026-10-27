@@ -12,7 +12,7 @@ export interface ProductContext {
 }
 
 export const PRODUCTS: ProductContext[] = [
-  { id: 'coins', name: 'Coin Flipper', shortName: 'Coin Flipper', description: 'Identify, value and sell coins and collectibles.', collectionLabel: 'My Coins', captureLabel: 'Scan Coin', accent: '#F5C842', hostnames: ['coinflipper.com', 'www.coinflipper.com', 'coin.swishflip.co.uk', 'coins.swishflip.co.uk'] },
+  { id: 'coins', name: 'Coin Flipper', shortName: 'Coin Flipper', description: 'Identify, value and sell coins and collectibles.', collectionLabel: 'My Coins', captureLabel: 'Scan Coin', accent: '#F5C842', hostnames: ['coinflipper.com', 'www.coinflipper.com', 'coins.swishflip.co.uk'] },
   { id: 'motocross', name: 'MX Flipper', shortName: 'MX Flipper', description: 'Identify, value and sell motocross bikes and parts.', collectionLabel: 'My Bikes & Parts', captureLabel: 'Identify Bike or Part', accent: '#EF4444', hostnames: ['mxflipper.com', 'www.mxflipper.com', 'mx.swishflip.co.uk'] },
   { id: 'bicycles', name: 'Bike Flipper', shortName: 'Bike Flipper', description: 'Identify, value and sell bicycles and components.', collectionLabel: 'My Bikes', captureLabel: 'Identify Bike', accent: '#22C55E', hostnames: ['bikeflipper.com', 'www.bikeflipper.com', 'bikesflipper.com', 'www.bikesflipper.com', 'bikes.swishflip.co.uk'] },
   { id: 'clothing', name: 'Clothes Flipper', shortName: 'Clothes Flipper', description: 'Identify clothing, estimate prices and create listings.', collectionLabel: 'My Clothing', captureLabel: 'Add Clothing', accent: '#E91E8C', hostnames: ['clothesflipper.com', 'www.clothesflipper.com', 'clothes.swishflip.co.uk', 'threads.swishflip.co.uk'] },

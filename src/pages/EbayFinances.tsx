@@ -26,9 +26,16 @@ export default function EbayFinances() {
     try {
       const sb = getSupabaseClient();
       if (!sb || !user) throw new Error('Please sign in again before loading eBay finances.');
-      if (!tenantId) throw new Error('Your SWISH workspace is not ready.');
+      const { data: membership, error: membershipError } = await sb
+        .from('tenant_memberships')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      if (membershipError) throw membershipError;
+      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready.');
       const { data, error } = await callEdgeFunction<Record<string, unknown>>('swish-ebay-finances', {
-        tenantId, route: 'get_summary', daysBack: 90,
+        tenantId: membership.tenant_id, route: 'get_summary', daysBack: 90,
       }, sb);
       if (error) throw error;
       const apiSummary = (data?.summary || {}) as Record<string, unknown>;
