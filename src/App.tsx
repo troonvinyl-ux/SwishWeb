@@ -99,7 +99,7 @@ function AppRoutes() {
           <Route path="/clothes" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'clothing' : safeNiche}`} replace />} />
           <Route path="/surplus" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'surplus_flip' : safeNiche}`} replace />} />
           <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/niches" element={isOwner ? <NicheEntry /> : <Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
+          <Route path="/niches" element={needsOnboarding ? <Navigate to="/onboarding" replace /> : <NicheEntry />} />
           <Route path="/workspace/:niche" element={<NicheWorkspace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/command-centre" element={<CommandCentre />} />
