@@ -3,7 +3,15 @@ import {
   CheckCircle2, Coins, Crown, Gamepad2, LogIn, Shirt, Smartphone,
   Sparkles, Tag, Trophy, Wrench, Watch, Gem, ShoppingCart, Heart,
 } from 'lucide-react';
-import heroImage from '@/assets/swish-hero.jpg';
+import coinArtwork from '@/assets/niches/coin-flipper.svg';
+import mxArtwork from '@/assets/niches/mx-flipper.svg';
+import bikeArtwork from '@/assets/niches/bike-flipper.svg';
+import threadsArtwork from '@/assets/niches/threads-flip.svg';
+import cardArtwork from '@/assets/niches/card-flipper.svg';
+import antiqueArtwork from '@/assets/niches/antique-flipper.svg';
+import fossilArtwork from '@/assets/niches/fossil-flipper.svg';
+import beautyArtwork from '@/assets/niches/beauty-flipper.svg';
+import techArtwork from '@/assets/niches/tech-flipper.svg';
 
 type Niche = {
   name: string;
@@ -15,18 +23,19 @@ type Niche = {
   button: string;
   color: string;
   glow: string;
+  artwork: string;
 };
 
 const niches: Niche[] = [
-  { name: 'Coin Flipper', slug: 'coins', eyebrow: 'ANCIENT · ISLAMIC · WORLD', description: 'Specialist coin identification, research and collection tools', tagline: 'A dedicated app for coin people.', icon: Coins, button: 'Enter Coins', color: 'from-amber-800 via-stone-950 to-black', glow: 'group-hover:shadow-amber-500/20' , },
-  { name: 'MX Flipper', slug: 'mx', eyebrow: 'DIRT BIKES · PARTS · GEAR', description: 'Bike, parts and gear recognition built around motocross', tagline: 'A dedicated app for MX enthusiasts.', icon: Wrench, button: 'Enter MX', color: 'from-orange-700 via-red-950 to-black', glow: 'group-hover:shadow-orange-500/20' },
-  { name: 'Bike Flipper', slug: 'bikes', eyebrow: 'BICYCLES · PARTS · UPGRADES', description: 'Understand bikes, components, condition and value', tagline: 'A dedicated app for cyclists and traders.', icon: Bike, button: 'Enter Bikes', color: 'from-green-700 via-emerald-950 to-black', glow: 'group-hover:shadow-green-500/20' },
-  { name: 'Threads Flip', slug: 'threads', eyebrow: 'CLOTHING · STREETWEAR · BRANDS', description: 'Fashion, brands, styles and resale knowledge in one place', tagline: 'A dedicated app for clothing specialists.', icon: Shirt, button: 'Enter Threads', color: 'from-pink-700 via-fuchsia-950 to-black', glow: 'group-hover:shadow-pink-500/20' },
-  { name: 'Card Flipper', slug: 'games', eyebrow: 'TRADING CARDS · TCG · SPORTS', description: 'Trading cards, sets, condition and collector knowledge', tagline: 'A dedicated app for card collectors.', icon: Gamepad2, button: 'Enter Cards', color: 'from-violet-700 via-purple-950 to-black', glow: 'group-hover:shadow-violet-500/20' },
-  { name: 'Antique Flipper', slug: 'home', eyebrow: 'ANTIQUES · VINTAGE · COLLECTABLES', description: 'Recognise antiques, learn their history and assess value', tagline: 'A dedicated app for antique hunters.', icon: Watch, button: 'Enter Antiques', color: 'from-yellow-800 via-amber-950 to-black', glow: 'group-hover:shadow-yellow-500/20' },
-  { name: 'Fossil Flipper', slug: 'surplus', eyebrow: 'FOSSILS · MINERALS · SPECIMENS', description: 'Fossils, minerals and specimen identification and research', tagline: 'A dedicated app for fossil enthusiasts.', icon: Gem, button: 'Enter Fossils', color: 'from-cyan-700 via-sky-950 to-black', glow: 'group-hover:shadow-cyan-500/20' },
-  { name: 'Beauty Flipper', slug: 'clothes', eyebrow: 'COSMETICS · FRAGRANCE · SKINCARE', description: 'Beauty, fragrance and skincare product knowledge', tagline: 'A dedicated app for beauty resellers.', icon: Heart, button: 'Enter Beauty', color: 'from-rose-700 via-pink-950 to-black', glow: 'group-hover:shadow-rose-500/20' },
-  { name: 'Tech Flipper', slug: 'electronics', eyebrow: 'PHONES · CONSOLES · GADGETS', description: 'Phones, consoles and gadgets with practical valuation help', tagline: 'A dedicated app for tech specialists.', icon: Smartphone, button: 'Enter Tech', color: 'from-blue-700 via-indigo-950 to-black', glow: 'group-hover:shadow-blue-500/20' },
+  { name: 'Coin Flipper', slug: 'coins', eyebrow: 'ANCIENT · ISLAMIC · WORLD', description: 'Specialist coin identification, research and collection tools', tagline: 'A dedicated app for coin people.', icon: Coins, button: 'Enter Coins', color: 'from-amber-800 via-stone-950 to-black', glow: 'group-hover:shadow-amber-500/20', artwork: coinArtwork },
+  { name: 'MX Flipper', slug: 'mx', eyebrow: 'DIRT BIKES · PARTS · GEAR', description: 'Bike, parts and gear recognition built around motocross', tagline: 'A dedicated app for MX enthusiasts.', icon: Wrench, button: 'Enter MX', color: 'from-orange-700 via-red-950 to-black', glow: 'group-hover:shadow-orange-500/20', artwork: mxArtwork },
+  { name: 'Bike Flipper', slug: 'bikes', eyebrow: 'BICYCLES · PARTS · UPGRADES', description: 'Understand bikes, components, condition and value', tagline: 'A dedicated app for cyclists and traders.', icon: Bike, button: 'Enter Bikes', color: 'from-green-700 via-emerald-950 to-black', glow: 'group-hover:shadow-green-500/20', artwork: bikeArtwork },
+  { name: 'Threads Flip', slug: 'threads', eyebrow: 'CLOTHING · STREETWEAR · BRANDS', description: 'Fashion, brands, styles and resale knowledge in one place', tagline: 'A dedicated app for clothing specialists.', icon: Shirt, button: 'Enter Threads', color: 'from-pink-700 via-fuchsia-950 to-black', glow: 'group-hover:shadow-pink-500/20', artwork: threadsArtwork },
+  { name: 'Card Flipper', slug: 'games', eyebrow: 'TRADING CARDS · TCG · SPORTS', description: 'Trading cards, sets, condition and collector knowledge', tagline: 'A dedicated app for card collectors.', icon: Gamepad2, button: 'Enter Cards', color: 'from-violet-700 via-purple-950 to-black', glow: 'group-hover:shadow-violet-500/20', artwork: cardArtwork },
+  { name: 'Antique Flipper', slug: 'home', eyebrow: 'ANTIQUES · VINTAGE · COLLECTABLES', description: 'Recognise antiques, learn their history and assess value', tagline: 'A dedicated app for antique hunters.', icon: Watch, button: 'Enter Antiques', color: 'from-yellow-800 via-amber-950 to-black', glow: 'group-hover:shadow-yellow-500/20', artwork: antiqueArtwork },
+  { name: 'Fossil Flipper', slug: 'surplus', eyebrow: 'FOSSILS · MINERALS · SPECIMENS', description: 'Fossils, minerals and specimen identification and research', tagline: 'A dedicated app for fossil enthusiasts.', icon: Gem, button: 'Enter Fossils', color: 'from-cyan-700 via-sky-950 to-black', glow: 'group-hover:shadow-cyan-500/20', artwork: fossilArtwork },
+  { name: 'Beauty Flipper', slug: 'clothes', eyebrow: 'COSMETICS · FRAGRANCE · SKINCARE', description: 'Beauty, fragrance and skincare product knowledge', tagline: 'A dedicated app for beauty resellers.', icon: Heart, button: 'Enter Beauty', color: 'from-rose-700 via-pink-950 to-black', glow: 'group-hover:shadow-rose-500/20', artwork: beautyArtwork },
+  { name: 'Tech Flipper', slug: 'electronics', eyebrow: 'PHONES · CONSOLES · GADGETS', description: 'Phones, consoles and gadgets with practical valuation help', tagline: 'A dedicated app for tech specialists.', icon: Smartphone, button: 'Enter Tech', color: 'from-blue-700 via-indigo-950 to-black', glow: 'group-hover:shadow-blue-500/20', artwork: techArtwork },
 ];
 
 const existingEntryRoutes: Record<string, string> = {
@@ -104,22 +113,17 @@ export default function SwishFlipHome() {
           <div><p className="text-[10px] font-black uppercase tracking-[.22em] text-yellow-300">Find your specialist app</p><h2 className="mt-1 text-2xl font-black sm:text-3xl">One app designed for your world</h2></div>
           <p className="hidden text-right text-xs text-slate-400 sm:block">Purpose-built experience · Shared learning engine</p>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {niches.map((niche) => {
             const Icon = niche.icon;
             return <a key={niche.slug} href={existingEntryRoutes[niche.slug] || '/workspace/coins'} aria-label={`Enter ${niche.name}`} className={`group relative isolate flex min-h-[285px] flex-col overflow-hidden rounded-2xl border border-white/25 bg-gradient-to-br ${niche.color} p-4 shadow-lg transition duration-300 hover:-translate-y-1 hover:border-white/60 hover:shadow-2xl ${niche.glow} focus:outline-none focus:ring-2 focus:ring-yellow-300 sm:min-h-[320px]`}>
-              <div
+              <img
+                src={niche.artwork}
+                alt=""
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 -z-10 bg-cover opacity-70 transition duration-500 group-hover:scale-105 group-hover:opacity-90"
-                style={{
-                  backgroundImage: `url(${heroImage})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: ({
-                    coins: 'left center', mx: 'center center', bikes: 'right center',
-                    threads: 'center center', games: 'right center', home: 'left center',
-                    surplus: 'center center', clothes: 'right center', electronics: 'center center',
-                  } as Record<string, string>)[niche.slug] || 'center',
-                }}
+                loading="lazy"
+                decoding="async"
+                className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105 group-hover:opacity-100"
               />
               <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-t from-black via-black/55 to-black/5 transition duration-300 group-hover:from-black/90 group-hover:via-black/45" />
               <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-30 mix-blend-screen" style={{ background: 'radial-gradient(ellipse at 80% 10%, rgba(255,255,255,.32), transparent 45%)' }} />
@@ -127,7 +131,7 @@ export default function SwishFlipHome() {
               <div className="flex items-start justify-between gap-3"><span className="rounded-full border border-white/20 bg-black/35 px-2.5 py-1 text-[9px] font-black tracking-[.12em] text-white/90">{niche.eyebrow}</span><Icon className="h-6 w-6 shrink-0 drop-shadow-lg"/></div>
               <div className="mt-auto pt-8">
                 <p className="mb-1 text-[10px] font-bold italic text-white/70">{niche.tagline}</p>
-                <h3 className="text-3xl font-black italic leading-none tracking-[-.04em] drop-shadow-lg sm:text-4xl 2xl:text-3xl">{niche.name.toUpperCase()}</h3>
+                <h3 className="text-3xl font-black italic leading-none tracking-[-.04em] drop-shadow-lg sm:text-4xl 2xl:text-4xl">{niche.name.toUpperCase()}</h3>
                 <p className="mt-2 text-xs font-semibold text-white/85">{niche.description}</p>
                 <span className="mt-4 flex items-center justify-between rounded-xl border border-white/30 bg-gradient-to-r from-yellow-100 to-yellow-400 px-4 py-3 text-sm font-black text-black shadow-lg transition group-hover:brightness-110"><span>{niche.button}</span><ArrowRight className="h-4 w-4 transition group-hover:translate-x-1"/></span>
               </div>
