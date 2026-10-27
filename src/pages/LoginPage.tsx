@@ -4,13 +4,14 @@ import { useAuth, ConnectionStatus } from '@/contexts/AuthContext';
 import { Zap, Eye, EyeOff, Loader2, Key, WifiOff, UserPlus, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
+import { getHostProduct } from '@/lib/productContext';
 
 const PRODUCTS = {
-  '/coins': { id: 'coins', label: 'SWISH Coins', description: 'Identify, value and sell coins and collectibles', accent: '#F5C842' },
-  '/mx': { id: 'motocross', label: 'SWISH MX', description: 'Buy, prepare and sell motocross and off-road bikes', accent: '#EF4444' },
-  '/bikes': { id: 'bicycles', label: 'SWISH Bikes', description: 'Identify, value and sell bicycles', accent: '#22C55E' },
-  '/threads': { id: 'clothing', label: 'Threads Flip', description: 'Turn fashion into opportunity', accent: '#E91E8C' },
-  '/clothes': { id: 'clothing', label: 'Threads Flip', description: 'Turn fashion into opportunity', accent: '#E91E8C' },
+  '/coins': { id: 'coins', label: 'Coin Flipper', description: 'Identify, value and sell coins and collectibles', accent: '#F5C842' },
+  '/mx': { id: 'motocross', label: 'MX Flipper', description: 'Buy, prepare and sell motocross and off-road bikes', accent: '#EF4444' },
+  '/bikes': { id: 'bicycles', label: 'Bike Flipper', description: 'Identify, value and sell bicycles', accent: '#22C55E' },
+  '/threads': { id: 'clothing', label: 'Clothes Flipper', description: 'Turn fashion into opportunity', accent: '#E91E8C' },
+  '/clothes': { id: 'clothing', label: 'Clothes Flipper', description: 'Turn fashion into opportunity', accent: '#E91E8C' },
   '/surplus': { id: 'surplus_flip', label: 'Surplus Flip', description: 'Turn job lots and pallet manifests into listings', accent: '#14B8A6' },
 } as const;
 const DEFAULT_PRODUCT = PRODUCTS['/coins'];
@@ -36,7 +37,10 @@ export default function LoginPage() {
   const { signIn, signUp, connectionStatus, setManualKey } = useAuth();
   const location = useLocation();
   const isRootEntry = location.pathname === '/';
-  const product = PRODUCTS[location.pathname as keyof typeof PRODUCTS] || DEFAULT_PRODUCT;
+  const hostProduct = getHostProduct();
+  const product = hostProduct
+    ? (Object.values(PRODUCTS).find(candidate => candidate.id === hostProduct.id) || DEFAULT_PRODUCT)
+    : (PRODUCTS[location.pathname as keyof typeof PRODUCTS] || DEFAULT_PRODUCT);
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [verificationPending, setVerificationPending] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
