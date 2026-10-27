@@ -3,15 +3,15 @@ import {
   CheckCircle2, Coins, Crown, Gamepad2, LogIn, Shirt, Smartphone,
   Sparkles, Tag, Trophy, Wrench, Watch, Gem, ShoppingCart, Heart,
 } from 'lucide-react';
-import coinArtwork from '@/assets/niches/coin-flipper.svg';
-import mxArtwork from '@/assets/niches/mx-flipper.svg';
+import coinArtwork from '@/assets/niches/coin-flipper.webp';
+import mxArtwork from '@/assets/niches/mx-flipper.webp';
 import bikeArtwork from '@/assets/niches/bike-flipper.svg';
 import threadsArtwork from '@/assets/niches/threads-flip.svg';
 import cardArtwork from '@/assets/niches/card-flipper.svg';
 import antiqueArtwork from '@/assets/niches/antique-flipper.svg';
-import fossilArtwork from '@/assets/niches/fossil-flipper.svg';
-import beautyArtwork from '@/assets/niches/beauty-flipper.svg';
-import techArtwork from '@/assets/niches/tech-flipper.svg';
+import fossilArtwork from '@/assets/niches/fossil-flipper.webp';
+import beautyArtwork from '@/assets/niches/beauty-flipper.webp';
+import techArtwork from '@/assets/niches/tech-flipper.webp';
 
 type Niche = {
   name: string;
@@ -31,26 +31,17 @@ const niches: Niche[] = [
   { name: 'MX Flipper', slug: 'mx', eyebrow: 'DIRT BIKES · PARTS · GEAR', description: 'Bike, parts and gear recognition built around motocross', tagline: 'A dedicated app for MX enthusiasts.', icon: Wrench, button: 'Enter MX', color: 'from-orange-700 via-red-950 to-black', glow: 'group-hover:shadow-orange-500/20', artwork: mxArtwork },
   { name: 'Bike Flipper', slug: 'bikes', eyebrow: 'BICYCLES · PARTS · UPGRADES', description: 'Understand bikes, components, condition and value', tagline: 'A dedicated app for cyclists and traders.', icon: Bike, button: 'Enter Bikes', color: 'from-green-700 via-emerald-950 to-black', glow: 'group-hover:shadow-green-500/20', artwork: bikeArtwork },
   { name: 'Threads Flip', slug: 'threads', eyebrow: 'CLOTHING · STREETWEAR · BRANDS', description: 'Fashion, brands, styles and resale knowledge in one place', tagline: 'A dedicated app for clothing specialists.', icon: Shirt, button: 'Enter Threads', color: 'from-pink-700 via-fuchsia-950 to-black', glow: 'group-hover:shadow-pink-500/20', artwork: threadsArtwork },
-  { name: 'Card Flipper', slug: 'cards', eyebrow: 'TRADING CARDS · TCG · SPORTS', description: 'Trading cards, sets, condition and collector knowledge', tagline: 'A dedicated app for card collectors.', icon: Gamepad2, button: 'Enter Cards', color: 'from-violet-700 via-purple-950 to-black', glow: 'group-hover:shadow-violet-500/20', artwork: cardArtwork },
-  { name: 'Antique Flipper', slug: 'antiques', eyebrow: 'ANTIQUES · VINTAGE · COLLECTABLES', description: 'Recognise antiques, learn their history and assess value', tagline: 'A dedicated app for antique hunters.', icon: Watch, button: 'Enter Antiques', color: 'from-yellow-800 via-amber-950 to-black', glow: 'group-hover:shadow-yellow-500/20', artwork: antiqueArtwork },
-  { name: 'Fossil Flipper', slug: 'fossils', eyebrow: 'FOSSILS · MINERALS · SPECIMENS', description: 'Fossils, minerals and specimen identification and research', tagline: 'A dedicated app for fossil enthusiasts.', icon: Gem, button: 'Enter Fossils', color: 'from-cyan-700 via-sky-950 to-black', glow: 'group-hover:shadow-cyan-500/20', artwork: fossilArtwork },
-  { name: 'Beauty Flipper', slug: 'beauty', eyebrow: 'COSMETICS · FRAGRANCE · SKINCARE', description: 'Beauty, fragrance and skincare product knowledge', tagline: 'A dedicated app for beauty resellers.', icon: Heart, button: 'Enter Beauty', color: 'from-rose-700 via-pink-950 to-black', glow: 'group-hover:shadow-rose-500/20', artwork: beautyArtwork },
-  { name: 'Tech Flipper', slug: 'tech', eyebrow: 'PHONES · CONSOLES · GADGETS', description: 'Phones, consoles and gadgets with practical valuation help', tagline: 'A dedicated app for tech specialists.', icon: Smartphone, button: 'Enter Tech', color: 'from-blue-700 via-indigo-950 to-black', glow: 'group-hover:shadow-blue-500/20', artwork: techArtwork },
+  { name: 'Card Flipper', slug: 'games', eyebrow: 'TRADING CARDS · TCG · SPORTS', description: 'Trading cards, sets, condition and collector knowledge', tagline: 'A dedicated app for card collectors.', icon: Gamepad2, button: 'Enter Cards', color: 'from-violet-700 via-purple-950 to-black', glow: 'group-hover:shadow-violet-500/20', artwork: cardArtwork },
+  { name: 'Antique Flipper', slug: 'home', eyebrow: 'ANTIQUES · VINTAGE · COLLECTABLES', description: 'Recognise antiques, learn their history and assess value', tagline: 'A dedicated app for antique hunters.', icon: Watch, button: 'Enter Antiques', color: 'from-yellow-800 via-amber-950 to-black', glow: 'group-hover:shadow-yellow-500/20', artwork: antiqueArtwork },
+  { name: 'Fossil Flipper', slug: 'surplus', eyebrow: 'FOSSILS · MINERALS · SPECIMENS', description: 'Fossils, minerals and specimen identification and research', tagline: 'A dedicated app for fossil enthusiasts.', icon: Gem, button: 'Enter Fossils', color: 'from-cyan-700 via-sky-950 to-black', glow: 'group-hover:shadow-cyan-500/20', artwork: fossilArtwork },
+  { name: 'Beauty Flipper', slug: 'clothes', eyebrow: 'COSMETICS · FRAGRANCE · SKINCARE', description: 'Beauty, fragrance and skincare product knowledge', tagline: 'A dedicated app for beauty resellers.', icon: Heart, button: 'Enter Beauty', color: 'from-rose-700 via-pink-950 to-black', glow: 'group-hover:shadow-rose-500/20', artwork: beautyArtwork },
+  { name: 'Tech Flipper', slug: 'electronics', eyebrow: 'PHONES · CONSOLES · GADGETS', description: 'Phones, consoles and gadgets with practical valuation help', tagline: 'A dedicated app for tech specialists.', icon: Smartphone, button: 'Enter Tech', color: 'from-blue-700 via-indigo-950 to-black', glow: 'group-hover:shadow-blue-500/20', artwork: techArtwork },
 ];
 
 const existingEntryRoutes: Record<string, string> = {
-  coins: '/coins',
-  mx: '/mx',
-  bikes: '/bikes',
-  threads: '/threads',
-  // These specialist niches are advertised in the directory but are not yet
-  // registered production products. Their routes show an explicit status page
-  // instead of silently sending customers into an unrelated workspace.
-  cards: '/cards',
-  antiques: '/antiques',
-  fossils: '/fossils',
-  beauty: '/beauty',
-  tech: '/tech',
+  coins: '/coins', mx: '/mx', bikes: '/bikes', threads: '/threads',
+  games: '/games', home: '/home', surplus: '/surplus', clothes: '/clothes',
+  electronics: '/electronics',
 };
 
 const features = [

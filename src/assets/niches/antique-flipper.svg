@@ -1,1 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675"><defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#6b411b"/><stop offset=".5" stop-color="#2d2118"/><stop offset="1" stop-color="#08090d"/></linearGradient></defs><rect width="1200" height="675" fill="url(#bg)"/><g fill="#c9a05a" stroke="#3e2918" stroke-width="12"><circle cx="280" cy="310" r="190"/><circle cx="280" cy="310" r="155" fill="#4a321e"/><circle cx="820" cy="300" r="170"/><circle cx="820" cy="300" r="135" fill="#4a321e"/></g><g stroke="#e2bf78" stroke-width="12" stroke-linecap="round"><path d="M280 310V200M280 310l80 50"/><path d="M820 300V195M820 300l-65 65"/></g><g fill="#e5c68b" font-family="Georgia,serif" text-anchor="middle"><text x="280" y="105" font-size="36">VINTAGE</text><text x="820" y="85" font-size="34">ANTIQUE</text><text x="550" y="590" font-size="52">TIMELESS OBJECTS</text></g><path d="M0 590h1200v85H0z" fill="#050505" opacity=".65"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="640" viewBox="0 0 960 640" fill="none">
+  <defs>
+    <linearGradient id="background" x2="960" y2="640" gradientUnits="userSpaceOnUse"><stop stop-color="#44361c"/><stop offset="1" stop-color="#0b0805"/></linearGradient>
+    <radialGradient id="light"><stop stop-color="#e1ba69" stop-opacity=".4"/><stop offset="1" stop-color="#e1ba69" stop-opacity="0"/></radialGradient>
+    <linearGradient id="brass" x2="1" y2="1"><stop stop-color="#f0d394"/><stop offset=".5" stop-color="#b28b4c"/><stop offset="1" stop-color="#634625"/></linearGradient>
+    <linearGradient id="ceramic" x2="1"><stop stop-color="#466962"/><stop offset=".5" stop-color="#aec0a2"/><stop offset="1" stop-color="#35534c"/></linearGradient>
+    <linearGradient id="shade" x2="0" y2="640" gradientUnits="userSpaceOnUse"><stop offset=".3" stop-color="#0a0705" stop-opacity="0"/><stop offset="1" stop-color="#0a0705"/></linearGradient>
+  </defs>
+  <path fill="url(#background)" d="M0 0h960v640H0z"/>
+  <ellipse cx="640" cy="160" rx="420" ry="295" fill="url(#light)"/>
+  <ellipse cx="634" cy="439" rx="285" ry="24" fill="#000" opacity=".5"/>
+  <path d="M418 412V207c0-95 196-95 196 0v205" fill="#3f2419" stroke="url(#brass)" stroke-width="10"/>
+  <path d="M400 402h232v29H400z" fill="url(#brass)"/>
+  <path d="M421 431h22v21h-22zm168 0h22v21h-22z" fill="#c2a46b"/>
+  <circle cx="516" cy="239" r="84" fill="url(#brass)"/><circle cx="516" cy="239" r="73" fill="#e9ddbd" stroke="#4b3725" stroke-width="3"/>
+  <g stroke="#61492e" stroke-width="4"><path d="M516 174v12m0 106v12m-65-65h12m106 0h12m-111-46 9 9m74 74 9 9m-92 0 9-9m74-74 9-9"/><path d="M516 239v-41m0 41 35 21" stroke-width="5" stroke-linecap="round"/></g>
+  <circle cx="516" cy="239" r="5" fill="#61492e"/>
+  <path d="M728 111h62l-9 66c0 32 74 62 66 132-5 48-37 98-49 119h-76c-12-21-44-71-49-119-8-70 66-100 66-132z" fill="url(#ceramic)" stroke="#afba92" stroke-width="3"/>
+  <path d="M727 116h65m-82 93c38 20 68 20 98 0m-107 49c39 20 82 20 121 0m-112 83c32-19 68-19 100 0" stroke="#c4b98a" stroke-width="4"/>
+  <g transform="translate(622 351) rotate(14)"><circle cy="-69" r="13" stroke="url(#brass)" stroke-width="6"/><path d="M-7-55H7" stroke="#d6ba7d" stroke-width="9"/><circle r="56" fill="url(#brass)"/><circle r="46" fill="#e9ddbd"/><path d="M0-36v8M36 0h-8M0 36v-8M-36 0h8M0 0v-23m0 23 21 10" stroke="#5d482d" stroke-width="4" stroke-linecap="round"/></g>
+  <path fill="url(#shade)" d="M0 0h960v640H0z"/>
+</svg>

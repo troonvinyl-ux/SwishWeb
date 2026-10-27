@@ -1,1 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675"><defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#006c3c"/><stop offset=".45" stop-color="#063b2d"/><stop offset="1" stop-color="#06090c"/></linearGradient></defs><rect width="1200" height="675" fill="url(#bg)"/><path d="M0 370 180 190 330 320 470 115 640 330 800 150 1000 310 1200 120V675H0Z" fill="#0b6541"/><path d="M0 420 200 280 370 390 540 235 740 400 900 250 1100 380 1200 310V675H0Z" fill="#092d24"/><g transform="translate(120 120)" stroke="#c9ff54" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none"><circle cx="180" cy="390" r="135" stroke="#f2f4e9"/><circle cx="780" cy="390" r="135" stroke="#f2f4e9"/><path d="M180 390 360 180 500 390 180 390 410 390 610 180 780 390 500 390 610 180 690 180"/><path d="M330 180h110M600 180h115M340 155l-35 0"/></g><path d="M0 570 Q350 520 650 600T1200 560V675H0Z" fill="#030807" opacity=".65"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="640" viewBox="0 0 960 640" fill="none">
+  <defs>
+    <linearGradient id="background" x2="960" y2="640" gradientUnits="userSpaceOnUse"><stop stop-color="#183c2c"/><stop offset="1" stop-color="#050b09"/></linearGradient>
+    <radialGradient id="light"><stop stop-color="#47da95" stop-opacity=".4"/><stop offset="1" stop-color="#47da95" stop-opacity="0"/></radialGradient>
+    <linearGradient id="frame"><stop stop-color="#a0f4bf"/><stop offset=".5" stop-color="#35b86e"/><stop offset="1" stop-color="#1c673d"/></linearGradient>
+    <linearGradient id="shade" x2="0" y2="640" gradientUnits="userSpaceOnUse"><stop offset=".3" stop-color="#040906" stop-opacity="0"/><stop offset="1" stop-color="#040906"/></linearGradient>
+  </defs>
+  <path fill="url(#background)" d="M0 0h960v640H0z"/>
+  <ellipse cx="640" cy="170" rx="420" ry="300" fill="url(#light)"/>
+  <g opacity=".13" stroke="#b0f3cc"><path d="M0 100h960M0 200h960M0 300h960M0 400h960"/><path d="M120 0v640M280 0v640M440 0v640M600 0v640M760 0v640"/></g>
+  <ellipse cx="590" cy="432" rx="316" ry="25" fill="#000" opacity=".55"/>
+  <g stroke="#080e0a" stroke-width="17"><circle cx="387" cy="301" r="114"/><circle cx="785" cy="301" r="114"/></g>
+  <g stroke="#bbd3c4" stroke-width="3"><circle cx="387" cy="301" r="103"/><circle cx="785" cy="301" r="103"/></g>
+  <g stroke="#c5e8d3" stroke-width="1.5" opacity=".5"><path d="M387 198v206m-103-103h206m-176-73 146 146m-146 0 146-146M785 198v206m-103-103h206m-176-73 146 146m-146 0 146-146"/></g>
+  <g stroke="url(#frame)" stroke-width="13" stroke-linejoin="round" stroke-linecap="round"><path d="m387 301 114-153 74 153H387l314-157-200 4M575 301l126-157 84 157"/><path d="m501 148-17-49m217 45-19-54"/></g>
+  <path d="M460 99h65" stroke="#d8e3db" stroke-width="12" stroke-linecap="round"/>
+  <path d="m682 90 43-11c44-12 55 34 22 47" stroke="#d8e3db" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="575" cy="301" r="23" stroke="#cad8cd" stroke-width="6"/>
+  <path d="m575 301 28 25h18" stroke="#d8e3db" stroke-width="6" stroke-linecap="round"/>
+  <path fill="url(#shade)" d="M0 0h960v640H0z"/>
+</svg>

@@ -52,17 +52,9 @@ import { getHostProduct } from '@/lib/productContext';
 
 const currentHostname = window.location.hostname.toLowerCase().replace(/^www\./, '').split(':')[0];
 const isSwishFlipMarketingHost = currentHostname === 'swishflip.co.uk';
-const futureNicheRoutes: Record<string, string> = {
-  '/cards': 'Card Flipper',
-  '/antiques': 'Antique Flipper',
-  '/fossils': 'Fossil Flipper',
-  '/beauty': 'Beauty Flipper',
-  '/tech': 'Tech Flipper',
-};
-
-function NicheComingSoon({ label }: { label?: string }) {
-  const nicheLabel = label || currentHostname.split('.')[0].replace(/[-_]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
-  return <main className="min-h-screen bg-[#080b12] text-white flex items-center justify-center p-6"><section className="max-w-xl rounded-3xl border border-white/10 bg-white/[.04] p-8 text-center"><div className="text-sm font-bold uppercase tracking-[.2em] text-yellow-300">SWISHFLIP specialist app</div><h1 className="mt-4 text-4xl font-black">{nicheLabel}</h1><p className="mt-4 leading-7 text-slate-300">This niche is featured in the SWISHFLIP directory, but its dedicated workspace has not yet been activated. We will not redirect you into an unrelated app.</p><a href="/" className="mt-7 inline-flex rounded-xl bg-yellow-300 px-5 py-3 font-bold text-slate-950">Back to SWISHFLIP</a></section></main>;
+function NicheComingSoon() {
+  const label = currentHostname.split('.')[0].replace(/[-_]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return <main className="min-h-screen bg-[#080b12] text-white flex items-center justify-center p-6"><section className="max-w-xl rounded-3xl border border-white/10 bg-white/[.04] p-8 text-center"><div className="text-sm font-bold uppercase tracking-[.2em] text-lime-300">SWISHFLIP niche</div><h1 className="mt-4 text-4xl font-black">{label}</h1><p className="mt-4 leading-7 text-slate-300">This specialist entry point is reserved in the SWISHFLIP directory, but this niche workspace has not been activated yet.</p><a href="https://swishflip.co.uk/#explore" className="mt-7 inline-flex rounded-xl bg-lime-300 px-5 py-3 font-bold text-slate-950">Explore available niches</a></section></main>;
 }
 
 const queryClient = new QueryClient({
@@ -81,8 +73,6 @@ function AppRoutes() {
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
   const hostProduct = getHostProduct();
   if (isSwishFlipMarketingHost && window.location.pathname === '/') return <SwishFlipHome />;
-  const futureNicheLabel = isSwishFlipMarketingHost ? futureNicheRoutes[window.location.pathname] : undefined;
-  if (futureNicheLabel) return <NicheComingSoon label={futureNicheLabel} />;
   if (currentHostname.endsWith('.swishflip.co.uk') && !hostProduct) return <NicheComingSoon />;
   const preferredNiche = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
   const routeProduct = {

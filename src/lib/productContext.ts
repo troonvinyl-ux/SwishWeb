@@ -26,9 +26,11 @@ const PATH_PRODUCT: Record<string, ProductId> = {
   '/clothes': 'clothing',
   '/threads': 'clothing',
   '/surplus': 'surplus_flip',
-  // Unsupported directory niches intentionally have no ProductId mapping.
-  // Their public routes display an explicit activation status instead of silently
-  // opening Coin Flipper with an unrelated specialist context.
+  // Broad directory links reuse the existing shared SWISH engine until dedicated
+  // products are registered in the canonical product registry.
+  '/electronics': 'coins',
+  '/games': 'coins',
+  '/home': 'coins',
 };
 
 /** Production hostname is the product selector. Local development retains the existing route-based selector. */
