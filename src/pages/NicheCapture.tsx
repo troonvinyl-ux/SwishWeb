@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useInsert } from '@/hooks/useSupabaseQuery';
 import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
-import { getDefaultSpecialistForNiche } from '@/lib/niche';
+import { getDefaultSpecialistForNiche, getSpecialistIdsForNiche, type SwishNicheId } from '@/lib/niche';
 import { ArrowLeft, Save, Package, Shirt, Bike, Coins, Wrench, Gamepad2, Gem, FlaskConical, Monitor, Hammer, Sparkles, Camera, CheckCircle2, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,9 +48,29 @@ export default function NicheCapture() {
           : routeNiche;
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  const canonicalNicheId = (niche === 'bikes' ? 'bicycles' : niche === 'mx' ? 'motocross' : niche) as SwishNicheId;
+  const { data: activeSpecialists = [], isLoading: entitlementsLoading } = useQuery({
+    queryKey: ['capture_niche_entitlements', tenantId],
+    enabled: Boolean(tenantId) && !isOwner,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const sb = getSupabaseClient() || await getSupabaseClientAsync();
+      if (!sb || !tenantId) return [] as string[];
+      const { data, error } = await sb.from('tenants').select('active_specialists').eq('id', tenantId).maybeSingle();
+      if (error) throw error;
+      const raw = data?.active_specialists;
+      if (Array.isArray(raw)) return raw.map(String);
+      if (typeof raw === 'string') { try { const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed.map(String) : []; } catch { return []; } }
+      return [] as string[];
+    },
+  });
+  const nicheAllowed = isOwner || getSpecialistIdsForNiche(canonicalNicheId).some(id => activeSpecialists.includes(id));
   const insert = useInsert('items', tenantId);
   const config = useMemo(() => CONFIG[niche] || CONFIG.generic, [niche]);
+  if (!isOwner && (tenantLoading || entitlementsLoading)) return <div className="p-8 text-center text-muted-foreground">Checking your SWISH niche access…</div>;
+  if (!nicheAllowed) return <Navigate to="/niches" replace />;
   const Icon = config.icon;
   const [form, setForm] = useState<Record<string,string>>({status:'review'});
   const [clothingPhotos, setClothingPhotos] = useState<Record<string, File | null>>({ brand: null, garment: null, detail: null });
