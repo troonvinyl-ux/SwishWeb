@@ -75,8 +75,17 @@ function AppRoutes() {
   if (isSwishFlipMarketingHost && window.location.pathname === '/') return <SwishFlipHome />;
   if (currentHostname.endsWith('.swishflip.co.uk') && !hostProduct) return <NicheComingSoon />;
   const preferredNiche = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
-  const safeNiche = hostProduct?.id || (['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins');
+  const routeProduct = {
+    '/coins': 'coins',
+    '/mx': 'motocross',
+    '/bikes': 'bicycles',
+    '/clothes': 'clothing',
+    '/threads': 'clothing',
+    '/surplus': 'surplus_flip',
+  }[location.pathname as '/coins' | '/mx' | '/bikes' | '/clothes' | '/threads' | '/surplus'];
+  const safeNiche = hostProduct?.id || routeProduct || (['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins');
   const needsOnboarding = !isOwner && user?.user_metadata?.onboarding_status === 'started';
+  const entryWorkspace = needsOnboarding ? '/onboarding' : `/workspace/${safeNiche}`;
 
   // Establishing backend connection
   if (connectionStatus === 'initialising') {
@@ -116,15 +125,20 @@ function AppRoutes() {
       <ErrorBoundary name="router">
         <Routes>
           <Route path="/" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
-          <Route path="/coins" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'coins' : safeNiche}`} replace />} />
-          <Route path="/mx" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'motocross' : safeNiche}`} replace />} />
-          <Route path="/bikes" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'bicycles' : safeNiche}`} replace />} />
-          <Route path="/threads" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'clothing' : safeNiche}`} replace />} />
-          <Route path="/clothes" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'clothing' : safeNiche}`} replace />} />
-          <Route path="/surplus" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'surplus_flip' : safeNiche}`} replace />} />
+          {/* The marketing directory lives on swishflip.co.uk; these permanent paths open
+              the matching workspace in this same app instance and use the existing backend. */}
+          <Route path="/coins" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/mx" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/bikes" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/threads" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/clothes" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/surplus" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/electronics" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
+          <Route path="/games" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
+          <Route path="/home" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
+          <Route path="/workspace/:niche" element={<NicheWorkspace />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/niches" element={<NicheEntry />} />
-          <Route path="/workspace/:niche" element={<NicheWorkspace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/command-centre" element={<CommandCentre />} />
 

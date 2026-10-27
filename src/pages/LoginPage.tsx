@@ -10,18 +10,15 @@ const PRODUCTS = {
   '/coins': { id: 'coins', label: 'Coin Flipper', description: 'Identify, value and sell coins and collectibles', accent: '#F5C842' },
   '/mx': { id: 'motocross', label: 'MX Flipper', description: 'Buy, prepare and sell motocross and off-road bikes', accent: '#EF4444' },
   '/bikes': { id: 'bicycles', label: 'Bike Flipper', description: 'Identify, value and sell bicycles', accent: '#22C55E' },
-  '/threads': { id: 'clothing', label: 'Clothes Flipper', description: 'Turn fashion into opportunity', accent: '#E91E8C' },
+  '/threads': { id: 'clothing', label: 'Threads Flip', description: 'Specialist fashion and clothing resale', accent: '#E91E8C' },
   '/clothes': { id: 'clothing', label: 'Clothes Flipper', description: 'Turn fashion into opportunity', accent: '#E91E8C' },
   '/surplus': { id: 'surplus_flip', label: 'Surplus Flip', description: 'Turn job lots and pallet manifests into listings', accent: '#14B8A6' },
+  '/electronics': { id: 'coins', label: 'SWISH', description: 'Your shared resale workspace', accent: '#38BDF8' },
+  '/games': { id: 'coins', label: 'SWISH', description: 'Your shared resale workspace', accent: '#A78BFA' },
+  '/home': { id: 'coins', label: 'SWISH', description: 'Your shared resale workspace', accent: '#94A3B8' },
 } as const;
 const DEFAULT_PRODUCT = PRODUCTS['/coins'];
-const ENTRY_PRODUCTS = [
-  { path: '/coins', ...PRODUCTS['/coins'] },
-  { path: '/mx', ...PRODUCTS['/mx'] },
-  { path: '/bikes', ...PRODUCTS['/bikes'] },
-  { path: '/clothes', ...PRODUCTS['/clothes'] },
-  { path: '/surplus', ...PRODUCTS['/surplus'] },
-];
+
 
 function ConnectionBanner({ status }: { status: ConnectionStatus }) {
   if (status === 'initialising') {
@@ -38,9 +35,8 @@ export default function LoginPage() {
   const location = useLocation();
   const isRootEntry = location.pathname === '/';
   const hostProduct = getHostProduct();
-  const product = hostProduct
-    ? (Object.values(PRODUCTS).find(candidate => candidate.id === hostProduct.id) || DEFAULT_PRODUCT)
-    : (PRODUCTS[location.pathname as keyof typeof PRODUCTS] || DEFAULT_PRODUCT);
+  const product = PRODUCTS[location.pathname as keyof typeof PRODUCTS]
+    || (hostProduct ? (Object.values(PRODUCTS).find(candidate => candidate.id === hostProduct.id) || DEFAULT_PRODUCT) : DEFAULT_PRODUCT);
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [verificationPending, setVerificationPending] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
