@@ -31,7 +31,7 @@ export default function ListingEditor() {
 
   // Load linked inventory item to pull scan images
   const itemId = form.item_id as string | undefined;
-  const { data: linkedItem } = useTableRow('inventory', itemId || null);
+  const { data: linkedItem } = useTableRow('items', itemId || null);
 
   useEffect(() => {
     if (data) {
