@@ -22,14 +22,17 @@ export default function Dispatch() {
     ['surplus_flip', 'surplus-flip', 'surplus_trader', 'catalog_flip', 'catalog_surplus'].includes(activeNiche) ? ['surplus_trader', 'surplus_flip'] :
     ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic'].includes(activeNiche) ? ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic', 'curiosities_collectibles'] : [];
   const { data, isLoading, error } = useTable('orders', {
-    select: '*, items!inner(specialist_id)',
+    select: '*, items(specialist_id)',
     filter: { tenant_id: tenantId, marketplace_id: 'ebay', status: 'awaiting_dispatch' },
-    inFilter: specialistIds.length ? { 'items.specialist_id': specialistIds } : undefined,
     enabled: Boolean(tenantId) && specialistIds.length > 0,
     order: { column: 'dispatch_by', ascending: true },
   });
 
-  const items = (data || []) as Record<string, unknown>[];
+  const items = ((data || []) as Record<string, unknown>[]).filter(order => {
+    const linked = order.items as Record<string, unknown> | Record<string, unknown>[] | null;
+    const linkedItems = Array.isArray(linked) ? linked : linked ? [linked] : [];
+    return linkedItems.some(item => specialistIds.includes(String(item.specialist_id || '')));
+  });
   const [tracking, setTracking] = useState<Record<string, { number: string; carrier: string }>>({});
 
   const handleDispatch = async (orderDbId: string) => {
