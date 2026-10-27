@@ -3,6 +3,7 @@ import {
   CheckCircle2, Coins, Crown, Gamepad2, LogIn, Shirt, Smartphone,
   Sparkles, Tag, Trophy, Wrench, Watch, Gem, ShoppingCart, Heart,
 } from 'lucide-react';
+import heroImage from '@/assets/swish-hero.jpg';
 
 type Niche = {
   name: string;
@@ -106,8 +107,22 @@ export default function SwishFlipHome() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {niches.map((niche) => {
             const Icon = niche.icon;
-            return <a key={niche.slug} href={existingEntryRoutes[niche.slug] || '/workspace/coins'} aria-label={`Enter ${niche.name}`} className={`group relative isolate flex min-h-[260px] flex-col overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br ${niche.color} p-4 shadow-lg transition duration-300 hover:-translate-y-1 hover:border-white/60 hover:shadow-2xl ${niche.glow} focus:outline-none focus:ring-2 focus:ring-yellow-300 sm:min-h-[285px]`}>
-              <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,.12),transparent_55%)] opacity-80 transition duration-500 group-hover:opacity-100" />
+            return <a key={niche.slug} href={existingEntryRoutes[niche.slug] || '/workspace/coins'} aria-label={`Enter ${niche.name}`} className={`group relative isolate flex min-h-[300px] flex-col overflow-hidden rounded-2xl border border-white/25 bg-gradient-to-br ${niche.color} p-4 shadow-lg transition duration-300 hover:-translate-y-1 hover:border-white/60 hover:shadow-2xl ${niche.glow} focus:outline-none focus:ring-2 focus:ring-yellow-300 sm:min-h-[320px]`}>
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 -z-10 bg-cover opacity-55 transition duration-500 group-hover:scale-105 group-hover:opacity-75"
+                style={{
+                  backgroundImage: `url(${heroImage})`,
+                  backgroundSize: '300% 300%',
+                  backgroundPosition: ({
+                    coins: '0% 0%', mx: '50% 0%', bikes: '100% 0%',
+                    threads: '0% 50%', games: '50% 50%', home: '100% 50%',
+                    surplus: '0% 100%', clothes: '50% 100%', electronics: '100% 100%',
+                  } as Record<string, string>)[niche.slug] || 'center',
+                }}
+              />
+              <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-t from-black via-black/65 to-black/10 transition duration-300 group-hover:from-black/90 group-hover:via-black/50" />
+              <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-30 mix-blend-screen" style={{ background: 'radial-gradient(ellipse at 80% 10%, rgba(255,255,255,.32), transparent 45%)' }} />
               <div className="pointer-events-none absolute -right-5 -top-6 -z-10 rotate-[-12deg] opacity-[.16] transition duration-500 group-hover:scale-110 group-hover:opacity-30"><Icon className="h-44 w-44 sm:h-52 sm:w-52"/></div>
               <div className="flex items-start justify-between gap-3"><span className="rounded-full border border-white/20 bg-black/35 px-2.5 py-1 text-[9px] font-black tracking-[.12em] text-white/90">{niche.eyebrow}</span><Icon className="h-6 w-6 shrink-0 drop-shadow-lg"/></div>
               <div className="mt-auto pt-8">
