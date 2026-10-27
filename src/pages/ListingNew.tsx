@@ -314,11 +314,9 @@ export default function ListingNew() {
       const sb = await getSupabaseClientAsync();
       if (!sb) throw new Error('SWISH backend is not connected');
       if (!user?.id) throw new Error('Sign in again before creating a listing');
-      const { data: membership, error: membershipError } = await sb.from('tenant_memberships')
-        .select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
-      if (membershipError) throw membershipError;
-      const tenantId = String((form.tenant_id as string) || membership?.tenant_id || (inv?.tenant_id as string) || '');
       if (!tenantId) throw new Error('Your SWISH workspace is not ready');
+      if (form.tenant_id && String(form.tenant_id) !== tenantId) throw new Error('Listing belongs to a different SWISH workspace.');
+      if (inv?.tenant_id && String(inv.tenant_id) !== tenantId) throw new Error('Linked inventory belongs to a different SWISH workspace.');
 
       // Insert only columns in the canonical SWISH listings schema.
       // Category labels and selected photos are UI data, not listings columns.
@@ -359,16 +357,13 @@ export default function ListingNew() {
     try {
       const sb = await getSupabaseClientAsync();
       if (!sb) throw new Error('Backend not connected');
-      const { data: membership, error: membershipError } = await sb.from('tenant_memberships')
-        .select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
-      if (membershipError) throw membershipError;
-      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready');
+      if (!tenantId) throw new Error('Your SWISH workspace is not ready');
       const { data: payload, error } = await callEdgeFunction<{
         success?: boolean;
         error?: string;
         suggestions?: Array<{ id?: string | number; name?: string; isLeaf?: boolean }>;
       }>('swish-ebay-list', {
-        route: 'get_category_suggestions', tenantId: String(membership.tenant_id), query: title.slice(0, 100),
+        route: 'get_category_suggestions', tenantId, query: title.slice(0, 100),
       });
       if (error) throw error;
       const suggestions = Array.isArray(payload?.suggestions) ? payload.suggestions : [];
