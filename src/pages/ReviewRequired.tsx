@@ -14,7 +14,7 @@ export default function ReviewRequired() {
   const [reidentifying, setReidentifying] = useState<string | null>(null);
   const [identificationResults, setIdentificationResults] = useState<Record<string, Record<string, unknown>>>({});
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
-  const update = useUpdate('items');
+  const update = useUpdate('items', tenantId);
   const specialistIds = getSpecialistIdsForNiche(getActiveNicheId());
 
   const { data, isLoading, error } = useTable('items', {
