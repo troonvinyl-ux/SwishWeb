@@ -3,6 +3,8 @@ import * as XLSX from 'xlsx';
 import { useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { getActiveNicheId } from '@/lib/niche';
 import { Upload, Download, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -60,6 +62,7 @@ function downloadCsvOrXlsx(rows: Record<string, unknown>[], name: string) {
 export default function EbayImport() {
   const fileRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
+  const { tenantId: currentTenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const qc = useQueryClient();
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -70,15 +73,11 @@ export default function EbayImport() {
   const getWorkspace = async () => {
     const sb = getSupabaseClient();
     if (!sb || !user) throw new Error('Please sign in again before importing or exporting.');
-    const { data: membership, error } = await sb.from('tenant_memberships').select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
-    if (error) throw error;
-    if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready.');
-    return { sb, tenantId: String(membership.tenant_id) };
+    if (!currentTenantId || tenantLoading) throw new Error('Your SWISH workspace is not ready.');
+    return { sb, tenantId: currentTenantId };
   };
 
-  const preferredNiche = String(user?.user_metadata?.preferred_niche || 'coins').toLowerCase();
-  const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
-  const activeNiche = String((isOwner ? localStorage.getItem('swish_active_niche') : preferredNiche) || preferredNiche).toLowerCase();
+  const activeNiche = getActiveNicheId();
   const specialistId = NICHE_SPECIALIST[activeNiche] || 'coins';
   const selectedCategoryIds = NICHE_CATEGORIES[specialistId] || NICHE_CATEGORIES[activeNiche] || [];
   const nicheSpecialistIds = specialistId === 'clothing'
