@@ -1,5 +1,6 @@
 import { useTable, useUpdate } from '@/hooks/useSupabaseQuery';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { getActiveNicheId, getSpecialistIdsForNiche } from '@/lib/niche';
 import { formatDate, statusVariant } from '@/lib/utils';
 import { AlertCircle, RefreshCw, Zap } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,11 +14,13 @@ export default function ReviewRequired() {
   const [reidentifying, setReidentifying] = useState<string | null>(null);
   const [identificationResults, setIdentificationResults] = useState<Record<string, Record<string, unknown>>>({});
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
-  const update = useUpdate('inventory');
+  const update = useUpdate('items');
+  const specialistIds = getSpecialistIdsForNiche(getActiveNicheId());
 
-  const { data, isLoading, error } = useTable('inventory', {
+  const { data, isLoading, error } = useTable('items', {
     filter: { tenant_id: tenantId, status: 'review' },
-    enabled: Boolean(tenantId),
+    inFilter: { specialist_id: specialistIds },
+    enabled: Boolean(tenantId) && specialistIds.length > 0,
     order: { column: 'created_at', ascending: false },
   });
 
@@ -63,7 +66,7 @@ export default function ReviewRequired() {
     const result = identificationResults[itemId];
     const title = String(result?.canonicalTitle || result?.title || '').trim();
     if (!title) { toast.error('This candidate has no supported title to apply.'); return; }
-    update.mutate({ id: itemId, updates: { title } }, {
+    update.mutate({ id: itemId, updates: { canonical_title: title } }, {
       onSuccess: () => {
         setIdentificationResults(current => {
           const next = { ...current };
@@ -71,7 +74,7 @@ export default function ReviewRequired() {
           return next;
         });
         toast.success('Suggested title saved. Review the remaining attributes before confirming the item.');
-        void qc.invalidateQueries({ queryKey: ['inventory'] });
+        void qc.invalidateQueries({ queryKey: ['items'] });
       },
       onError: error => toast.error(error.message),
     });
@@ -104,8 +107,8 @@ export default function ReviewRequired() {
             <div key={item.id as string} className="swish-card p-4 space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-lg bg-secondary overflow-hidden shrink-0">
-                  {item.image_url ? (
-                    <img src={item.image_url as string} alt="" className="w-full h-full object-cover" />
+                  {(item.image_url || (Array.isArray(item.media) ? item.media[0] : null)) ? (
+                    <img src={(item.image_url || (Array.isArray(item.media) ? item.media[0] : null)) as string} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <AlertCircle className="w-5 h-5 text-muted-foreground" />
@@ -113,7 +116,7 @@ export default function ReviewRequired() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{(item.title || item.sku || 'Untitled') as string}</div>
+                  <div className="text-sm font-medium truncate">{(item.canonical_title || item.title || item.sku || 'Untitled') as string}</div>
                   <div className="text-xs text-muted-foreground">{formatDate(item.created_at as string)}</div>
                 </div>
               </div>
