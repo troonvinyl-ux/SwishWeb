@@ -176,6 +176,12 @@ function AppRoutes() {
 
           {/* eBay */}
           <Route path="/ebay" element={<EbayHub />} />
+          <Route path="/ebay/account" element={<Settings />} />
+          <Route path="/ebay/admin" element={<MasterAdmin />} />
+          <Route path="/ebay/categories" element={<EbayHub />} />
+          <Route path="/ebay/csv" element={<EbayImport />} />
+          <Route path="/ebay/draft-sync-test" element={<EbayLogs />} />
+          <Route path="/stock-listing/:id" element={<InventoryItem />} />
           <Route path="/ebay/listings" element={<EbayListings />} />
           <Route path="/ebay/orders" element={<EbayOrders />} />
           <Route path="/ebay/messages" element={<EbayMessages />} />
