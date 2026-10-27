@@ -48,6 +48,7 @@ import MasterAdmin from '@/pages/MasterAdmin';
 import ParityTools from '@/pages/ParityTools';
 import NotFound from '@/pages/NotFound';
 import SwishFlipHome from '@/pages/SwishFlipHome';
+import SwishFlipHome from '@/pages/SwishFlipHome';
 
 const NICHE_HOSTS: Record<string, string> = {
   'coins.swishflip.co.uk': 'coins',
@@ -68,6 +69,12 @@ function NicheComingSoon() {
   return <main className="min-h-screen bg-[#080b12] text-white flex items-center justify-center p-6"><section className="max-w-xl rounded-3xl border border-white/10 bg-white/[.04] p-8 text-center"><div className="text-sm font-bold uppercase tracking-[.2em] text-lime-300">SWISHFLIP niche</div><h1 className="mt-4 text-4xl font-black">{label}</h1><p className="mt-4 leading-7 text-slate-300">This specialist entry point is reserved in the SWISHFLIP directory, but this niche workspace has not been activated yet.</p><a href="https://swishflip.co.uk/#explore" className="mt-7 inline-flex rounded-xl bg-lime-300 px-5 py-3 font-bold text-slate-950">Explore available niches</a></section></main>;
 }
 
+const currentHostname = window.location.hostname.toLowerCase().replace(/^www\./, '').split(':')[0];
+const isSwishFlipMarketingHost = currentHostname === 'swishflip.co.uk';
+function NicheComingSoon() {
+  const label = currentHostname.split('.')[0].replace(/[-_]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return <main className="min-h-screen bg-[#080b12] text-white flex items-center justify-center p-6"><section className="max-w-xl rounded-3xl border border-white/10 bg-white/[.04] p-8 text-center"><div className="text-sm font-bold uppercase tracking-[.2em] text-lime-300">SWISHFLIP niche</div><h1 className="mt-4 text-4xl font-black">{label}</h1><p className="mt-4 leading-7 text-slate-300">This specialist entry point is reserved in the SWISHFLIP directory, but this niche workspace has not been activated yet.</p><a href="https://swishflip.co.uk/#explore" className="mt-7 inline-flex rounded-xl bg-lime-300 px-5 py-3 font-bold text-slate-950">Explore available niches</a></section></main>;
+}
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
