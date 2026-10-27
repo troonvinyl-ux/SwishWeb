@@ -1,6 +1,7 @@
 import { useTable } from '@/hooks/useSupabaseQuery';
 import { useState } from 'react';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { getActiveNicheId, getSpecialistIdsForNiche } from '@/lib/niche';
 import { formatCurrency, formatDate, statusVariant, truncate } from '@/lib/utils';
 import { RefreshCw } from 'lucide-react';
 import { callEdgeFunction, EdgeFunctionError, getSupabaseClientAsync } from '@/lib/supabase';
@@ -11,19 +12,20 @@ export default function EbayOrders() {
   const qc = useQueryClient();
   const [syncing, setSyncing] = useState(false);
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
-  const { data, isLoading } = useTable('ebay_orders', {
-    filter: { tenant_id: tenantId },
-    order: { column: 'created_at', ascending: false },
-    enabled: Boolean(tenantId),
-  });
-  // swish-ebay-orders persists to orders using marketplace_id='ebay'; keep the fallback aligned with that contract.
-  const { data: fallback } = useTable('orders', {
+  const specialistIds = getSpecialistIdsForNiche(getActiveNicheId());
+  // The existing orders table is the canonical output of swish-ebay-orders.
+  const { data, isLoading } = useTable('orders', {
+    select: '*, items(specialist_id)',
     filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
     order: { column: 'created_at', ascending: false },
-    enabled: Boolean(tenantId) && (!data || (data as unknown[]).length === 0),
+    enabled: Boolean(tenantId) && specialistIds.length > 0,
   });
 
-  const items = ((data && (data as unknown[]).length > 0 ? data : fallback) || []) as Record<string, unknown>[];
+  const items = ((data || []) as Record<string, unknown>[]).filter(order => {
+    const linked = order.items as Record<string, unknown> | Record<string, unknown>[] | null;
+    const linkedItems = Array.isArray(linked) ? linked : linked ? [linked] : [];
+    return linkedItems.some(item => specialistIds.includes(String(item.specialist_id || '')));
+  });
 
   const syncOrders = async () => {
     if (!tenantId) { toast.error('Your SWISH workspace is not ready.'); return; }
