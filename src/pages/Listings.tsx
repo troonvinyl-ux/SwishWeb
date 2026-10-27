@@ -4,16 +4,22 @@ import { formatCurrency, formatDate, statusVariant, truncate } from '@/lib/utils
 import { Tag, Plus, RefreshCw, Search, ExternalLink } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { getActiveNicheId, getSpecialistIdsForNiche } from '@/lib/niche';
 
 export default function Listings() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
-  const [platform, setPlatform] = useState('');
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  const specialistIds = getSpecialistIdsForNiche(getActiveNicheId());
 
   const { data, isLoading, error } = useTable('listings', {
+    select: '*, items!inner(specialist_id)',
     order: { column: 'created_at', ascending: false },
     search: search ? { column: 'title', query: search } : undefined,
-    filter: platform ? { platform } : undefined,
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
+    inFilter: { 'items.specialist_id': specialistIds },
+    enabled: Boolean(tenantId) && specialistIds.length > 0,
   });
 
   const items = (data || []) as Record<string, unknown>[];
@@ -36,17 +42,10 @@ export default function Listings() {
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search listings…" className="input-field pl-8" />
         </div>
-        <select value={platform} onChange={e => setPlatform(e.target.value)} className="input-field w-auto min-w-36">
-          <option value="">All Platforms</option>
-          <option value="ebay">eBay</option>
-          <option value="amazon">Amazon</option>
-          <option value="depop">Depop</option>
-          <option value="vinted">Vinted</option>
-        </select>
       </div>
 
       <div className="swish-card overflow-hidden">
-        {isLoading ? (
+        {isLoading || tenantLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading listings…</div>
         ) : error ? (
           <div className="p-8 text-center text-destructive text-sm">{(error as Error).message}</div>
@@ -70,7 +69,7 @@ export default function Listings() {
                       <div className="font-medium text-xs">{truncate((l.title || 'Untitled') as string, 45)}</div>
                       {l.external_id && <div className="text-xs text-muted-foreground font-mono">{l.external_id as string}</div>}
                     </td>
-                    <td className="text-xs capitalize">{(l.platform || '—') as string}</td>
+                    <td className="text-xs capitalize">eBay</td>
                     <td>{l.status ? <span className={statusVariant(l.status as string)}>{l.status as string}</span> : '—'}</td>
                     <td className="text-right text-xs font-semibold swish-gold">{formatCurrency(l.price as number)}</td>
                     <td className="text-xs text-muted-foreground">{(l.views ?? '—') as number}</td>
