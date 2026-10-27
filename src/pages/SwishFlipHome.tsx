@@ -104,30 +104,30 @@ export default function SwishFlipHome() {
           <div><p className="text-[10px] font-black uppercase tracking-[.22em] text-yellow-300">Find your specialist app</p><h2 className="mt-1 text-2xl font-black sm:text-3xl">One app designed for your world</h2></div>
           <p className="hidden text-right text-xs text-slate-400 sm:block">Purpose-built experience · Shared learning engine</p>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
           {niches.map((niche) => {
             const Icon = niche.icon;
-            return <a key={niche.slug} href={existingEntryRoutes[niche.slug] || '/workspace/coins'} aria-label={`Enter ${niche.name}`} className={`group relative isolate flex min-h-[300px] flex-col overflow-hidden rounded-2xl border border-white/25 bg-gradient-to-br ${niche.color} p-4 shadow-lg transition duration-300 hover:-translate-y-1 hover:border-white/60 hover:shadow-2xl ${niche.glow} focus:outline-none focus:ring-2 focus:ring-yellow-300 sm:min-h-[320px]`}>
+            return <a key={niche.slug} href={existingEntryRoutes[niche.slug] || '/workspace/coins'} aria-label={`Enter ${niche.name}`} className={`group relative isolate flex min-h-[285px] flex-col overflow-hidden rounded-2xl border border-white/25 bg-gradient-to-br ${niche.color} p-4 shadow-lg transition duration-300 hover:-translate-y-1 hover:border-white/60 hover:shadow-2xl ${niche.glow} focus:outline-none focus:ring-2 focus:ring-yellow-300 sm:min-h-[320px]`}>
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 -z-10 bg-cover opacity-55 transition duration-500 group-hover:scale-105 group-hover:opacity-75"
+                className="pointer-events-none absolute inset-0 -z-10 bg-cover opacity-70 transition duration-500 group-hover:scale-105 group-hover:opacity-90"
                 style={{
                   backgroundImage: `url(${heroImage})`,
-                  backgroundSize: '300% 300%',
+                  backgroundSize: 'cover',
                   backgroundPosition: ({
-                    coins: '0% 0%', mx: '50% 0%', bikes: '100% 0%',
-                    threads: '0% 50%', games: '50% 50%', home: '100% 50%',
-                    surplus: '0% 100%', clothes: '50% 100%', electronics: '100% 100%',
+                    coins: 'left center', mx: 'center center', bikes: 'right center',
+                    threads: 'center center', games: 'right center', home: 'left center',
+                    surplus: 'center center', clothes: 'right center', electronics: 'center center',
                   } as Record<string, string>)[niche.slug] || 'center',
                 }}
               />
-              <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-t from-black via-black/65 to-black/10 transition duration-300 group-hover:from-black/90 group-hover:via-black/50" />
+              <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-t from-black via-black/55 to-black/5 transition duration-300 group-hover:from-black/90 group-hover:via-black/45" />
               <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-30 mix-blend-screen" style={{ background: 'radial-gradient(ellipse at 80% 10%, rgba(255,255,255,.32), transparent 45%)' }} />
               <div className="pointer-events-none absolute -right-5 -top-6 -z-10 rotate-[-12deg] opacity-[.16] transition duration-500 group-hover:scale-110 group-hover:opacity-30"><Icon className="h-44 w-44 sm:h-52 sm:w-52"/></div>
               <div className="flex items-start justify-between gap-3"><span className="rounded-full border border-white/20 bg-black/35 px-2.5 py-1 text-[9px] font-black tracking-[.12em] text-white/90">{niche.eyebrow}</span><Icon className="h-6 w-6 shrink-0 drop-shadow-lg"/></div>
               <div className="mt-auto pt-8">
                 <p className="mb-1 text-[10px] font-bold italic text-white/70">{niche.tagline}</p>
-                <h3 className="text-3xl font-black italic leading-none tracking-[-.04em] drop-shadow-lg sm:text-4xl">{niche.name.toUpperCase()}</h3>
+                <h3 className="text-3xl font-black italic leading-none tracking-[-.04em] drop-shadow-lg sm:text-4xl 2xl:text-3xl">{niche.name.toUpperCase()}</h3>
                 <p className="mt-2 text-xs font-semibold text-white/85">{niche.description}</p>
                 <span className="mt-4 flex items-center justify-between rounded-xl border border-white/30 bg-gradient-to-r from-yellow-100 to-yellow-400 px-4 py-3 text-sm font-black text-black shadow-lg transition group-hover:brightness-110"><span>{niche.button}</span><ArrowRight className="h-4 w-4 transition group-hover:translate-x-1"/></span>
               </div>
