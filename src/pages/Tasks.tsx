@@ -4,18 +4,21 @@ import { formatDate } from '@/lib/utils';
 import { CheckSquare, Plus, RefreshCw, X, Square, AlertTriangle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 
 const DEFAULT_FORM = { title: '', description: '', priority: 'medium', due_date: '' };
 
 export default function Tasks() {
   const qc = useQueryClient();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState('open');
   const [form, setForm] = useState({ ...DEFAULT_FORM });
 
   const { data, isLoading, error } = useTable('tasks', {
-    filter: filter !== 'all' ? { status: filter } : undefined,
+    filter: { tenant_id: tenantId, ...(filter !== 'all' ? { status: filter } : {}) },
     order: { column: 'created_at', ascending: false },
+    enabled: Boolean(tenantId),
   });
 
   const insert = useInsert('tasks');
@@ -30,7 +33,8 @@ export default function Tasks() {
 
   const handleAdd = () => {
     if (!form.title.trim()) { toast.error('Title required'); return; }
-    insert.mutate({ ...form, status: 'open' } as Record<string, unknown>, {
+    if (!tenantId || tenantLoading) { toast.error('Your SWISH workspace is not ready.'); return; }
+    insert.mutate({ ...form, tenant_id: tenantId, status: 'open' } as Record<string, unknown>, {
       onSuccess: () => {
         toast.success('Task created');
         setShowForm(false);
