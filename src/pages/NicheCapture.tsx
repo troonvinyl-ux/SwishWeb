@@ -48,7 +48,7 @@ export default function NicheCapture() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
-  const insert = useInsert('items');
+  const insert = useInsert('items', tenantId);
   const config = useMemo(() => CONFIG[niche] || CONFIG.generic, [niche]);
   const Icon = config.icon;
   const [form, setForm] = useState<Record<string,string>>({status:'review'});
