@@ -16,8 +16,9 @@ export default function EbayOrders() {
     order: { column: 'created_at', ascending: false },
     enabled: Boolean(tenantId),
   });
+  // swish-ebay-orders persists to orders using marketplace_id='ebay'; keep the fallback aligned with that contract.
   const { data: fallback } = useTable('orders', {
-    filter: { tenant_id: tenantId, platform: 'ebay' },
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
     order: { column: 'created_at', ascending: false },
     enabled: Boolean(tenantId) && (!data || (data as unknown[]).length === 0),
   });
