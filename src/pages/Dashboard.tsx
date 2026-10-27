@@ -4,6 +4,8 @@ import { formatCurrency, formatRelative, statusVariant } from '@/lib/utils';
 import { Package, Tag, ShoppingCart, Truck, CheckSquare, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SafeSection } from '@/components/ErrorBoundary';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { getActiveNicheId, getSpecialistIdsForNiche } from '@/lib/niche';
 
 function StatCard({ label, value, icon: Icon, to }: {
   label: string;
@@ -28,31 +30,39 @@ function StatCard({ label, value, icon: Icon, to }: {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  const specialistIds = getSpecialistIdsForNiche(getActiveNicheId());
+  const scoped = Boolean(tenantId) && specialistIds.length > 0;
 
-  // Use SafeSection wrappers so individual failures don't blank the dashboard
-  const { data: inventory } = useTable('inventory', {
-    limit: 5, order: { column: 'created_at', ascending: false },
+  // Use SafeSection wrappers so individual failures don't blank the dashboard.
+  // All operational data is scoped to the current tenant and active niche.
+  const { data: inventory } = useTable('items', {
+    filter: { tenant_id: tenantId }, inFilter: { specialist_id: specialistIds },
+    limit: 5, order: { column: 'created_at', ascending: false }, enabled: scoped,
   });
   const { data: orders } = useTable('orders', {
-    limit: 5, order: { column: 'created_at', ascending: false },
+    select: '*, items!inner(specialist_id)',
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
+    inFilter: { 'items.specialist_id': specialistIds },
+    limit: 5, order: { column: 'created_at', ascending: false }, enabled: scoped,
   });
 
-  // Tasks are optional — count returns 0 on missing table (hook handles gracefully)
+  // Tasks are optional and tenant-scoped.
   const { data: tasks } = useTable('tasks', {
-    limit: 5, filter: { status: 'open' },
+    limit: 5, filter: { tenant_id: tenantId, status: 'open' }, enabled: Boolean(tenantId),
   });
 
-  const { data: invCount }      = useCount('inventory');
-  const { data: listingCount }  = useCount('listings', { status: 'active' });
-  const { data: orderCount }    = useCount('orders');
-  const { data: dispatchCount } = useCount('orders', { status: 'awaiting_dispatch' });
-  const { data: taskCount }     = useCount('tasks', { status: 'open' });
+  const { data: invCount }      = useCount('items', { tenant_id: tenantId }, { specialist_id: specialistIds }, scoped);
+  const { data: listingCount }  = useCount('listings', { tenant_id: tenantId, marketplace_id: 'ebay', status: 'active' }, { 'items.specialist_id': specialistIds }, scoped, '*, items!inner(specialist_id)');
+  const { data: orderCount }    = useCount('orders', { tenant_id: tenantId, marketplace_id: 'ebay' }, { 'items.specialist_id': specialistIds }, scoped, '*, items!inner(specialist_id)');
+  const { data: dispatchCount } = useCount('orders', { tenant_id: tenantId, marketplace_id: 'ebay', status: 'awaiting_dispatch' }, { 'items.specialist_id': specialistIds }, scoped, '*, items!inner(specialist_id)');
+  const { data: taskCount }     = useCount('tasks', { tenant_id: tenantId, status: 'open' }, undefined, Boolean(tenantId));
 
   const stats = [
-    { label: 'Total Inventory',  value: invCount ?? '—',      icon: Package,     to: '/inventory' },
-    { label: 'Active Listings',  value: listingCount ?? '—',  icon: Tag,         to: '/listings' },
-    { label: 'Total Orders',     value: orderCount ?? '—',    icon: ShoppingCart, to: '/orders' },
-    { label: 'Pending Dispatch', value: dispatchCount ?? '—', icon: Truck,       to: '/dispatch' },
+    { label: 'Total Inventory',  value: tenantLoading ? '…' : (invCount ?? '—'),      icon: Package,     to: '/inventory' },
+    { label: 'Active Listings',  value: tenantLoading ? '…' : (listingCount ?? '—'),  icon: Tag,         to: '/listings' },
+    { label: 'Total Orders',     value: tenantLoading ? '…' : (orderCount ?? '—'),    icon: ShoppingCart, to: '/orders' },
+    { label: 'Pending Dispatch', value: tenantLoading ? '…' : (dispatchCount ?? '—'), icon: Truck,       to: '/dispatch' },
     { label: 'Open Tasks',       value: taskCount ?? '—',     icon: CheckSquare, to: '/tasks' },
   ];
 
