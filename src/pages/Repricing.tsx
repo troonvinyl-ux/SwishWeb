@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTable } from '@/hooks/useSupabaseQuery';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { getActiveNicheId, getSpecialistIdsForNiche } from '@/lib/niche';
 import { formatCurrency, statusVariant, truncate } from '@/lib/utils';
 import { RefreshCw, TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,11 +13,14 @@ export default function Repricing() {
   const [repricing, setRepricing] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<Record<string, Record<string, unknown>>>({});
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  const specialistIds = getSpecialistIdsForNiche(getActiveNicheId());
 
   const { data, isLoading, error } = useTable('listings', {
-    filter: { tenant_id: tenantId, status: 'active' },
+    select: '*, items!inner(specialist_id)',
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay', status: 'active' },
+    inFilter: { 'items.specialist_id': specialistIds },
     order: { column: 'updated_at', ascending: true },
-    enabled: Boolean(tenantId),
+    enabled: Boolean(tenantId) && specialistIds.length > 0,
   });
 
   const items = (data || []) as Record<string, unknown>[];
