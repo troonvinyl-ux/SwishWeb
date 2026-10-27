@@ -11,8 +11,7 @@ export const NICHE_SPECIALISTS: Record<SwishNicheId, string[]> = {
   ],
   motocross: ['motocross'],
   bicycles: ['bicycles'],
-  // Canonical write ID is 'clothing'; aliases remain read-compatible for existing records.
-  clothing: ['clothing', 'trainers_sneakers', 'clothing_specialist'],
+  clothing: ['clothing', 'trainers_sneakers'],
   surplus_flip: ['surplus_trader'],
 };
 

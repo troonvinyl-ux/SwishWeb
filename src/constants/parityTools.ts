@@ -17,7 +17,7 @@ export const PARITY_TOOLS: ParityTool[] = [
   {
     path: '/tools/silver-batch', title: 'Silver batch processing',
     summary: 'Review coin images and measurement evidence before identification and valuation.',
-    limitation: 'The web client now supports multi-coin capture and sequential specialist identification using the existing backend. The native app's full silver commercial grouping, batch persistence and listing-strategy workflow is not yet fully ported.',
+    limitation: "The web client now supports multi-coin capture and sequential specialist identification using the existing backend. The native app's full silver commercial grouping, batch persistence and listing-strategy workflow is not yet fully ported.",
     destination: '/tools/silver-batch', actionLabel: 'Open silver batch',
   },
   {
@@ -29,7 +29,7 @@ export const PARITY_TOOLS: ParityTool[] = [
   {
     path: '/tools/listing-preflight', title: 'Listing preflight',
     summary: 'Choose a listing, open its editor, save the draft and select Preflight.',
-    limitation: 'Opens the listing workspace where a draft can be selected and its editor/preflight action run. A dedicated parity screen with the native app's full checklist and submit confirmation remains to be completed.',
+    limitation: "Opens the listing workspace where a draft can be selected and its editor/preflight action run. A dedicated parity screen with the native app's full checklist and submit confirmation remains to be completed.",
     destination: '/listings', actionLabel: 'Choose a listing',
   },
 ];
