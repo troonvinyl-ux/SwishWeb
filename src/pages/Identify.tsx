@@ -23,8 +23,10 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { callEdgeFunction, getSupabaseClient, getSupabaseClientAsync, EdgeFunctionError } from '@/lib/supabase';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useTable } from '@/hooks/useSupabaseQuery';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
@@ -241,6 +243,7 @@ function ImageSlot({
 
 export default function Identify() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Duplicate-submit guard (ref — not state — so it doesn't cause re-renders)
   const submitGuard = useRef(false);
@@ -268,7 +271,24 @@ export default function Identify() {
 
   // Existing inventory search (for REQ-INV-002 — update path)
   const [inventorySearch, setInventorySearch] = useState('');
-  const { tenantId } = useCurrentTenantId();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
+  const { data: activeSpecialists = [], isLoading: entitlementsLoading } = useQuery({
+    queryKey: ['coin_identify_entitlements', tenantId],
+    enabled: Boolean(tenantId) && !isOwner,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const sb = getSupabaseClient() || await getSupabaseClientAsync();
+      if (!sb || !tenantId) return [] as string[];
+      const { data, error } = await sb.from('tenants').select('active_specialists').eq('id', tenantId).maybeSingle();
+      if (error) throw error;
+      const raw = data?.active_specialists;
+      if (Array.isArray(raw)) return raw.map(String);
+      if (typeof raw === 'string') { try { const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed.map(String) : []; } catch { return []; } }
+      return [] as string[];
+    },
+  });
+  const coinAllowed = isOwner || getSpecialistIdsForNiche('coins').some(id => activeSpecialists.includes(id));
   const specialistIds = getSpecialistIdsForNiche(getActiveNicheId());
   const { data: inventoryResults } = useTable('items', {
     filter: { tenant_id: tenantId },
@@ -860,6 +880,9 @@ export default function Identify() {
   const candidates = result?.candidates ?? (result?.identification ? [result.identification as Candidate] : []);
 
   // ──────────────────────────────────────────────────────────────────────────
+  if (!isOwner && (tenantLoading || entitlementsLoading)) return <div className="p-8 text-center text-muted-foreground">Checking your SWISH niche access…</div>;
+  if (!coinAllowed) return <Navigate to="/niches" replace />;
+
   // RENDER: Identifying (progress spinner)
   // ──────────────────────────────────────────────────────────────────────────
   if (step === 'identifying') {
