@@ -133,12 +133,17 @@ export function useInsert(table: string) {
   });
 }
 
-export function useUpdate(table: string) {
+export function useUpdate(table: string, tenantId?: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, unknown> }) => {
       const sb = await getClient();
-      const { data, error } = await sb.from(table).update(updates).eq('id', id).select().single();
+      let query = sb.from(table).update(updates).eq('id', id);
+      if (tenantId !== undefined) {
+        if (!tenantId) throw new Error('Your SWISH workspace is not ready.');
+        query = query.eq('tenant_id', tenantId);
+      }
+      const { data, error } = await query.select().single();
       if (error) throw new Error(error.message);
       return data;
     },
@@ -159,12 +164,17 @@ export function useUpsert(table: string) {
   });
 }
 
-export function useDelete(table: string) {
+export function useDelete(table: string, tenantId?: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const sb = await getClient();
-      const { error } = await sb.from(table).delete().eq('id', id);
+      let query = sb.from(table).delete().eq('id', id);
+      if (tenantId !== undefined) {
+        if (!tenantId) throw new Error('Your SWISH workspace is not ready.');
+        query = query.eq('tenant_id', tenantId);
+      }
+      const { error } = await query;
       if (error) throw new Error(error.message);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [table] }),
