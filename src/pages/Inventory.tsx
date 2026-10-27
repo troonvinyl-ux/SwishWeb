@@ -34,7 +34,7 @@ export default function Inventory() {
     enabled: Boolean(tenantId) && specialistIds.length > 0,
   });
   const listingsQuery = useTable('listings', {
-    select: '*, items!inner(id, specialist_id, title, canonical_title, name, image_url, media, status)',
+    select: '*, items!inner(id, specialist_id, image_url, media, status)',
     order: { column: 'created_at', ascending: false },
     filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
     inFilter: { 'items.specialist_id': specialistIds },
@@ -57,7 +57,7 @@ export default function Inventory() {
     if (!q) return base;
     return base.filter(item => {
       const linked = item.items || {};
-      return [item.title, item.canonical_title, item.name, linked.title, linked.canonical_title, linked.name, item.sku]
+      return [item.title, item.listing_title, item.name, item.sku]
         .some(value => String(value || '').toLowerCase().includes(q));
     });
   }, [tab, search, stockQuery.data, listingsQuery.data]);
@@ -66,7 +66,7 @@ export default function Inventory() {
     void qc.invalidateQueries({ queryKey: ['items'] });
     void qc.invalidateQueries({ queryKey: ['listings'] });
   };
-  const itemTitle = (row: Row) => String(row.title || row.canonical_title || row.name || row.items?.canonical_title || row.items?.title || row.items?.name || 'Untitled item');
+  const itemTitle = (row: Row) => String(row.title || row.listing_title || row.name || row.items?.name || 'Untitled item');
   const imageFor = (row: Row) => row.image_url || row.items?.image_url || (Array.isArray(row.media) ? row.media[0] : '') || (Array.isArray(row.items?.media) ? row.items.media[0] : '');
   const openItem = (row: Row) => navigate(row.item_id ? `/listings/${row.id}` : `/inventory/${row.id}`);
 
