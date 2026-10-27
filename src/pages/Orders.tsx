@@ -18,7 +18,7 @@ export default function Orders() {
   const { data, isLoading, error } = useTable('orders', {
     select: '*, items(specialist_id)',
     order: { column: 'created_at', ascending: false },
-    filter: { tenant_id: tenantId, ...(status ? { status } : {}) },
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay', ...(status ? { status } : {}) },
     enabled: Boolean(tenantId) && specialistIds.length > 0,
     search: search ? { column: 'buyer_name', query: search } : undefined,
   });
