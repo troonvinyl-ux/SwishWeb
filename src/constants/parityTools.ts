@@ -23,7 +23,7 @@ export const PARITY_TOOLS: ParityTool[] = [
   {
     path: '/tools/bike-flipper', title: 'Bike Flipper tools',
     summary: 'Record a bicycle’s identity, fit, mechanical condition and known faults.',
-    limitation: 'Opens the existing bicycle capture workflow. The native app's dedicated repair-cost, profit-decision and buying recommendation logic still requires a web parity pass.',
+    limitation: "Opens the existing bicycle capture workflow. The native app's dedicated repair-cost, profit-decision and buying recommendation logic still requires a web parity pass.",
     destination: '/scan/bikes', actionLabel: 'Open bicycle capture',
   },
   {
