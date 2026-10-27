@@ -250,6 +250,24 @@ export default function ListingNew() {
     if (scanImages.obverse) defaultSelected.push(scanImages.obverse);
     if (scanImages.reverse) defaultSelected.push(scanImages.reverse);
 
+    // Canonical SWISH inventory stores permanent image URLs in items.media.
+    // Use those when older scan_images metadata is absent.
+    const mediaUrls = (Array.isArray(inv.media) ? inv.media : [])
+      .map(value => {
+        if (typeof value === 'string') return value.trim();
+        if (value && typeof value === 'object') {
+          const image = value as Record<string, unknown>;
+          const url = image.url || image.publicUrl || image.public_url || image.src;
+          return typeof url === 'string' ? url.trim() : '';
+        }
+        return '';
+      })
+      .filter((url): url is string => Boolean(url));
+    for (const url of mediaUrls) {
+      if (defaultSelected.length >= 2) break;
+      if (!defaultSelected.includes(url)) defaultSelected.push(url);
+    }
+
     setForm(p => ({
       ...p,
       title: (p.title as string) || (inv.title as string) || (candidate.title as string) || (candidate.denomination as string) || '',
