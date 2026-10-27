@@ -2,6 +2,8 @@ import { useEffect, useMemo } from 'react';
 import { useCount } from '@/hooks/useSupabaseQuery';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { getSpecialistIdsForNiche, type SwishNicheId } from '@/lib/niche';
 import { ArrowLeft, Search, Camera, Package, Tag, ShoppingCart, BarChart3, Wrench, Sparkles, Coins, Bike, Shirt, Lightbulb, Store, ScanLine } from 'lucide-react';
 
 type Action = { label: string; detail: string; icon: typeof Coins; to: string };
@@ -79,7 +81,9 @@ export default function NicheWorkspace() {
   const allowedNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferred) ? preferred : 'coins';
   const config = useMemo(() => CONFIGS[niche] || CONFIGS.coins, [niche]);
   const BrandIcon = config.icon;
-  const { data: inventoryCount } = useCount('inventory');
+  const { tenantId } = useCurrentTenantId();
+  const specialistIds = getSpecialistIdsForNiche((CONFIGS[niche] ? niche : 'coins') as SwishNicheId);
+  const { data: inventoryCount } = useCount('items', { tenant_id: tenantId }, { specialist_id: specialistIds }, Boolean(tenantId));
   useEffect(() => { if (isOwner || niche === allowedNiche) setActiveNiche(config); }, [config, isOwner, niche, allowedNiche]);
 
   if (!isOwner && niche !== allowedNiche) return <Navigate to={`/workspace/${allowedNiche}`} replace />;
