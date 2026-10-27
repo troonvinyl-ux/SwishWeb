@@ -116,12 +116,17 @@ function AppRoutes() {
       <ErrorBoundary name="router">
         <Routes>
           <Route path="/" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
-          <Route path="/coins" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'coins' : safeNiche}`} replace />} />
-          <Route path="/mx" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'motocross' : safeNiche}`} replace />} />
-          <Route path="/bikes" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'bicycles' : safeNiche}`} replace />} />
-          <Route path="/threads" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'clothing' : safeNiche}`} replace />} />
-          <Route path="/clothes" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'clothing' : safeNiche}`} replace />} />
-          <Route path="/surplus" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'surplus_flip' : safeNiche}`} replace />} />
+          {/* The marketing directory lives on swishflip.co.uk; these permanent paths open
+              the matching workspace in this same app instance and use the existing backend. */}
+          <Route path="/coins" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
+          <Route path="/mx" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/motocross"} replace />} />
+          <Route path="/bikes" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/bicycles"} replace />} />
+          <Route path="/threads" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/clothing"} replace />} />
+          <Route path="/clothes" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/clothing"} replace />} />
+          <Route path="/surplus" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/surplus_flip"} replace />} />
+          <Route path="/electronics" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
+          <Route path="/games" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
+          <Route path="/home" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/niches" element={<NicheEntry />} />
           <Route path="/workspace/:niche" element={<NicheWorkspace />} />
