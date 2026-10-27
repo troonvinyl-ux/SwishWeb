@@ -47,6 +47,20 @@ import Settings from '@/pages/Settings';
 import MasterAdmin from '@/pages/MasterAdmin';
 import ParityTools from '@/pages/ParityTools';
 import NotFound from '@/pages/NotFound';
+import SwishFlipHome from '@/pages/SwishFlipHome';
+
+const NICHE_HOSTS: Record<string, string> = {
+  'coins.swishflip.co.uk': 'coins',
+  'mx.swishflip.co.uk': 'motocross',
+  'bikes.swishflip.co.uk': 'bicycles',
+  'clothes.swishflip.co.uk': 'clothing',
+  'threads.swishflip.co.uk': 'clothing',
+  'surplus.swishflip.co.uk': 'surplus_flip',
+};
+
+const hostname = window.location.hostname.toLowerCase().replace(/^www\\./, '');
+const isSwishFlipMarketingHost = hostname === 'swishflip.co.uk';
+const hostNiche = NICHE_HOSTS[hostname];
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,8 +74,13 @@ const queryClient = new QueryClient({
 
 function AppRoutes() {
   const { connectionStatus, loading, user } = useAuth();
+  // The apex domain is the public discovery splash page and must not depend on backend availability.
+  if (isSwishFlipMarketingHost && window.location.pathname === '/') return <SwishFlipHome />;
+  // A niche subdomain is a fixed product entry point at its root path.
+  // Host context wins over browser-local selection so switching a saved local niche cannot cross product boundaries.
+  if (hostNiche && localStorage.getItem('swish_active_niche') !== hostNiche) localStorage.setItem('swish_active_niche', hostNiche);
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
-  const preferredNiche = String(localStorage.getItem('swish_active_niche') || user?.user_metadata?.preferred_niche || 'coins');
+  const preferredNiche = String(hostNiche || localStorage.getItem('swish_active_niche') || user?.user_metadata?.preferred_niche || 'coins');
   const safeNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins';
   const needsOnboarding = !isOwner && user?.user_metadata?.onboarding_status === 'started';
 
