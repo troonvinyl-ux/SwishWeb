@@ -75,7 +75,15 @@ function AppRoutes() {
   if (isSwishFlipMarketingHost && window.location.pathname === '/') return <SwishFlipHome />;
   if (currentHostname.endsWith('.swishflip.co.uk') && !hostProduct) return <NicheComingSoon />;
   const preferredNiche = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
-  const safeNiche = hostProduct?.id || (['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins');
+  const routeProduct = {
+    '/coins': 'coins',
+    '/mx': 'motocross',
+    '/bikes': 'bicycles',
+    '/clothes': 'clothing',
+    '/threads': 'clothing',
+    '/surplus': 'surplus_flip',
+  }[location.pathname as '/coins' | '/mx' | '/bikes' | '/clothes' | '/threads' | '/surplus'];
+  const safeNiche = hostProduct?.id || routeProduct || (['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins');
   const needsOnboarding = !isOwner && user?.user_metadata?.onboarding_status === 'started';
 
   // Establishing backend connection
