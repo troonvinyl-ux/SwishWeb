@@ -18,14 +18,18 @@ export function useCurrentTenantId() {
     queryFn: async () => {
       const sb = getSupabaseClient() || await getSupabaseClientAsync();
       if (!sb || !user?.id) throw new Error('Sign in to SWISH to access this workspace.');
+      // Match the native app's tenant resolution: RLS exposes the signed-in
+      // user's tenant rows, and the native app selects the primary tenant by
+      // oldest creation date. Do not independently pick an arbitrary membership
+      // row here or the web app can query a different tenant from the native app.
       const { data, error } = await sb
-        .from('tenant_memberships')
-        .select('tenant_id')
-        .eq('user_id', user.id)
+        .from('tenants')
+        .select('id')
+        .order('created_at', { ascending: true })
         .limit(1)
         .maybeSingle();
       if (error) throw new Error('Could not resolve your SWISH workspace. Please retry.');
-      return data?.tenant_id ? String(data.tenant_id) : null;
+      return data?.id ? String(data.id) : null;
     },
   });
 
