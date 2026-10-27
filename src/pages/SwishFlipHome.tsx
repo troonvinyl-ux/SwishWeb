@@ -1,9 +1,8 @@
 import {
   ArrowRight, Bike, BookOpen, BrainCircuit, Camera, ChartNoAxesColumnIncreasing,
   CheckCircle2, Coins, Crown, Gamepad2, LogIn, Shirt, Smartphone,
-  Sparkles, Tag, Trophy, Wrench, Users, Watch, Gem, ShoppingCart, Heart,
+  Sparkles, Tag, Trophy, Wrench, Watch, Gem, ShoppingCart, Heart,
 } from 'lucide-react';
-import heroImage from '@/assets/swish-hero.jpg';
 
 type Niche = {
   name: string;
@@ -18,15 +17,15 @@ type Niche = {
 };
 
 const niches: Niche[] = [
-  { name: 'Coin Flipper', slug: 'coins', eyebrow: 'ANCIENT · ISLAMIC · WORLD', description: 'Identify · Value · Collect · Sell', tagline: 'History has value.', icon: Coins, button: 'Enter Coins', color: 'from-amber-800 via-stone-950 to-black', glow: 'group-hover:shadow-amber-500/20' , },
-  { name: 'MX Flipper', slug: 'mx', eyebrow: 'DIRT BIKES · PARTS · GEAR', description: 'Find · Flip · Service · Repeat', tagline: 'Built for the next ride.', icon: Wrench, button: 'Enter MX', color: 'from-orange-700 via-red-950 to-black', glow: 'group-hover:shadow-orange-500/20' },
-  { name: 'Bike Flipper', slug: 'bikes', eyebrow: 'BICYCLES · PARTS · UPGRADES', description: 'Buy · Assess · Upgrade · Sell', tagline: 'Every ride has a value.', icon: Bike, button: 'Enter Bikes', color: 'from-green-700 via-emerald-950 to-black', glow: 'group-hover:shadow-green-500/20' },
-  { name: 'Threads Flip', slug: 'threads', eyebrow: 'CLOTHING · STREETWEAR · BRANDS', description: 'Vintage · Designer · Style · Sell', tagline: 'Spot the next big label.', icon: Shirt, button: 'Enter Threads', color: 'from-pink-700 via-fuchsia-950 to-black', glow: 'group-hover:shadow-pink-500/20' },
-  { name: 'Card Flipper', slug: 'games', eyebrow: 'TRADING CARDS · TCG · SPORTS', description: 'Identify · Grade · Value · List', tagline: 'Collect smarter.', icon: Gamepad2, button: 'Enter Cards', color: 'from-violet-700 via-purple-950 to-black', glow: 'group-hover:shadow-violet-500/20' },
-  { name: 'Antique Flipper', slug: 'home', eyebrow: 'ANTIQUES · VINTAGE · COLLECTABLES', description: 'Identify · Value · Restore · Sell', tagline: 'Old treasures. New value.', icon: Watch, button: 'Enter Antiques', color: 'from-yellow-800 via-amber-950 to-black', glow: 'group-hover:shadow-yellow-500/20' },
-  { name: 'Fossil Flipper', slug: 'surplus', eyebrow: 'FOSSILS · MINERALS · SPECIMENS', description: 'Identify · Value · Collect · Sell', tagline: 'Discover what it is worth.', icon: Gem, button: 'Enter Fossils', color: 'from-cyan-700 via-sky-950 to-black', glow: 'group-hover:shadow-cyan-500/20' },
-  { name: 'Beauty Flipper', slug: 'clothes', eyebrow: 'COSMETICS · FRAGRANCE · SKINCARE', description: 'Identify · Value · Bundle · Sell', tagline: 'Find value in every product.', icon: Heart, button: 'Enter Beauty', color: 'from-rose-700 via-pink-950 to-black', glow: 'group-hover:shadow-rose-500/20' },
-  { name: 'Tech Flipper', slug: 'electronics', eyebrow: 'PHONES · CONSOLES · GADGETS', description: 'Test · Value · Refurb · Sell', tagline: 'Make tech work for you.', icon: Smartphone, button: 'Enter Tech', color: 'from-blue-700 via-indigo-950 to-black', glow: 'group-hover:shadow-blue-500/20' },
+  { name: 'Coin Flipper', slug: 'coins', eyebrow: 'ANCIENT · ISLAMIC · WORLD', description: 'Specialist coin identification, research and collection tools', tagline: 'A dedicated app for coin people.', icon: Coins, button: 'Enter Coins', color: 'from-amber-800 via-stone-950 to-black', glow: 'group-hover:shadow-amber-500/20' , },
+  { name: 'MX Flipper', slug: 'mx', eyebrow: 'DIRT BIKES · PARTS · GEAR', description: 'Bike, parts and gear recognition built around motocross', tagline: 'A dedicated app for MX enthusiasts.', icon: Wrench, button: 'Enter MX', color: 'from-orange-700 via-red-950 to-black', glow: 'group-hover:shadow-orange-500/20' },
+  { name: 'Bike Flipper', slug: 'bikes', eyebrow: 'BICYCLES · PARTS · UPGRADES', description: 'Understand bikes, components, condition and value', tagline: 'A dedicated app for cyclists and traders.', icon: Bike, button: 'Enter Bikes', color: 'from-green-700 via-emerald-950 to-black', glow: 'group-hover:shadow-green-500/20' },
+  { name: 'Threads Flip', slug: 'threads', eyebrow: 'CLOTHING · STREETWEAR · BRANDS', description: 'Fashion, brands, styles and resale knowledge in one place', tagline: 'A dedicated app for clothing specialists.', icon: Shirt, button: 'Enter Threads', color: 'from-pink-700 via-fuchsia-950 to-black', glow: 'group-hover:shadow-pink-500/20' },
+  { name: 'Card Flipper', slug: 'games', eyebrow: 'TRADING CARDS · TCG · SPORTS', description: 'Trading cards, sets, condition and collector knowledge', tagline: 'A dedicated app for card collectors.', icon: Gamepad2, button: 'Enter Cards', color: 'from-violet-700 via-purple-950 to-black', glow: 'group-hover:shadow-violet-500/20' },
+  { name: 'Antique Flipper', slug: 'home', eyebrow: 'ANTIQUES · VINTAGE · COLLECTABLES', description: 'Recognise antiques, learn their history and assess value', tagline: 'A dedicated app for antique hunters.', icon: Watch, button: 'Enter Antiques', color: 'from-yellow-800 via-amber-950 to-black', glow: 'group-hover:shadow-yellow-500/20' },
+  { name: 'Fossil Flipper', slug: 'surplus', eyebrow: 'FOSSILS · MINERALS · SPECIMENS', description: 'Fossils, minerals and specimen identification and research', tagline: 'A dedicated app for fossil enthusiasts.', icon: Gem, button: 'Enter Fossils', color: 'from-cyan-700 via-sky-950 to-black', glow: 'group-hover:shadow-cyan-500/20' },
+  { name: 'Beauty Flipper', slug: 'clothes', eyebrow: 'COSMETICS · FRAGRANCE · SKINCARE', description: 'Beauty, fragrance and skincare product knowledge', tagline: 'A dedicated app for beauty resellers.', icon: Heart, button: 'Enter Beauty', color: 'from-rose-700 via-pink-950 to-black', glow: 'group-hover:shadow-rose-500/20' },
+  { name: 'Tech Flipper', slug: 'electronics', eyebrow: 'PHONES · CONSOLES · GADGETS', description: 'Phones, consoles and gadgets with practical valuation help', tagline: 'A dedicated app for tech specialists.', icon: Smartphone, button: 'Enter Tech', color: 'from-blue-700 via-indigo-950 to-black', glow: 'group-hover:shadow-blue-500/20' },
 ];
 
 const existingEntryRoutes: Record<string, string> = {
@@ -66,32 +65,32 @@ export default function SwishFlipHome() {
       </header>
 
       <section className="relative isolate border-b border-white/10">
-        <div className="absolute inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url(${heroImage})` }} />
+        <div className="absolute inset-0 -z-20 bg-[radial-gradient(ellipse_at_65%_15%,rgba(250,204,21,.18),transparent_45%),linear-gradient(120deg,#09090b,#12121a_55%,#08090d)]" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/95 via-black/75 to-black/45" />
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_25%,rgba(250,204,21,.18),transparent_50%)]" />
-        <div className="mx-auto grid max-w-[1500px] items-center gap-8 px-5 py-12 sm:px-8 md:grid-cols-[1.15fr_.85fr] md:py-16">
+        <div className="mx-auto grid max-w-[1500px] items-center gap-6 px-4 py-8 sm:px-8 sm:py-12 md:grid-cols-[1.15fr_.85fr] md:py-16">
           <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-yellow-300/30 bg-yellow-300/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-[.22em] text-yellow-200"><Sparkles className="h-4 w-4" /> One platform · One shared engine</div>
-            <h1 className="max-w-3xl text-5xl font-black italic leading-[.92] tracking-[-.045em] sm:text-6xl lg:text-7xl xl:text-8xl">ONE PLATFORM<br/><span className="text-yellow-300">NINE NICHES</span></h1>
-            <p className="mt-5 text-base font-black uppercase tracking-[.18em] text-white sm:text-xl">Turn knowledge into profit</p>
-            <div className="mt-8 grid max-w-2xl grid-cols-3 gap-3 sm:grid-cols-5">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-yellow-300/30 bg-yellow-300/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-[.22em] text-yellow-200"><Sparkles className="h-4 w-4" /> Specialist apps · Shared learning engine</div>
+            <h1 className="max-w-3xl text-[2.65rem] font-black italic leading-[.95] tracking-[-.045em] sm:text-6xl lg:text-7xl xl:text-8xl">YOUR NICHE.<br/><span className="text-yellow-300">YOUR APP.</span></h1>
+            <p className="mt-5 text-base font-black uppercase tracking-[.18em] text-white sm:text-xl">Specialist tools powered by shared intelligence</p>
+            <div className="mt-6 grid max-w-2xl grid-cols-5 gap-1 sm:gap-3">
               {[
                 { icon: Camera, title: 'IDENTIFY', sub: 'with AI' },
                 { icon: ChartNoAxesColumnIncreasing, title: 'REAL MARKET', sub: 'data' },
                 { icon: Tag, title: 'VALUE', sub: 'with confidence' },
                 { icon: ShoppingCart, title: 'LIST & SELL', sub: 'faster' },
                 { icon: Trophy, title: 'BIGGER', sub: 'opportunities' },
-              ].map(({icon: Icon,title,sub}) => <div key={title} className="border-r border-white/15 px-2 text-center last:border-0"><Icon className="mx-auto mb-2 h-6 w-6 text-yellow-200 sm:h-7 sm:w-7"/><p className="text-[10px] font-black sm:text-xs">{title}</p><p className="text-[10px] text-slate-300 sm:text-xs">{sub}</p></div>)}
+              ].map(({icon: Icon,title,sub}) => <div key={title} className="border-r border-white/15 px-1 text-center last:border-0"><Icon className="mx-auto mb-2 h-6 w-6 text-yellow-200 sm:h-7 sm:w-7"/><p className="text-[8px] font-black sm:text-xs">{title}</p><p className="text-[9px] text-slate-300 sm:text-xs">{sub}</p></div>)}
             </div>
           </div>
           <div className="hidden md:block">
             <div className="rounded-2xl border border-yellow-200/30 bg-black/35 p-5 shadow-2xl shadow-black/50 backdrop-blur-sm">
-              <p className="text-xs font-black uppercase tracking-[.2em] text-yellow-200">Your flipping advantage</p>
+              <p className="text-xs font-black uppercase tracking-[.2em] text-yellow-200">Built around your niche</p>
               <div className="mt-4 space-y-4">
                 {[
-                  ['01','Identify items faster','AI-assisted recognition'],
-                  ['02','Price with confidence','Market data and research'],
-                  ['03','List and sell smarter','One streamlined workflow'],
+                  ['01','Your app understands your category','Specialist workflows and recognition'],
+                  ['02','Learn from shared intelligence','Predictions improve as knowledge grows'],
+                  ['03','Automate the repetitive work','Less admin. More time for your expertise.'],
                 ].map(([number,title,sub])=><div key={number} className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-yellow-300/25 bg-yellow-300/10 text-sm font-black text-yellow-200">{number}</span><span><span className="block font-extrabold">{title}</span><span className="text-sm text-slate-300">{sub}</span></span><CheckCircle2 className="ml-auto h-5 w-5 shrink-0 text-lime-300"/></div>)}
               </div>
             </div>
@@ -101,14 +100,14 @@ export default function SwishFlipHome() {
 
       <section id="niches" className="mx-auto max-w-[1500px] px-4 py-7 sm:px-6 sm:py-9">
         <div className="mb-5 flex items-end justify-between gap-3">
-          <div><p className="text-[10px] font-black uppercase tracking-[.22em] text-yellow-300">Pick your speciality</p><h2 className="mt-1 text-2xl font-black sm:text-3xl">Choose your SWISHFLIP app</h2></div>
-          <p className="hidden text-right text-xs text-slate-400 sm:block">One login · One platform · No extra downloads</p>
+          <div><p className="text-[10px] font-black uppercase tracking-[.22em] text-yellow-300">Find your specialist app</p><h2 className="mt-1 text-2xl font-black sm:text-3xl">One app designed for your world</h2></div>
+          <p className="hidden text-right text-xs text-slate-400 sm:block">Purpose-built experience · Shared learning engine</p>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {niches.map((niche) => {
             const Icon = niche.icon;
             return <a key={niche.slug} href={existingEntryRoutes[niche.slug] || '/workspace/coins'} aria-label={`Enter ${niche.name}`} className={`group relative isolate flex min-h-[260px] flex-col overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br ${niche.color} p-4 shadow-lg transition duration-300 hover:-translate-y-1 hover:border-white/60 hover:shadow-2xl ${niche.glow} focus:outline-none focus:ring-2 focus:ring-yellow-300 sm:min-h-[285px]`}>
-              <div className="pointer-events-none absolute inset-0 -z-10 opacity-20 mix-blend-screen transition duration-500 group-hover:opacity-35" style={{ backgroundImage: `url(${heroImage})`, backgroundSize: 'cover', backgroundPosition: niche.slug === 'coins' ? 'left center' : niche.slug === 'mx' ? 'center' : 'right center' }} />
+              <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,.12),transparent_55%)] opacity-80 transition duration-500 group-hover:opacity-100" />
               <div className="pointer-events-none absolute -right-5 -top-6 -z-10 rotate-[-12deg] opacity-[.16] transition duration-500 group-hover:scale-110 group-hover:opacity-30"><Icon className="h-44 w-44 sm:h-52 sm:w-52"/></div>
               <div className="flex items-start justify-between gap-3"><span className="rounded-full border border-white/20 bg-black/35 px-2.5 py-1 text-[9px] font-black tracking-[.12em] text-white/90">{niche.eyebrow}</span><Icon className="h-6 w-6 shrink-0 drop-shadow-lg"/></div>
               <div className="mt-auto pt-8">
@@ -130,7 +129,7 @@ export default function SwishFlipHome() {
 
       <section id="pricing" className="mx-auto max-w-[1500px] px-4 pb-8 pt-3 sm:px-6">
         <a id="community" href="/coins" className="group flex items-center justify-between gap-4 rounded-2xl border border-yellow-200/40 bg-gradient-to-r from-yellow-200 via-yellow-300 to-amber-400 p-4 text-black shadow-xl shadow-yellow-500/10 transition hover:brightness-105 sm:px-7 sm:py-5">
-          <span className="flex items-center gap-4"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-black/10"><Crown className="h-8 w-8"/></span><span><span className="block text-xl font-black sm:text-2xl">GET SWISHFLIP PRO</span><span className="mt-1 block text-xs font-semibold sm:text-sm">Access all niches · Advanced tools · More opportunities</span></span></span>
+          <span className="flex items-center gap-4"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-black/10"><Crown className="h-8 w-8"/></span><span><span className="block text-xl font-black sm:text-2xl">GET SWISHFLIP PRO</span><span className="mt-1 block text-xs font-semibold sm:text-sm">Unlock your niche app · Smarter predictions · Routine tasks automated</span></span></span>
           <ArrowRight className="h-7 w-7 shrink-0 transition group-hover:translate-x-1"/>
         </a>
       </section>
