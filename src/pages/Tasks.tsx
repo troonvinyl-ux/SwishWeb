@@ -22,8 +22,8 @@ export default function Tasks() {
   });
 
   const insert = useInsert('tasks');
-  const update = useUpdate('tasks');
-  const del    = useDelete('tasks');
+  const update = useUpdate('tasks', tenantId);
+  const del    = useDelete('tasks', tenantId);
 
   const items = (data || []) as Record<string, unknown>[];
 
