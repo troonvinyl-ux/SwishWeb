@@ -12,13 +12,13 @@ export const PARITY_TOOLS: ParityTool[] = [
     path: '/tools/islamic-batch', title: 'Islamic & countermark batch',
     summary: 'Capture both sides, add measurements and select specialist identification options.',
     limitation: 'A dedicated web batch screen is now available. It sends each coin to the existing swish-islamic-identify Edge Function and displays returned evidence for review. Saving/confirming results into inventory remains a separate explicit action.',
-    destination: '/identify', actionLabel: 'Open single-coin capture',
+    destination: '/tools/islamic-batch', actionLabel: 'Open batch identification',
   },
   {
     path: '/tools/silver-batch', title: 'Silver batch processing',
     summary: 'Review coin images and measurement evidence before identification and valuation.',
     limitation: 'The web client now supports multi-coin capture and sequential specialist identification using the existing backend. The native app's full silver commercial grouping, batch persistence and listing-strategy workflow is not yet fully ported.',
-    destination: '/identify', actionLabel: 'Open single-coin capture',
+    destination: '/tools/silver-batch', actionLabel: 'Open silver batch',
   },
   {
     path: '/tools/bike-flipper', title: 'Bike Flipper tools',
