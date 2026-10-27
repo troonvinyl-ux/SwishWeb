@@ -21,10 +21,10 @@ type Niche = {
 
 const OWNER_EMAIL = 'troonvinyl@gmail.com';
 const NICHES: Niche[] = [
-  { id: 'coins', name: 'SWISH Coins', tagline: 'Identify, value and flip coins & collectibles', colour: '#F5C842', specialistCount: 8, marketplaces: ['eBay', 'Etsy', 'Specialist auction houses'], acquisitionSources: ['Auctions', 'Car boot sales', 'eBay'], categories: ['coins', 'islamic silver', 'banknotes', 'gold', '+4 more'], icon: Coins },
-  { id: 'motocross', name: 'SWISH MX', tagline: 'Buy, prep and flip motocross & off-road bikes', colour: '#EF4444', specialistCount: 1, marketplaces: ['eBay', 'Facebook Marketplace', 'Gumtree', 'Autotrader Moto'], acquisitionSources: ['eBay', 'Facebook Marketplace', 'Gumtree'], categories: ['motocross'], icon: Wrench },
-  { id: 'bicycles', name: 'SWISH Bikes', tagline: 'Identify, value and flip bicycles', colour: '#22C55E', specialistCount: 1, marketplaces: ['eBay', 'Facebook Marketplace', 'Gumtree', 'BikeExchange'], acquisitionSources: ['Facebook Marketplace', 'eBay', 'Gumtree'], categories: ['bicycles'], icon: Bike },
-  { id: 'clothing', name: 'Threads Flip', tagline: 'Turn fashion into opportunity.', colour: '#E91E8C', specialistCount: 2, marketplaces: ['eBay', 'Depop', 'Vinted', 'Etsy', 'Facebook Marketplace'], acquisitionSources: ['Charity shops', 'Car boot sales', 'eBay'], categories: ['Vintage', 'Designer', 'Streetwear', 'High Street', 'Sustainable', 'Trainers', 'Accessories', 'Sportswear'], icon: Shirt },
+  { id: 'coins', name: 'SWISH Coins', tagline: 'Identify, value and flip coins & collectibles', colour: '#F5C842', specialistCount: 8, marketplaces: ['eBay'], acquisitionSources: ['Auctions', 'Car boot sales', 'eBay'], categories: ['coins', 'islamic silver', 'banknotes', 'gold', '+4 more'], icon: Coins },
+  { id: 'motocross', name: 'SWISH MX', tagline: 'Buy, prep and flip motocross & off-road bikes', colour: '#EF4444', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['eBay', 'Facebook Marketplace', 'Gumtree'], categories: ['motocross'], icon: Wrench },
+  { id: 'bicycles', name: 'SWISH Bikes', tagline: 'Identify, value and flip bicycles', colour: '#22C55E', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Facebook Marketplace', 'eBay', 'Gumtree'], categories: ['bicycles'], icon: Bike },
+  { id: 'clothing', name: 'Threads Flip', tagline: 'Turn fashion into opportunity.', colour: '#E91E8C', specialistCount: 2, marketplaces: ['eBay'], acquisitionSources: ['Charity shops', 'Car boot sales', 'eBay'], categories: ['Vintage', 'Designer', 'Streetwear', 'High Street', 'Sustainable', 'Trainers', 'Accessories', 'Sportswear'], icon: Shirt },
   { id: 'surplus_flip', name: 'Surplus Flip', tagline: 'Turn job lots and pallet manifests into eBay listings', colour: '#14B8A6', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Job lots', 'Pallets', 'Wholesale manifests'], categories: ['Job lots', 'Pallets', 'Wholesale', 'Returns'], icon: Package },
 ];
 
