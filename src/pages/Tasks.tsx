@@ -21,7 +21,7 @@ export default function Tasks() {
     enabled: Boolean(tenantId),
   });
 
-  const insert = useInsert('tasks');
+  const insert = useInsert('tasks', tenantId);
   const update = useUpdate('tasks', tenantId);
   const del    = useDelete('tasks', tenantId);
 
