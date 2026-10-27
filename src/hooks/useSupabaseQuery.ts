@@ -100,14 +100,16 @@ export function useTable(table: string, options?: TableOptions) {
 // useTableRow — single row by id
 // ---------------------------------------------------------------------------
 
-export function useTableRow(table: string, id: string | null | undefined, select = '*') {
+export function useTableRow(table: string, id: string | null | undefined, select = '*', tenantId?: string | null) {
   return useQuery({
-    queryKey: [table, id, select],
-    enabled: !!id && id !== 'new',
+    queryKey: [table, id, select, tenantId],
+    enabled: !!id && id !== 'new' && (tenantId === undefined || Boolean(tenantId)),
     retry: false,
     queryFn: async () => {
       const sb = await getClient();
-      const { data, error } = await sb.from(table).select(select).eq('id', id!).single();
+      let query = sb.from(table).select(select).eq('id', id!);
+      if (tenantId !== undefined) query = query.eq('tenant_id', tenantId);
+      const { data, error } = await query.single();
       if (error) throw new Error(error.message);
       return data;
     },
