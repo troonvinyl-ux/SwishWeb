@@ -159,7 +159,7 @@ export default function NicheWorkspace() {
   }
 
   const route = (to: string) => navigate(to);
-  return <div className="niche-workspace space-y-6" style={{ '--workspace-accent': config.accent } as React.CSSProperties}>
+  return <div className={`niche-workspace niche-${config.id} space-y-6`} style={{ '--workspace-accent': config.accent } as React.CSSProperties}>
     <div className="flex items-center justify-between gap-3"><Link to={`/workspace/${config.id}`} className="btn-ghost"><ArrowLeft className="w-4 h-4" />Home</Link><span className="text-xs text-muted-foreground">Specialist workspace</span></div>
     <section className="workspace-hero">
       <div className="workspace-heading-icon"><BrandIcon className="w-5 h-5" /></div>
