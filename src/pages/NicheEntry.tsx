@@ -1,4 +1,8 @@
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
+import { getSpecialistIdsForNiche, type SwishNicheId } from '@/lib/niche';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Info, CheckCircle2, Circle, Coins, Bike, Shirt, Wrench, Package, Search, ShieldCheck, Grid3X3, Construction } from 'lucide-react';
@@ -28,19 +32,28 @@ export default function NicheEntry() {
   const { user } = useAuth();
   const isOwner = user?.email?.toLowerCase() === OWNER_EMAIL;
   const navigate = useNavigate();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const [query, setQuery] = useState('');
   const [activeId, setActiveId] = useState(() => {
     const stored = localStorage.getItem('swish_active_niche') || String(user?.user_metadata?.preferred_niche || 'coins');
     return NICHES.some(n => n.id === stored) ? stored : 'coins';
   });
-  const [enabled, setEnabled] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem('swish_enabled_niches');
-      return stored ? (JSON.parse(stored) as string[]).filter(id => NICHES.some(n => n.id === id)) : NICHES.map(n => n.id);
-    } catch {
-      return NICHES.map(n => n.id);
-    }
+  const { data: activeSpecialists = [], isLoading: entitlementsLoading } = useQuery({
+    queryKey: ['niche_entry_entitlements', tenantId],
+    enabled: Boolean(tenantId) && !isOwner,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const sb = getSupabaseClient() || await getSupabaseClientAsync();
+      if (!sb || !tenantId) return [] as string[];
+      const { data, error } = await sb.from('tenants').select('active_specialists').eq('id', tenantId).maybeSingle();
+      if (error) throw error;
+      const raw = data?.active_specialists;
+      if (Array.isArray(raw)) return raw.map(String);
+      if (typeof raw === 'string') { try { const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed.map(String) : []; } catch { return []; } }
+      return [] as string[];
+    },
   });
+  const enabled = useMemo(() => isOwner ? NICHES.map(n => n.id) : NICHES.filter(n => getSpecialistIdsForNiche(n.id as SwishNicheId).some(id => activeSpecialists.includes(id))).map(n => n.id), [isOwner, activeSpecialists]);
   const niches = useMemo(() => NICHES.filter(n => (n.name + ' ' + n.tagline + ' ' + n.categories.join(' ')).toLowerCase().includes(query.toLowerCase())), [query]);
 
   const selectNiche = (niche: Niche) => {
@@ -49,19 +62,13 @@ export default function NicheEntry() {
     localStorage.setItem('swish_active_niche_name', niche.name);
   };
   const toggleEnabled = (id: string) => {
-    const next = enabled.includes(id) ? enabled.filter(item => item !== id) : [...enabled, id];
-    if (next.length === 0) return;
-    setEnabled(next);
-    localStorage.setItem('swish_enabled_niches', JSON.stringify(next));
-    if (!next.includes(activeId)) {
-      const replacement = next[0];
-      setActiveId(replacement);
-      localStorage.setItem('swish_active_niche', replacement);
-      localStorage.setItem('swish_active_niche_name', NICHES.find(n => n.id === replacement)?.name || replacement);
-    }
+    // Browser storage must never grant access to an unentitled niche.
+    if (enabled.includes(id)) selectNiche(NICHES.find(n => n.id === id) || NICHES[0]);
   };
   const done = () => {
-    const niche = NICHES.find(n => n.id === activeId) || NICHES[0];
+    if (tenantLoading || entitlementsLoading) return;
+    const niche = NICHES.find(n => n.id === activeId && enabled.includes(n.id)) || NICHES.find(n => enabled.includes(n.id));
+    if (!niche) return;
     localStorage.setItem('swish_active_niche', niche.id);
     localStorage.setItem('swish_active_niche_name', niche.name);
     document.documentElement.dataset.niche = niche.id;
@@ -79,7 +86,7 @@ export default function NicheEntry() {
       <section className="vertical-content" aria-label="Trading niches">
         <div className="vertical-search"><Search className="w-4 h-4" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search niches…" aria-label="Search niches" /></div>
         <div className="vertical-list">
-          {niches.map(niche => {
+          {niches.filter(niche => enabled.includes(niche.id)).map(niche => {
             const Icon = niche.icon;
             const active = activeId === niche.id;
             const isEnabled = enabled.includes(niche.id);
@@ -93,7 +100,7 @@ export default function NicheEntry() {
                 <div className="vertical-chips">{niche.categories.slice(0, 4).map(item => <span key={item}>{item}</span>)}{niche.categories.length > 4 && <span>+{niche.categories.length - 4} more</span>}</div>
                 <div className="vertical-sources"><Package className="w-3 h-3" />{niche.acquisitionSources.join(' · ')}</div>
               </div>
-              <div className="vertical-card-actions"><button className="vertical-small-btn" onClick={() => toggleEnabled(niche.id)}>{isEnabled ? '✓ Enabled for this switcher' : '+ Enable niche'}</button>{active && <span className="vertical-active-tag">ACTIVE</span>}</div>
+              <div className="vertical-card-actions"><button className="vertical-small-btn" onClick={() => toggleEnabled(niche.id)}>{isOwner ? '✓ Available to owner' : '✓ Included in your subscription'}</button>{active && <span className="vertical-active-tag">ACTIVE</span>}</div>
             </article>;
           })}
           {niches.length === 0 && <p className="py-8 text-center text-muted-foreground">No niches match that search.</p>}
@@ -101,7 +108,7 @@ export default function NicheEntry() {
         <div className="vertical-coming"><Construction className="w-5 h-5 shrink-0" /><div><strong>More verticals coming</strong><p>Electronics · Musical instruments · Sports equipment · Golf · Watches · Vinyl records · Comics</p></div></div>
         <div className="vertical-note"><Grid3X3 className="w-4 h-4 shrink-0" /><div><strong>ONE PLATFORM, MANY NICHES</strong><p>Your inventory, eBay integration, AI engine, valuation and orders share one platform. Switching niche changes the specialist context; existing backend access controls remain authoritative.</p></div></div>
       </section>
-      <footer className="vertical-done"><button onClick={done}><CheckCircle2 className="w-5 h-5" />Done — Using {NICHES.find(n => n.id === activeId)?.name || 'SWISH'}</button></footer>
+      <footer className="vertical-done"><button onClick={done} disabled={tenantLoading || entitlementsLoading || enabled.length === 0}><CheckCircle2 className="w-5 h-5" />Done — Using {NICHES.find(n => n.id === activeId)?.name || 'SWISH'}</button></footer>
     </main>
   );
 }
