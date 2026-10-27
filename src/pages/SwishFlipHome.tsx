@@ -1,6 +1,6 @@
 import {
   ArrowRight, Bike, BookOpen, BrainCircuit, Camera, ChartNoAxesColumnIncreasing,
-  CheckCircle2, Coins, Crown, Gamepad2, Hammer, LogIn, Shirt, Smartphone,
+  CheckCircle2, Coins, Crown, Gamepad2, LogIn, Shirt, Smartphone,
   Sparkles, Tag, Trophy, Wrench, Users, Watch, Gem, ShoppingCart, Heart,
 } from 'lucide-react';
 import heroImage from '@/assets/swish-hero.jpg';
