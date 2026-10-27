@@ -84,6 +84,7 @@ function AppRoutes() {
     '/surplus': 'surplus_flip',
   }[location.pathname as '/coins' | '/mx' | '/bikes' | '/clothes' | '/threads' | '/surplus'];
   const safeNiche = hostProduct?.id || routeProduct || (['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins');
+  const entryWorkspace = needsOnboarding ? '/onboarding' : `/workspace/${safeNiche}`;
   const needsOnboarding = !isOwner && user?.user_metadata?.onboarding_status === 'started';
 
   // Establishing backend connection
@@ -126,12 +127,12 @@ function AppRoutes() {
           <Route path="/" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
           {/* The marketing directory lives on swishflip.co.uk; these permanent paths open
               the matching workspace in this same app instance and use the existing backend. */}
-          <Route path="/coins" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
-          <Route path="/mx" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/motocross"} replace />} />
-          <Route path="/bikes" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/bicycles"} replace />} />
-          <Route path="/threads" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/clothing"} replace />} />
-          <Route path="/clothes" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/clothing"} replace />} />
-          <Route path="/surplus" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/surplus_flip"} replace />} />
+          <Route path="/coins" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/mx" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/bikes" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/threads" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/clothes" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/surplus" element={<Navigate to={entryWorkspace} replace />} />
           <Route path="/electronics" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
           <Route path="/games" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
           <Route path="/home" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
