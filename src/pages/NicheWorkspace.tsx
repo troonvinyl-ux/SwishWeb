@@ -14,7 +14,7 @@ type WorkspaceConfig = {
 
 const CONFIGS: Record<string, WorkspaceConfig> = {
   coins: { id: 'coins', name: 'SWISH Coins', tagline: 'Identify, value and flip coins & collectibles', detail: 'Ancient · Islamic silver · banknotes · gold', accent: '#F5C842', icon: Coins, scan: 'Scan Coin', actions: [
-    { label: 'Scan Coin', detail: 'Identify a coin and check references', icon: Camera, to: '/identify' },
+    { label: 'Scan Coin', detail: 'Identify a coin and check references', icon: Camera, to: scanRoute },
     { label: 'My Stock', detail: 'Review saved coins and references', icon: Package, to: '/inventory' },
     { label: 'Islamic Silver', detail: 'Process specialist silver and countermark batches', icon: Sparkles, to: '/tools/islamic-batch' },
     { label: 'Value Opportunities', detail: 'Review valuations and buying opportunities', icon: BarChart3, to: '/opportunities' },
@@ -22,14 +22,14 @@ const CONFIGS: Record<string, WorkspaceConfig> = {
     { label: 'Orders & Dispatch', detail: 'Manage orders and fulfilment', icon: ShoppingCart, to: '/orders' },
   ] },
   motocross: { id: 'motocross', name: 'SWISH MX', tagline: 'Buy, prep and flip motocross & off-road bikes', detail: 'Motocross · enduro · trail bikes · parts', accent: '#EF4444', icon: Wrench, scan: 'Identify Bike', actions: [
-    { label: 'Identify Bike', detail: 'Start a bike or parts assessment', icon: Camera, to: '/identify' },
+    { label: 'Identify Bike', detail: 'Start a bike or parts assessment', icon: Camera, to: scanRoute },
     { label: 'Workshop Stock', detail: 'Review bikes, parts and projects', icon: Package, to: '/inventory' },
     { label: 'Acquisition Calculator', detail: 'Estimate prep costs and margin', icon: Wrench, to: '/opportunities' },
     { label: 'List & Sell', detail: 'Prepare listings for sale', icon: Tag, to: '/listings' },
     { label: 'Orders & Dispatch', detail: 'Track completed sales', icon: ShoppingCart, to: '/orders' },
   ] },
   bicycles: { id: 'bicycles', name: 'SWISH Bikes', tagline: 'Identify, value and flip bicycles', detail: 'Road · mountain · gravel · hybrid · BMX · e-bikes', accent: '#22C55E', icon: Bike, scan: 'Identify Bike', actions: [
-    { label: 'Identify Bike', detail: 'Assess a bike, frame and components', icon: Camera, to: '/identify' },
+    { label: 'Identify Bike', detail: 'Assess a bike, frame and components', icon: Camera, to: scanRoute },
     { label: 'My Bikes', detail: 'Review saved bikes and projects', icon: Package, to: '/inventory' },
     { label: 'Parts & Repairs', detail: 'Open bike-flipper specialist tools', icon: Wrench, to: '/tools/bike-flipper' },
     { label: 'Profit Opportunities', detail: 'Compare potential acquisitions', icon: BarChart3, to: '/opportunities' },
@@ -37,7 +37,7 @@ const CONFIGS: Record<string, WorkspaceConfig> = {
     { label: 'Orders & Dispatch', detail: 'Track sales and fulfilment', icon: ShoppingCart, to: '/orders' },
   ] },
   clothing: { id: 'clothing', name: 'Threads Flip', tagline: 'Turn fashion into opportunity.', detail: 'Vintage · designer · streetwear · high street', accent: '#E91E8C', icon: Shirt, scan: 'Scan Item', actions: [
-    { label: 'Scan Item', detail: 'Capture and identify clothing, brand and era', icon: Camera, to: '/identify' },
+    { label: 'Scan Item', detail: 'Capture and identify clothing, brand and era', icon: Camera, to: scanRoute },
     { label: 'My Wardrobe', detail: 'Review your clothing inventory', icon: Package, to: '/inventory' },
     { label: 'Brands', detail: 'Explore brands and authentication checks', icon: Shirt, to: '/identify' },
     { label: 'List & Sell', detail: 'Prepare fashion listings', icon: Tag, to: '/listings' },
@@ -81,6 +81,7 @@ export default function NicheWorkspace() {
   const allowedNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferred) ? preferred : 'coins';
   const config = useMemo(() => CONFIGS[niche] || CONFIGS.coins, [niche]);
   const BrandIcon = config.icon;
+  const scanRoute = config.id === 'coins' ? '/identify/coins' : `/scan/${config.id === 'bicycles' ? 'bikes' : config.id === 'motocross' ? 'mx' : config.id}`;
   const { tenantId } = useCurrentTenantId();
   const specialistIds = getSpecialistIdsForNiche((CONFIGS[niche] ? niche : 'coins') as SwishNicheId);
   const { data: inventoryCount } = useCount('items', { tenant_id: tenantId }, { specialist_id: specialistIds }, Boolean(tenantId));
@@ -111,7 +112,7 @@ export default function NicheWorkspace() {
         <h2 className="threads-section-title">TOOLS</h2>
         <section className="threads-tools">
           {[
-            { label: 'Scan Item', icon: Camera, to: '/identify' },
+            { label: 'Scan Item', icon: Camera, to: scanRoute },
             { label: 'My Wardrobe', icon: Package, to: '/inventory' },
             { label: 'Brands', icon: Shirt, to: '/identify' },
             { label: 'List & Sell', icon: Tag, to: '/listings' },
@@ -141,12 +142,12 @@ export default function NicheWorkspace() {
       <span className="workspace-eyebrow">SWISH SPECIALIST</span>
       <p className="text-xs uppercase tracking-[.2em] text-muted-foreground mb-2 mt-5">{config.detail}</p><h1 className="text-3xl sm:text-5xl font-extrabold">{config.name}</h1><p className="text-lg sm:text-xl mt-3 text-white/80">{config.tagline}</p>
       <div className="workspace-quick-actions mt-6">
-        <button className="workspace-primary" onClick={() => route('/identify')}><Camera className="w-4 h-4" />{config.scan}<span>↗</span></button>
+        <button className="workspace-primary" onClick={() => route(scanRoute)}><Camera className="w-4 h-4" />{config.scan}<span>↗</span></button>
         <Link className="workspace-import" to="/ebay/import"><Package className="w-4 h-4" />Import from eBay</Link>
       </div>
     </section>
     <div className="flex items-end justify-between gap-3"><div><h2 className="text-xl font-bold">Your workflow</h2><p className="text-sm text-muted-foreground mt-1">Choose what you want to do next.</p></div><span className="text-xs rounded-full px-3 py-1 border" style={{ borderColor: config.accent, color: config.accent }}>{config.name}</span></div>
-    <section className="workspace-actions">{config.actions.map(action => { const Icon = action.icon; return <Link key={action.label} to={action.to} className="workspace-action" style={{ '--workspace-accent': config.accent } as React.CSSProperties}><span className="workspace-action-icon"><Icon className="w-5 h-5" /></span><span className="font-semibold">{action.label}<span className="workspace-open-arrow"> ↗</span></span><span className="text-xs text-muted-foreground">{action.detail}</span></Link>; })}</section>
+    <section className="workspace-actions">{config.actions.map(action => { const Icon = action.icon; return <Link key={action.label} to={action.to === '/identify' && /scan|identify/i.test(action.label) ? scanRoute : action.to} className="workspace-action" style={{ '--workspace-accent': config.accent } as React.CSSProperties}><span className="workspace-action-icon"><Icon className="w-5 h-5" /></span><span className="font-semibold">{action.label}<span className="workspace-open-arrow"> ↗</span></span><span className="text-xs text-muted-foreground">{action.detail}</span></Link>; })}</section>
     <div className="swish-card p-4 flex flex-wrap items-center justify-between gap-3"><div><div className="font-semibold text-sm">Your standalone workspace</div><p className="text-xs text-muted-foreground mt-1">Your product workspace stays separate from other SWISH products.</p></div><Link to="/settings" className="btn-secondary">Account settings</Link></div>
   </div>;
 }
