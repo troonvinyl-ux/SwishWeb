@@ -46,6 +46,7 @@ import EbayLogs from '@/pages/EbayLogs';
 import Settings from '@/pages/Settings';
 import MasterAdmin from '@/pages/MasterAdmin';
 import ParityTools from '@/pages/ParityTools';
+import SpecialistTools from '@/pages/SpecialistTools';
 import NotFound from '@/pages/NotFound';
 import SwishFlipHome from '@/pages/SwishFlipHome';
 import { getHostProduct } from '@/lib/productContext';
@@ -186,10 +187,10 @@ function AppRoutes() {
 
           {/* Current app specialist tools / parity */}
           <Route path="/tools" element={<ParityTools />} />
-          <Route path="/tools/islamic-batch" element={<ParityTools />} />
-          <Route path="/tools/silver-batch" element={<ParityTools />} />
-          <Route path="/tools/bike-flipper" element={<ParityTools />} />
-          <Route path="/tools/listing-preflight" element={<ParityTools />} />
+          <Route path="/tools/islamic-batch" element={<SpecialistTools />} />
+          <Route path="/tools/silver-batch" element={<SpecialistTools />} />
+          <Route path="/tools/bike-flipper" element={<NicheCapture />} />
+          <Route path="/tools/listing-preflight" element={<Listings />} />
 
           {/* Settings */}
           <Route path="/settings" element={<Settings />} />
