@@ -6,13 +6,13 @@ export type SwishNicheId = 'coins' | 'motocross' | 'bicycles' | 'clothing' | 'su
 
 export const NICHE_SPECIALISTS: Record<SwishNicheId, string[]> = {
   coins: [
-    'coins', 'islamic_silver', 'banknotes', 'gold', 'silver',
+    'coins', 'coins_uk', 'coins_world', 'islamic_silver', 'banknotes', 'gold', 'silver',
     'jewellery_precious_metals', 'ancient_artefacts', 'curiosities_collectibles',
   ],
-  motocross: ['motocross'],
-  bicycles: ['bicycles'],
-  clothing: ['clothing', 'trainers_sneakers'],
-  surplus_flip: ['surplus_trader'],
+  motocross: ['motocross', 'mx'],
+  bicycles: ['bicycles', 'bikes'],
+  clothing: ['clothing', 'trainers_sneakers', 'clothing_specialist'],
+  surplus_flip: ['surplus_trader', 'surplus_flip'],
 };
 
 export const NICHE_DEFAULT_SPECIALIST: Record<SwishNicheId, string> = {
