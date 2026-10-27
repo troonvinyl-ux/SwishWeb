@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { useTable } from '@/hooks/useSupabaseQuery';
 import { formatCurrency } from '@/lib/utils';
 import { BarChart3, RefreshCw, TrendingUp, ShoppingCart, Package } from 'lucide-react';
@@ -9,6 +10,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 export default function EbayAnalytics() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const preferredNiche = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins').toLowerCase();
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
   const activeNiche = String((isOwner ? localStorage.getItem('swish_active_niche') : preferredNiche) || preferredNiche).toLowerCase();
@@ -27,9 +29,9 @@ export default function EbayAnalytics() {
 
   const queryOptions = {
     select: '*, items!inner(specialist_id)',
-    filter: { marketplace_id: 'ebay' },
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
     inFilter: specialistIds.length ? { 'items.specialist_id': specialistIds } : undefined,
-    enabled: specialistIds.length > 0,
+    enabled: Boolean(tenantId) && specialistIds.length > 0,
     limit: 1000,
   };
   const { data: salesData, isLoading: salesLoading, error: salesError } = useTable('sales', {
@@ -40,9 +42,9 @@ export default function EbayAnalytics() {
   });
   const { data: listingsData } = useTable('listings', {
     select: '*, items!inner(specialist_id)',
-    filter: { marketplace_id: 'ebay', status: 'active' },
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay', status: 'active' },
     inFilter: specialistIds.length ? { 'items.specialist_id': specialistIds } : undefined,
-    enabled: specialistIds.length > 0,
+    enabled: Boolean(tenantId) && specialistIds.length > 0,
     limit: 1000,
   });
 
@@ -72,7 +74,7 @@ export default function EbayAnalytics() {
     ? sourceRows.reduce((sum, row) => sum + Number(row.net_revenue || 0), 0)
     : grossRevenue;
   const avgSale = sourceRows.length ? grossRevenue / sourceRows.length : 0;
-  const loading = salesLoading || ordersLoading;
+  const loading = tenantLoading || salesLoading || ordersLoading;
   const error = salesError || ordersError;
 
   return (
