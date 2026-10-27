@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, Plus, Trash2, Upload, Zap } from 'lucide-react';
 import { toast } from 'sonner';
-import { callEdgeFunction, getSupabaseClientAsync } from '@/lib/supabase';
+import { callEdgeFunction } from '@/lib/supabase';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 
 type CoinRow = { id: string; label: string; front?: File; back?: File; weight: string; diameter: string; notes: string; status: 'ready' | 'running' | 'done' | 'error'; result?: any; error?: string };
@@ -62,7 +62,7 @@ export default function SpecialistTools() {
     <div className="flex items-center gap-3"><Link to="/tools" className="rounded-lg border border-border p-2" aria-label="Back to app tools"><ArrowLeft className="h-4 w-4" /></Link><div><p className="text-xs font-bold uppercase tracking-widest text-primary">SWISH specialist workflow</p><h1 className="page-title">{title}</h1><p className="mt-1 text-sm text-muted-foreground">Uses the existing authenticated SWISH backend. Results are not automatically confirmed or published.</p></div></div>
     <div className="swish-card flex items-start gap-3 p-4"><Zap className="mt-1 h-5 w-5 shrink-0 text-primary"/><p className="text-sm leading-6">Upload both sides and optional measurements. The existing specialist identification function processes each coin in sequence. Check evidence and confidence carefully; an AI suggestion is not a verified identification or valuation.</p></div>
     <div className="flex flex-wrap items-center justify-between gap-3"><div className="text-sm text-muted-foreground">{rows.length} coin(s) · {completed} completed</div><button onClick={add} disabled={running || rows.length >= 100} className="btn-secondary inline-flex items-center gap-2"><Plus className="h-4 w-4"/>Add coin</button></div>
-    {rows.map((row, index) => <section key={row.id} className="swish-card space-y-4 p-5">
+    {rows.map((row) => <section key={row.id} className="swish-card space-y-4 p-5">
       <div className="flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">{row.label}</h2><div className="flex items-center gap-2 text-sm">{row.status === 'done' ? <CheckCircle2 className="h-4 w-4 text-emerald-500"/> : row.status === 'running' ? <Loader2 className="h-4 w-4 animate-spin"/> : row.status === 'error' ? <AlertCircle className="h-4 w-4 text-destructive"/> : null}<span className="capitalize text-muted-foreground">{row.status}</span><button onClick={() => remove(row.id)} disabled={running || rows.length === 1} className="rounded-md p-2 text-muted-foreground hover:text-destructive" aria-label={`Remove ${row.label}`}><Trash2 className="h-4 w-4"/></button></div></div>
       <div className="grid gap-3 md:grid-cols-2">
         {(['front','back'] as const).map(side => <label key={side} className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border p-4 text-center hover:border-primary"><Upload className="h-5 w-5 text-primary"/><span className="font-medium">{side === 'front' ? 'Obverse / front' : 'Reverse / back'} photo</span><span className="max-w-full truncate text-xs text-muted-foreground">{row[side]?.name || 'Choose image'}</span><input type="file" accept="image/*" capture="environment" className="sr-only" disabled={running} onChange={e => patch(row.id, { [side]: e.target.files?.[0], status: 'ready', result: undefined, error: undefined })}/></label>)}
