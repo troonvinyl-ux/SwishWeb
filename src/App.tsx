@@ -100,11 +100,8 @@ function AppRoutes() {
   // Not signed in — login page is branded from the current product domain.
   if (!user) return <LoginPage />;
 
-  // A product domain cannot be used to silently switch an account's niche.
-  // Existing backend entitlement metadata must agree with the requested product.
-  if (hostProduct && !isOwner && String(user.user_metadata?.preferred_niche || '') !== hostProduct.id) {
-    return <main className="min-h-screen flex items-center justify-center bg-background p-6"><section className="max-w-lg rounded-2xl border border-border bg-card p-8 text-center"><h1 className="text-2xl font-bold">Product access needs attention</h1><p className="mt-3 text-sm text-muted-foreground">This account is not currently assigned to {hostProduct.name}. Please contact support to correct the existing product entitlement. No other product workspace has been opened.</p></section></main>;
-  }
+  // Product hostname selects the workspace entry point; account access is handled by
+  // the existing workspace/tenant entitlement rules, not a single preferred_niche field.
 
   if (hostProduct && !isOwner) {
     const path = location.pathname;
