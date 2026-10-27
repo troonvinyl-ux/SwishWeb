@@ -1,83 +1,140 @@
-import { ArrowRight, Coins, Shirt, Bike, Wrench, Smartphone, Gamepad2, Sofa, Crown, LogIn, Sparkles } from 'lucide-react';
+import {
+  ArrowRight, Bike, BookOpen, BrainCircuit, Camera, ChartNoAxesColumnIncreasing,
+  CheckCircle2, Coins, Crown, Gamepad2, LogIn, Shirt, Smartphone,
+  Sparkles, Tag, Trophy, Wrench, Users, Watch, Gem, ShoppingCart, Heart,
+} from 'lucide-react';
 import heroImage from '@/assets/swish-hero.jpg';
 
 type Niche = {
   name: string;
   slug: string;
+  eyebrow: string;
   description: string;
+  tagline: string;
   icon: typeof Coins;
-  tone: string;
+  button: string;
+  color: string;
+  glow: string;
 };
 
 const niches: Niche[] = [
-  { name: 'Coin Flipper', slug: 'coins', description: 'Identify, research, value and sell coins.', icon: Coins, tone: 'from-amber-950 to-stone-950 border-amber-300/30 text-amber-100' },
-  { name: 'Clothes Flipper', slug: 'clothes', description: 'Identify fashion, brands and resale value.', icon: Shirt, tone: 'from-pink-950 to-zinc-950 border-pink-400/30 text-pink-100' },
-  { name: 'MX Flipper', slug: 'mx', description: 'Motocross bikes, riding kit and parts.', icon: Wrench, tone: 'from-orange-950 to-zinc-950 border-orange-400/30 text-orange-100' },
-  { name: 'Bike Flipper', slug: 'bikes', description: 'Bicycles, components and cycling resale.', icon: Bike, tone: 'from-lime-950 to-zinc-950 border-lime-400/30 text-lime-100' },
-  { name: 'Threads Flip', slug: 'threads', description: 'A specialist fashion resale workspace.', icon: Shirt, tone: 'from-fuchsia-950 to-zinc-950 border-fuchsia-400/30 text-fuchsia-100' },
-  { name: 'Surplus Flip', slug: 'surplus', description: 'Job lots, clearance stock and manifests.', icon: Sofa, tone: 'from-teal-950 to-zinc-950 border-teal-400/30 text-teal-100' },
-  { name: 'Electronics', slug: 'electronics', description: 'Use SWISH to organise electronics resale in the shared workspace.', icon: Smartphone, tone: 'from-sky-950 to-zinc-950 border-sky-400/30 text-sky-100' },
-  { name: 'Games & Collectables', slug: 'games', description: 'Use the shared SWISH workspace for games and collectables.', icon: Gamepad2, tone: 'from-violet-950 to-zinc-950 border-violet-400/30 text-violet-100' },
-  { name: 'Home & Tools', slug: 'home', description: 'Use the shared SWISH workspace for furniture, tools and home stock.', icon: Wrench, tone: 'from-slate-800 to-zinc-950 border-slate-300/30 text-slate-100' },
+  { name: 'Coin Flipper', slug: 'coins', eyebrow: 'ANCIENT · ISLAMIC · WORLD', description: 'Identify · Value · Collect · Sell', tagline: 'History has value.', icon: Coins, button: 'Enter Coins', color: 'from-amber-800 via-stone-950 to-black', glow: 'group-hover:shadow-amber-500/20' , },
+  { name: 'MX Flipper', slug: 'mx', eyebrow: 'DIRT BIKES · PARTS · GEAR', description: 'Find · Flip · Service · Repeat', tagline: 'Built for the next ride.', icon: Wrench, button: 'Enter MX', color: 'from-orange-700 via-red-950 to-black', glow: 'group-hover:shadow-orange-500/20' },
+  { name: 'Bike Flipper', slug: 'bikes', eyebrow: 'BICYCLES · PARTS · UPGRADES', description: 'Buy · Assess · Upgrade · Sell', tagline: 'Every ride has a value.', icon: Bike, button: 'Enter Bikes', color: 'from-green-700 via-emerald-950 to-black', glow: 'group-hover:shadow-green-500/20' },
+  { name: 'Threads Flip', slug: 'threads', eyebrow: 'CLOTHING · STREETWEAR · BRANDS', description: 'Vintage · Designer · Style · Sell', tagline: 'Spot the next big label.', icon: Shirt, button: 'Enter Threads', color: 'from-pink-700 via-fuchsia-950 to-black', glow: 'group-hover:shadow-pink-500/20' },
+  { name: 'Card Flipper', slug: 'games', eyebrow: 'TRADING CARDS · TCG · SPORTS', description: 'Identify · Grade · Value · List', tagline: 'Collect smarter.', icon: Gamepad2, button: 'Enter Cards', color: 'from-violet-700 via-purple-950 to-black', glow: 'group-hover:shadow-violet-500/20' },
+  { name: 'Antique Flipper', slug: 'home', eyebrow: 'ANTIQUES · VINTAGE · COLLECTABLES', description: 'Identify · Value · Restore · Sell', tagline: 'Old treasures. New value.', icon: Watch, button: 'Enter Antiques', color: 'from-yellow-800 via-amber-950 to-black', glow: 'group-hover:shadow-yellow-500/20' },
+  { name: 'Fossil Flipper', slug: 'surplus', eyebrow: 'FOSSILS · MINERALS · SPECIMENS', description: 'Identify · Value · Collect · Sell', tagline: 'Discover what it is worth.', icon: Gem, button: 'Enter Fossils', color: 'from-cyan-700 via-sky-950 to-black', glow: 'group-hover:shadow-cyan-500/20' },
+  { name: 'Beauty Flipper', slug: 'clothes', eyebrow: 'COSMETICS · FRAGRANCE · SKINCARE', description: 'Identify · Value · Bundle · Sell', tagline: 'Find value in every product.', icon: Heart, button: 'Enter Beauty', color: 'from-rose-700 via-pink-950 to-black', glow: 'group-hover:shadow-rose-500/20' },
+  { name: 'Tech Flipper', slug: 'electronics', eyebrow: 'PHONES · CONSOLES · GADGETS', description: 'Test · Value · Refurb · Sell', tagline: 'Make tech work for you.', icon: Smartphone, button: 'Enter Tech', color: 'from-blue-700 via-indigo-950 to-black', glow: 'group-hover:shadow-blue-500/20' },
 ];
 
 const existingEntryRoutes: Record<string, string> = {
-  coins: '/coins',
-  clothes: '/clothes',
-  mx: '/mx',
-  bikes: '/bikes',
-  threads: '/threads',
-  surplus: '/surplus',
+  coins: '/coins', mx: '/mx', bikes: '/bikes', threads: '/threads',
+  games: '/games', home: '/home', surplus: '/surplus', clothes: '/clothes',
+  electronics: '/electronics',
 };
 
-// Until a specialist workspace is registered in the existing app, send the
-// remaining broad categories to the existing shared engine with its available
-// niche selected. This avoids dead links and does not pretend separate products exist.
-const routeFor = (slug: string) => existingEntryRoutes[slug] || '/workspace/coins';
+const features = [
+  { icon: BrainCircuit, title: 'AI IDENTIFICATION', subtitle: 'Photos, video & real-world data' },
+  { icon: ChartNoAxesColumnIncreasing, title: 'LIVE MARKET VALUES', subtitle: 'eBay & sales history' },
+  { icon: Tag, title: 'PROFIT CALCULATORS', subtitle: 'Know what items are worth' },
+  { icon: BookOpen, title: 'EXPERT GUIDES', subtitle: 'Learn & improve' },
+];
 
 export default function SwishFlipHome() {
   return (
-    <main className="min-h-screen bg-[#080b12] text-white">
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-[#080b12]/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-          <a href="/" className="flex items-center gap-3" aria-label="SWISHFLIP home">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-lime-200 to-amber-300 text-slate-950 shadow-lg"><Crown className="h-6 w-6" /></span>
-            <span className="text-xl font-black tracking-tight">SWISH<span className="text-lime-300">FLIP</span></span>
+    <main className="min-h-screen overflow-hidden bg-[#07080c] text-white">
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-[#08090d]/95 shadow-xl shadow-black/30 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <a href="/" aria-label="SWISHFLIP home" className="flex shrink-0 flex-col leading-none">
+            <span className="text-3xl font-black italic tracking-[-.08em] sm:text-4xl">SWISH<span className="text-yellow-300">FLIP</span><sup className="ml-1 text-yellow-300">↗</sup></span>
+            <span className="mt-1 text-[9px] font-bold tracking-[.24em] text-slate-300 sm:text-[10px]">IDENTIFY · VALUE · FLIP · PROFIT</span>
           </a>
-          <a href="/coins" className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold hover:border-lime-300/60"><LogIn className="h-4 w-4" /> Member sign in</a>
+          <nav className="hidden items-center gap-5 lg:flex">
+            <a href="/" className="border-b-2 border-yellow-300 px-1 py-3 text-sm font-bold text-yellow-200">⌂ Home</a>
+            <a href="#niches" className="px-1 py-3 text-sm font-semibold text-slate-200 transition hover:text-yellow-200">Niches</a>
+            <a href="#how-it-works" className="px-1 py-3 text-sm font-semibold text-slate-200 transition hover:text-yellow-200">How It Works</a>
+            <a href="#pricing" className="px-1 py-3 text-sm font-semibold text-slate-200 transition hover:text-yellow-200">Pricing</a>
+            <a href="#community" className="px-1 py-3 text-sm font-semibold text-slate-200 transition hover:text-yellow-200">Community</a>
+          </nav>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <a href="/coins" className="hidden items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm font-bold transition hover:border-yellow-300/60 sm:inline-flex"><LogIn className="h-4 w-4" /> Login</a>
+            <a href="#niches" className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-yellow-200 to-yellow-400 px-4 py-3 text-sm font-black text-black shadow-lg shadow-yellow-500/20 transition hover:brightness-110 sm:px-6">Get Started <ArrowRight className="h-4 w-4" /></a>
+          </div>
         </div>
       </header>
-      <section className="relative isolate overflow-hidden border-b border-white/10">
-        <div className="pointer-events-none absolute inset-0 -z-20 bg-cover bg-center opacity-30" style={{ backgroundImage: `url(${heroImage})` }} />
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-[#080b12] via-[#080b12]/90 to-[#080b12]/45" />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_75%_25%,rgba(190,242,100,0.18),transparent_40%),radial-gradient(ellipse_at_15%_75%,rgba(56,189,248,0.10),transparent_38%)]" />
-        <div className="mx-auto max-w-7xl px-5 py-14 md:py-20">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-lime-300/30 bg-lime-300/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[.18em] text-lime-200"><Sparkles className="h-3.5 w-3.5" /> One shared SWISH engine</div>
-          <h1 className="max-w-3xl text-5xl font-black leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl">Find it.<br/><span className="text-lime-300">Value it.</span><br/>Flip it.</h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">Choose the kind of stock you sell. Each card opens an entry point in the existing SWISH web app. No niche downloads, no drop-down menus and no niche search.</p>
+
+      <section className="relative isolate border-b border-white/10">
+        <div className="absolute inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url(${heroImage})` }} />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/95 via-black/75 to-black/45" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_25%,rgba(250,204,21,.18),transparent_50%)]" />
+        <div className="mx-auto grid max-w-[1500px] items-center gap-8 px-5 py-12 sm:px-8 md:grid-cols-[1.15fr_.85fr] md:py-16">
+          <div>
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-yellow-300/30 bg-yellow-300/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-[.22em] text-yellow-200"><Sparkles className="h-4 w-4" /> One platform · One shared engine</div>
+            <h1 className="max-w-3xl text-5xl font-black italic leading-[.92] tracking-[-.045em] sm:text-6xl lg:text-7xl xl:text-8xl">ONE PLATFORM<br/><span className="text-yellow-300">NINE NICHES</span></h1>
+            <p className="mt-5 text-base font-black uppercase tracking-[.18em] text-white sm:text-xl">Turn knowledge into profit</p>
+            <div className="mt-8 grid max-w-2xl grid-cols-3 gap-3 sm:grid-cols-5">
+              {[
+                { icon: Camera, title: 'IDENTIFY', sub: 'with AI' },
+                { icon: ChartNoAxesColumnIncreasing, title: 'REAL MARKET', sub: 'data' },
+                { icon: Tag, title: 'VALUE', sub: 'with confidence' },
+                { icon: ShoppingCart, title: 'LIST & SELL', sub: 'faster' },
+                { icon: Trophy, title: 'BIGGER', sub: 'opportunities' },
+              ].map(({icon: Icon,title,sub}) => <div key={title} className="border-r border-white/15 px-2 text-center last:border-0"><Icon className="mx-auto mb-2 h-6 w-6 text-yellow-200 sm:h-7 sm:w-7"/><p className="text-[10px] font-black sm:text-xs">{title}</p><p className="text-[10px] text-slate-300 sm:text-xs">{sub}</p></div>)}
+            </div>
+          </div>
+          <div className="hidden md:block">
+            <div className="rounded-2xl border border-yellow-200/30 bg-black/35 p-5 shadow-2xl shadow-black/50 backdrop-blur-sm">
+              <p className="text-xs font-black uppercase tracking-[.2em] text-yellow-200">Your flipping advantage</p>
+              <div className="mt-4 space-y-4">
+                {[
+                  ['01','Identify items faster','AI-assisted recognition'],
+                  ['02','Price with confidence','Market data and research'],
+                  ['03','List and sell smarter','One streamlined workflow'],
+                ].map(([number,title,sub])=><div key={number} className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-yellow-300/25 bg-yellow-300/10 text-sm font-black text-yellow-200">{number}</span><span><span className="block font-extrabold">{title}</span><span className="text-sm text-slate-300">{sub}</span></span><CheckCircle2 className="ml-auto h-5 w-5 shrink-0 text-lime-300"/></div>)}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
-      <section id="niches" className="mx-auto max-w-7xl px-5 py-10 md:py-14">
-        <div className="mb-7 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div><p className="text-sm font-bold uppercase tracking-[.2em] text-lime-300">Choose your workspace</p><h2 className="mt-2 text-3xl font-black sm:text-4xl">Nine ways to SWISH</h2></div>
-          <p className="text-sm text-slate-400">One web app · One existing backend · Nine entry cards</p>
+
+      <section id="niches" className="mx-auto max-w-[1500px] px-4 py-7 sm:px-6 sm:py-9">
+        <div className="mb-5 flex items-end justify-between gap-3">
+          <div><p className="text-[10px] font-black uppercase tracking-[.22em] text-yellow-300">Pick your speciality</p><h2 className="mt-1 text-2xl font-black sm:text-3xl">Choose your SWISHFLIP app</h2></div>
+          <p className="hidden text-right text-xs text-slate-400 sm:block">One login · One platform · No extra downloads</p>
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {niches.map((niche, index) => {
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {niches.map((niche) => {
             const Icon = niche.icon;
-            return (
-              <a key={niche.slug} href={routeFor(niche.slug)} aria-label={`Open ${niche.name} workspace`} className={`group relative isolate flex min-h-52 flex-col overflow-hidden rounded-2xl border bg-gradient-to-br p-5 shadow-xl transition duration-300 hover:-translate-y-1 hover:border-lime-300/60 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-lime-300 ${niche.tone}`}>
-                <span className="pointer-events-none absolute -right-5 -top-5 -z-10 opacity-[.12] transition duration-500 group-hover:scale-110"><Icon className="h-40 w-40" /></span>
-                <span className="flex items-center justify-between gap-3"><span className="grid h-12 w-12 place-items-center rounded-xl border border-white/15 bg-black/30"><Icon className="h-6 w-6" /></span><span className="rounded-full border border-white/15 bg-black/30 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest">Open app</span></span>
-                <span className="mt-8 text-2xl font-black tracking-tight">{niche.name}</span>
-                <span className="mt-2 max-w-sm text-sm leading-6 text-white/70">{niche.description}</span>
-                <span className="mt-auto pt-5 inline-flex items-center gap-2 text-sm font-bold">Open workspace <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
-              </a>
-            );
+            return <a key={niche.slug} href={existingEntryRoutes[niche.slug] || '/workspace/coins'} aria-label={`Enter ${niche.name}`} className={`group relative isolate flex min-h-[260px] flex-col overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br ${niche.color} p-4 shadow-lg transition duration-300 hover:-translate-y-1 hover:border-white/60 hover:shadow-2xl ${niche.glow} focus:outline-none focus:ring-2 focus:ring-yellow-300 sm:min-h-[285px]`}>
+              <div className="pointer-events-none absolute inset-0 -z-10 opacity-20 mix-blend-screen transition duration-500 group-hover:opacity-35" style={{ backgroundImage: `url(${heroImage})`, backgroundSize: 'cover', backgroundPosition: niche.slug === 'coins' ? 'left center' : niche.slug === 'mx' ? 'center' : 'right center' }} />
+              <div className="pointer-events-none absolute -right-5 -top-6 -z-10 rotate-[-12deg] opacity-[.16] transition duration-500 group-hover:scale-110 group-hover:opacity-30"><Icon className="h-44 w-44 sm:h-52 sm:w-52"/></div>
+              <div className="flex items-start justify-between gap-3"><span className="rounded-full border border-white/20 bg-black/35 px-2.5 py-1 text-[9px] font-black tracking-[.12em] text-white/90">{niche.eyebrow}</span><Icon className="h-6 w-6 shrink-0 drop-shadow-lg"/></div>
+              <div className="mt-auto pt-8">
+                <p className="mb-1 text-[10px] font-bold italic text-white/70">{niche.tagline}</p>
+                <h3 className="text-3xl font-black italic leading-none tracking-[-.04em] drop-shadow-lg sm:text-4xl">{niche.name.toUpperCase()}</h3>
+                <p className="mt-2 text-xs font-semibold text-white/85">{niche.description}</p>
+                <span className="mt-4 flex items-center justify-between rounded-xl border border-white/30 bg-gradient-to-r from-yellow-100 to-yellow-400 px-4 py-3 text-sm font-black text-black shadow-lg transition group-hover:brightness-110"><span>{niche.button}</span><ArrowRight className="h-4 w-4 transition group-hover:translate-x-1"/></span>
+              </div>
+            </a>;
           })}
         </div>
       </section>
-      <footer className="border-t border-white/10"><div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-7 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between"><span>© {new Date().getFullYear()} SWISHFLIP. Built for the business of flipping.</span><span>One shared engine. No duplicate databases.</span></div></footer>
+
+      <section id="how-it-works" className="mx-auto max-w-[1500px] px-4 pb-4 sm:px-6">
+        <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-r from-[#15161c] to-[#08090d] md:grid-cols-4">
+          {features.map(({icon:Icon,title,subtitle},i)=><div key={title} className={`flex items-center gap-3 border-white/10 p-4 sm:p-5 ${i%2===0?'border-r':''} ${i<2?'border-b md:border-b-0':''} ${i===1?'md:border-r':''} ${i===2?'md:border-r':''}`}><Icon className="h-7 w-7 shrink-0 text-yellow-200 sm:h-9 sm:w-9"/><div><p className="text-[10px] font-black sm:text-xs">{title}</p><p className="mt-1 text-[10px] leading-4 text-slate-400 sm:text-xs">{subtitle}</p></div></div>)}
+        </div>
+      </section>
+
+      <section id="pricing" className="mx-auto max-w-[1500px] px-4 pb-8 pt-3 sm:px-6">
+        <a id="community" href="/coins" className="group flex items-center justify-between gap-4 rounded-2xl border border-yellow-200/40 bg-gradient-to-r from-yellow-200 via-yellow-300 to-amber-400 p-4 text-black shadow-xl shadow-yellow-500/10 transition hover:brightness-105 sm:px-7 sm:py-5">
+          <span className="flex items-center gap-4"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-black/10"><Crown className="h-8 w-8"/></span><span><span className="block text-xl font-black sm:text-2xl">GET SWISHFLIP PRO</span><span className="mt-1 block text-xs font-semibold sm:text-sm">Access all niches · Advanced tools · More opportunities</span></span></span>
+          <ArrowRight className="h-7 w-7 shrink-0 transition group-hover:translate-x-1"/>
+        </a>
+      </section>
+      <footer className="border-t border-white/10 px-5 py-5 text-center text-xs text-slate-500">© {new Date().getFullYear()} SWISHFLIP · Identify · Value · Flip · Profit</footer>
     </main>
   );
 }
