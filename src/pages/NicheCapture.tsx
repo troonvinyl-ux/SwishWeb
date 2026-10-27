@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useInsert } from '@/hooks/useSupabaseQuery';
 import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { getDefaultSpecialistForNiche } from '@/lib/niche';
 import { ArrowLeft, Save, Package, Shirt, Bike, Coins, Wrench, Gamepad2, Gem, FlaskConical, Monitor, Hammer, Sparkles, Camera, CheckCircle2, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -45,6 +47,7 @@ export default function NicheCapture() {
           : routeNiche;
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const insert = useInsert('items');
   const config = useMemo(() => CONFIG[niche] || CONFIG.generic, [niche]);
   const Icon = config.icon;
@@ -272,17 +275,16 @@ export default function NicheCapture() {
     if (niche === 'clothing' && !clothingIdentified) { toast.error('Photograph the brand label and run Threads Flip identification before saving'); return; }
     if (!f('title').trim()) { toast.error('The AI needs to identify an item title before saving. Run identification, then review or edit the title.'); return; }
     if (!user?.id) { toast.error('Please sign in before creating inventory'); return; }
+    if (!tenantId || tenantLoading) { toast.error('Your SWISH workspace is not ready.'); return; }
     const sb = getSupabaseClient() || await getSupabaseClientAsync();
     if (!sb) { toast.error('Backend not connected'); return; }
-    const { data: tenants, error } = await sb.from('tenants').select('id').order('created_at',{ascending:true}).limit(1);
-    if (error || !tenants?.[0]?.id) { toast.error(error?.message || 'No workspace found for this account'); return; }
     const attributes:Record<string,string> = {};
     config.fields.forEach(field => { if (f(field.key).trim()) attributes[field.key]=f(field.key).trim(); });
     const row:Record<string,unknown> = {
-      tenant_id:tenants[0].id,
+      tenant_id:tenantId,
       canonical_title:f('title').trim(),
       description:f('description').trim(),
-      specialist_id:config.specialistId,
+      specialist_id: niche === 'bikes' ? getDefaultSpecialistForNiche('bicycles') : niche === 'mx' ? getDefaultSpecialistForNiche('motocross') : niche === 'surplus_flip' ? getDefaultSpecialistForNiche('surplus_flip') : config.specialistId,
       status:'review',
       disposition_decision:'pending',
       condition:f('condition'),
@@ -376,7 +378,7 @@ export default function NicheCapture() {
         <section className="space-y-3 rounded-3xl border p-4 sm:p-5" style={{background:'#160E16',borderColor:'#301830'}}>
           <h2 className="text-lg font-bold">3. Purchase and value details</h2><div className="grid grid-cols-1 gap-3 sm:grid-cols-3">{[['cost','Purchase cost (£)'],['valuation','Estimated value (£)'],['sale_price','Planned listing price (£)']].map(([key,label])=><div key={key}><label className="mb-1 block text-sm" style={{color:'#9A7090'}}>{label}</label><input className="input-field mt-1" type="number" min="0" step="0.01" value={f(key)} onChange={e=>setF(key,e.target.value)}/></div>)}</div><p className="text-xs" style={{color:'#9A7090'}}>Values entered here are estimates, not verified sold-comparable valuations.</p>
         </section>
-        <div className="flex flex-wrap justify-between gap-3"><Link to="/inventory" className="btn-secondary"><Package className="h-4 w-4"/>Wardrobe / Inventory</Link><button className="btn-primary" onClick={save} disabled={insert.isPending || !clothingIdentified}><Save className="h-4 w-4"/>{insert.isPending?'Saving…':!clothingIdentified?'Identify photos to continue':'Save item for review'}</button></div>
+        <div className="flex flex-wrap justify-between gap-3"><Link to="/inventory" className="btn-secondary"><Package className="h-4 w-4"/>Wardrobe / Inventory</Link><button className="btn-primary" onClick={save} disabled={insert.isPending || tenantLoading || !tenantId || !clothingIdentified}><Save className="h-4 w-4"/>{insert.isPending?'Saving…':!clothingIdentified?'Identify photos to continue':'Save item for review'}</button></div>
       </main>
     </div>;
   }
@@ -389,6 +391,6 @@ export default function NicheCapture() {
       <div><label className="text-xs text-muted-foreground">Description / notes</label><textarea className="input-field mt-1" rows={4} value={f('description')} onChange={e=>setF('description',e.target.value)} placeholder="Visible details, label text, measurements, included accessories and evidence…"/></div>
     </div>
     <div className="swish-card p-4 space-y-3"><h2 className="font-semibold">2. Purchase and value details</h2><div className="grid grid-cols-1 sm:grid-cols-3 gap-3">{[['cost','Purchase cost (£)'],['valuation','Estimated value (£)'],['sale_price','Planned listing price (£)']].map(([key,label])=><div key={key}><label className="text-xs text-muted-foreground">{label}</label><input className="input-field mt-1" type="number" min="0" step="0.01" value={f(key)} onChange={e=>setF(key,e.target.value)}/></div>)}</div><p className="text-xs text-muted-foreground">Values entered here are user estimates, not verified sold-comparable valuations.</p></div>
-    <div className="flex flex-wrap justify-between gap-3"><Link to="/inventory" className="btn-secondary"><Package className="w-4 h-4"/>Inventory</Link><button className="btn-primary" onClick={save} disabled={insert.isPending}><Save className="w-4 h-4"/>{insert.isPending?'Saving…':niche==='coins'?'Open coin capture':'Save for review'}</button></div>
+    <div className="flex flex-wrap justify-between gap-3"><Link to="/inventory" className="btn-secondary"><Package className="w-4 h-4"/>Inventory</Link><button className="btn-primary" onClick={save} disabled={insert.isPending || tenantLoading || !tenantId}><Save className="w-4 h-4"/>{insert.isPending?'Saving…':niche==='coins'?'Open coin capture':'Save for review'}</button></div>
   </div>;
 }
