@@ -289,7 +289,11 @@ export default function Identify() {
     },
   });
   const coinAllowed = isOwner || getSpecialistIdsForNiche('coins').some(id => activeSpecialists.includes(id));
-  const specialistIds = getSpecialistIdsForNiche(getActiveNicheId());
+  const specialistIds = getSpecialistIdsForNiche('coins');
+  useEffect(() => {
+    localStorage.setItem('swish_active_niche', 'coins');
+    document.documentElement.dataset.niche = 'coins';
+  }, []);
   const { data: inventoryResults } = useTable('items', {
     filter: { tenant_id: tenantId },
     inFilter: { specialist_id: specialistIds },
