@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getSupabaseClientAsync } from '@/lib/supabase';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useInsert, useTableRow } from '@/hooks/useSupabaseQuery';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { callEdgeFunction } from '@/lib/supabase';
 import {
   ArrowLeft, Save, Zap, Package, AlertTriangle, Info,
@@ -192,7 +193,8 @@ export default function ListingNew() {
   const priceParam  = searchParams.get('price') || '';
 
   // Load linked inventory record to extract AI identification data
-  const { data: linkedItem } = useTableRow('items', itemIdParam || null);
+  const { tenantId } = useCurrentTenantId();
+  const { data: linkedItem } = useTableRow('items', itemIdParam || null, '*', tenantId);
   const inv = linkedItem as Record<string, unknown> | null;
 
   // Initial param pre-fill (lightweight — just the URL params)
