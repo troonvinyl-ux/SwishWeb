@@ -22,7 +22,7 @@ export default function EbayMessages() {
     order: { column: 'received_at', ascending: false },
   });
 
-  const update = useUpdate('ebay_messages');
+  const update = useUpdate('ebay_messages', tenantId);
   const items = (data || []) as Record<string, unknown>[];
   const unread = items.filter(m => !m.is_read).length;
 
@@ -41,18 +41,11 @@ export default function EbayMessages() {
     try {
       const sb = getSupabaseClient();
       if (!sb || !user) throw new Error('Please sign in again before replying.');
-      const { data: membership, error: membershipError } = await sb
-        .from('tenant_memberships')
-        .select('tenant_id')
-        .eq('user_id', user.id)
-        .limit(1)
-        .maybeSingle();
-      if (membershipError) throw membershipError;
-      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready.');
+      if (!tenantId || tenantLoading) throw new Error('Your SWISH workspace is not ready.');
 
       const { data, error } = await callEdgeFunction<Record<string, unknown>>('swish-ebay-messages', {
         route: 'send_reply',
-        tenantId: membership.tenant_id,
+        tenantId,
         messageId: selected.id,
         replyText: reply.trim(),
         buyerUsername: String(selected.buyer_username || ''),
@@ -84,7 +77,7 @@ export default function EbayMessages() {
       if (membershipError) throw membershipError;
       if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready.');
       const { error } = await callEdgeFunction('swish-ebay-messages', {
-        route: 'sync_messages', tenantId: membership.tenant_id, daysBack: 30,
+        route: 'sync_messages', tenantId, daysBack: 30,
       }, sb);
       if (error) throw error;
       await qc.invalidateQueries({ queryKey: ['ebay_messages'] });
