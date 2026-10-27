@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Camera, Package, Store, UserRound } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
+import { getSpecialistIdsForNiche, type SwishNicheId } from '@/lib/niche';
 
 const VALID_NICHES = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'];
 const PRODUCT_NAMES: Record<string, string> = {
@@ -45,16 +49,58 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { user } = useAuth();
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
-  // The owner can switch between all niche skins; subscriber accounts remain
-  // anchored to their assigned preferred niche rather than browser storage.
-  const preferred = String(localStorage.getItem('swish_active_niche') || user?.user_metadata?.preferred_niche || 'coins');
-  const niche = VALID_NICHES.includes(preferred) ? preferred : 'coins';
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  const [selectedNiche, setSelectedNiche] = useState(() => {
+    const saved = localStorage.getItem('swish_active_niche') || user?.user_metadata?.preferred_niche || 'coins';
+    return VALID_NICHES.includes(saved) ? saved : 'coins';
+  });
+  const { data: activeSpecialists = [], isLoading: entitlementsLoading } = useQuery({
+    queryKey: ['app_shell_niche_entitlements', tenantId],
+    enabled: Boolean(tenantId) && !isOwner,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const sb = getSupabaseClient() || await getSupabaseClientAsync();
+      if (!sb || !tenantId) return [] as string[];
+      const { data, error } = await sb.from('tenants').select('active_specialists').eq('id', tenantId).maybeSingle();
+      if (error) throw error;
+      const raw = data?.active_specialists;
+      if (Array.isArray(raw)) return raw.map(String);
+      if (typeof raw === 'string') { try { const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed.map(String) : []; } catch { return []; } }
+      return [] as string[];
+    },
+  });
+  const entitledNiches = useMemo(() => isOwner ? VALID_NICHES : VALID_NICHES.filter(id => getSpecialistIdsForNiche(id as SwishNicheId).some(specialist => activeSpecialists.includes(specialist))), [isOwner, activeSpecialists]);
+  const niche = selectedNiche;
   const isClothingWorkspace = niche === 'clothing' && location.pathname.startsWith('/workspace/clothing');
   const isAdminScreen = isOwner && (location.pathname.startsWith('/master-admin') || location.pathname === '/niches');
 
   useEffect(() => {
+    const saved = localStorage.getItem('swish_active_niche') || user?.user_metadata?.preferred_niche || 'coins';
+    if (VALID_NICHES.includes(saved)) setSelectedNiche(saved);
+  }, [location.pathname, user?.user_metadata?.preferred_niche]);
+
+  useEffect(() => {
+    if (isOwner || tenantLoading || entitlementsLoading) return;
+    if (!entitledNiches.length) return;
+    if (!entitledNiches.includes(selectedNiche)) {
+      const preferred = String(user?.user_metadata?.preferred_niche || '');
+      const replacement = entitledNiches.includes(preferred) ? preferred : entitledNiches[0];
+      localStorage.setItem('swish_active_niche', replacement);
+      localStorage.setItem('swish_active_niche_name', PRODUCT_NAMES[replacement] || replacement);
+      setSelectedNiche(replacement);
+    }
+  }, [isOwner, tenantLoading, entitlementsLoading, entitledNiches, selectedNiche, user?.user_metadata?.preferred_niche]);
+
+  useEffect(() => {
     document.documentElement.dataset.niche = niche;
   }, [niche, location.pathname]);
+
+  if (!isOwner && (tenantLoading || entitlementsLoading)) {
+    return <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">Loading your SWISH workspace…</div>;
+  }
+  if (!isOwner && !entitledNiches.length) {
+    return <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background p-6 text-center"><h1 className="text-xl font-bold">No niche access is configured</h1><p className="text-sm text-muted-foreground">Your workspace does not currently have an active specialist entitlement. Please contact the SWISH owner.</p></div>;
+  }
 
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-background">
