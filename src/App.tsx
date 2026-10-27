@@ -127,9 +127,9 @@ function AppRoutes() {
           <Route path="/electronics" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
           <Route path="/games" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
           <Route path="/home" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
+          <Route path="/workspace/:niche" element={<NicheWorkspace />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/niches" element={<NicheEntry />} />
-          <Route path="/workspace/:niche" element={<NicheWorkspace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/command-centre" element={<CommandCentre />} />
 
