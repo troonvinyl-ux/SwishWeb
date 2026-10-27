@@ -57,16 +57,13 @@ export default function ListingEditor() {
     try {
       const sb = await getSupabaseClientAsync();
       if (!sb) throw new Error('SWISH backend is not connected');
-      const { data: membership, error: membershipError } = await sb.from('tenant_memberships')
-        .select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
-      if (membershipError) throw membershipError;
-      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready');
+      if (!tenantId) throw new Error('Your SWISH workspace is not ready');
       const { data: payload, error } = await callEdgeFunction<{
         success?: boolean; error?: string;
         suggestions?: Array<{ id?: string | number; name?: string; isLeaf?: boolean }>;
       }>('swish-ebay-list', {
         route: 'get_category_suggestions',
-        tenantId: String(membership.tenant_id),
+        tenantId,
         query: title.slice(0, 100),
       });
       if (error) throw error;
@@ -129,11 +126,8 @@ export default function ListingEditor() {
     try {
       const sb = await getSupabaseClientAsync();
       if (!sb) throw new Error('SWISH backend is not connected');
-      const { data: membership, error: membershipError } = await sb.from('tenant_memberships')
-        .select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
-      if (membershipError) throw membershipError;
-      const tenantId = String(form.tenant_id || membership?.tenant_id || '');
       if (!tenantId) throw new Error('Your SWISH workspace is not ready');
+      if (form.tenant_id && String(form.tenant_id) !== tenantId) throw new Error('Listing belongs to a different SWISH workspace.');
 
       // Use the existing, authenticated verification function used by the
       // native app. There is no deployed "listing-preflight" function.
