@@ -14,7 +14,7 @@ type WorkspaceConfig = {
 
 const CONFIGS: Record<string, WorkspaceConfig> = {
   coins: { id: 'coins', name: 'SWISH Coins', tagline: 'Identify, value and flip coins & collectibles', detail: 'Ancient · Islamic silver · banknotes · gold', accent: '#F5C842', icon: Coins, scan: 'Scan Coin', actions: [
-    { label: 'Scan Coin', detail: 'Identify a coin and check references', icon: Camera, to: scanRoute },
+    { label: 'Scan Coin', detail: 'Identify a coin and check references', icon: Camera, to: '/identify' },
     { label: 'My Stock', detail: 'Review saved coins and references', icon: Package, to: '/inventory' },
     { label: 'Islamic Silver', detail: 'Process specialist silver and countermark batches', icon: Sparkles, to: '/tools/islamic-batch' },
     { label: 'Value Opportunities', detail: 'Review valuations and buying opportunities', icon: BarChart3, to: '/opportunities' },
@@ -77,7 +77,7 @@ export default function NicheWorkspace() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
-  const preferred = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
+  const preferred = String((isOwner ? localStorage.getItem('swish_active_niche') : user?.user_metadata?.preferred_niche) || user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
   const allowedNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferred) ? preferred : 'coins';
   const config = useMemo(() => CONFIGS[niche] || CONFIGS.coins, [niche]);
   const BrandIcon = config.icon;
