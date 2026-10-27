@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTableRow, useUpsert } from '@/hooks/useSupabaseQuery';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { callEdgeFunction, EdgeFunctionError } from '@/lib/supabase';
 import { ArrowLeft, Save, Zap, Send, Loader2, ImageIcon, CheckCircle, ChevronDown, ChevronRight, AlertTriangle, Upload, X, RotateCw, Sun, Contrast, Sparkles, Tag, Truck, ShoppingBag } from 'lucide-react';
 import { getSupabaseClientAsync } from '@/lib/supabase';
@@ -11,7 +12,8 @@ export default function ListingEditor() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data, isLoading } = useTableRow('listings', id);
+  const { tenantId } = useCurrentTenantId();
+  const { data, isLoading } = useTableRow('listings', id, '*', tenantId);
   const upsert = useUpsert('listings');
   const [form, setForm] = useState<Record<string, unknown>>({ platform: 'ebay', status: 'draft' });
   const [preflighting, setPreflighting] = useState(false);
@@ -31,7 +33,7 @@ export default function ListingEditor() {
 
   // Load linked inventory item to pull scan images
   const itemId = form.item_id as string | undefined;
-  const { data: linkedItem } = useTableRow('items', itemId || null);
+  const { data: linkedItem } = useTableRow('items', itemId || null, '*', tenantId);
 
   useEffect(() => {
     if (data) {
