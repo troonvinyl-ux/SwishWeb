@@ -66,7 +66,8 @@ export default function NicheCapture() {
       return [] as string[];
     },
   });
-  const nicheAllowed = isOwner || getSpecialistIdsForNiche(canonicalNicheId).some(id => activeSpecialists.includes(id));
+  const isSupportedNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(canonicalNicheId);
+  const nicheAllowed = isOwner || (isSupportedNiche && getSpecialistIdsForNiche(canonicalNicheId).some(id => activeSpecialists.includes(id)));
   const insert = useInsert('items', tenantId);
   const config = useMemo(() => CONFIG[niche] || CONFIG.generic, [niche]);
   if (!isOwner && (tenantLoading || entitlementsLoading)) return <div className="p-8 text-center text-muted-foreground">Checking your SWISH niche access…</div>;
