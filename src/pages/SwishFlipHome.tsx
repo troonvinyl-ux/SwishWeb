@@ -16,9 +16,9 @@ const niches: Niche[] = [
   { name: 'Bike Flipper', slug: 'bikes', description: 'Bicycles, components and cycling resale.', icon: Bike, tone: 'from-lime-950 to-zinc-950 border-lime-400/30 text-lime-100' },
   { name: 'Threads Flip', slug: 'threads', description: 'A specialist fashion resale workspace.', icon: Shirt, tone: 'from-fuchsia-950 to-zinc-950 border-fuchsia-400/30 text-fuchsia-100' },
   { name: 'Surplus Flip', slug: 'surplus', description: 'Job lots, clearance stock and manifests.', icon: Sofa, tone: 'from-teal-950 to-zinc-950 border-teal-400/30 text-teal-100' },
-  { name: 'Electronics', slug: 'electronics', description: 'Phones, computers, gaming and tech resale.', icon: Smartphone, tone: 'from-sky-950 to-zinc-950 border-sky-400/30 text-sky-100' },
-  { name: 'Games & Collectables', slug: 'games', description: 'Games, cards, toys and collectable finds.', icon: Gamepad2, tone: 'from-violet-950 to-zinc-950 border-violet-400/30 text-violet-100' },
-  { name: 'Home & Tools', slug: 'home', description: 'Furniture, tools and useful second-hand stock.', icon: Wrench, tone: 'from-slate-800 to-zinc-950 border-slate-300/30 text-slate-100' },
+  { name: 'Electronics', slug: 'electronics', description: 'Use SWISH to organise electronics resale in the shared workspace.', icon: Smartphone, tone: 'from-sky-950 to-zinc-950 border-sky-400/30 text-sky-100' },
+  { name: 'Games & Collectables', slug: 'games', description: 'Use the shared SWISH workspace for games and collectables.', icon: Gamepad2, tone: 'from-violet-950 to-zinc-950 border-violet-400/30 text-violet-100' },
+  { name: 'Home & Tools', slug: 'home', description: 'Use the shared SWISH workspace for furniture, tools and home stock.', icon: Wrench, tone: 'from-slate-800 to-zinc-950 border-slate-300/30 text-slate-100' },
 ];
 
 const existingEntryRoutes: Record<string, string> = {
@@ -54,7 +54,7 @@ export default function SwishFlipHome() {
         <div className="mx-auto max-w-7xl px-5 py-14 md:py-20">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-lime-300/30 bg-lime-300/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[.18em] text-lime-200"><Sparkles className="h-3.5 w-3.5" /> One shared SWISH engine</div>
           <h1 className="max-w-3xl text-5xl font-black leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl">Find it.<br/><span className="text-lime-300">Value it.</span><br/>Flip it.</h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">Choose the kind of stock you sell. Each card opens the existing SWISH web app. No niche downloads, no drop-down menus and no niche search.</p>
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">Choose the kind of stock you sell. Each card opens an entry point in the existing SWISH web app. No niche downloads, no drop-down menus and no niche search.</p>
         </div>
       </section>
       <section id="niches" className="mx-auto max-w-7xl px-5 py-10 md:py-14">
