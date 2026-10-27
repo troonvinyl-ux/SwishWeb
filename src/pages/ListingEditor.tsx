@@ -462,7 +462,7 @@ export default function ListingEditor() {
           <div><label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Inventory item ID</label><input value={f('item_id')} onChange={e => setF('item_id', e.target.value)} className="input-field mt-1 font-mono text-xs" placeholder="Linked inventory UUID" /></div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div><label className="text-xs text-muted-foreground">Platform</label><select value={f('platform')} onChange={e => setF('platform', e.target.value)} className="input-field mt-1"><option value="ebay">eBay</option><option value="amazon">Amazon</option><option value="depop">Depop</option><option value="vinted">Vinted</option></select></div>
+          <div><label className="text-xs text-muted-foreground">Platform</label><div className="input-field mt-1 flex items-center" aria-label="Platform">eBay</div></div>
           <div><label className="text-xs text-muted-foreground">Status</label><select value={f('status')} onChange={e => setF('status', e.target.value)} className="input-field mt-1"><option value="draft">Draft</option><option value="active">Active</option><option value="ended">Ended</option><option value="scheduled">Scheduled</option></select></div>
         </div>
       </section>
