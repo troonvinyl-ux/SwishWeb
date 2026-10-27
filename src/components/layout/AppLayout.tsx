@@ -17,9 +17,10 @@ const PRODUCT_NAMES: Record<string, string> = {
 
 function MobileAppNav({ niche }: { niche: string }) {
   const location = useLocation();
+  const captureRoute = niche === 'coins' ? '/identify/coins' : niche === 'surplus_flip' ? '/scan/surplus_flip' : `/scan/${niche === 'bicycles' ? 'bikes' : niche === 'motocross' ? 'mx' : niche}`;
   const links = [
     { label: 'Home', to: `/workspace/${niche}`, icon: Home },
-    { label: 'Capture', to: niche === 'surplus_flip' ? '/ebay/import' : '/identify', icon: Camera, primary: true },
+    { label: 'Capture', to: captureRoute, icon: Camera, primary: true },
     { label: 'Stock', to: '/inventory', icon: Package },
     { label: 'eBay', to: '/ebay', icon: Store },
     { label: 'Account', to: '/settings', icon: UserRound },
