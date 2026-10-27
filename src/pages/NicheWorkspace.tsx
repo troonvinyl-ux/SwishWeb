@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 import { useCount } from '@/hooks/useSupabaseQuery';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { getSpecialistIdsForNiche, type SwishNicheId } from '@/lib/niche';
@@ -109,7 +109,6 @@ export default function NicheWorkspace() {
     else navigate(`/workspace/${entitledNiches[0] || allowedNiche}`, { replace: true });
   }, [config, isOwner, niche, allowedNiche, entitledNiches.join(','), entitlementsLoading, navigate]);
 
-  if (!isOwner && niche !== allowedNiche) return <Navigate to={`/workspace/${allowedNiche}`} replace />;
 
   if (config.id === 'clothing') {
     const route = (to: string) => navigate(to);
