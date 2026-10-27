@@ -306,7 +306,7 @@ export default function NicheCapture() {
       canonical_title:f('title').trim(),
       description:f('description').trim(),
       specialist_id: niche === 'bikes' ? getDefaultSpecialistForNiche('bicycles') : niche === 'mx' ? getDefaultSpecialistForNiche('motocross') : niche === 'surplus_flip' ? getDefaultSpecialistForNiche('surplus_flip') : config.specialistId,
-      status:'review',
+      status:'review_required',
       disposition_decision:'pending',
       condition:f('condition'),
       attributes,
