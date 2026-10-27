@@ -61,7 +61,7 @@ const queryClient = new QueryClient({
 function AppRoutes() {
   const { connectionStatus, loading, user } = useAuth();
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
-  const preferredNiche = String((isOwner ? localStorage.getItem('swish_active_niche') : user?.user_metadata?.preferred_niche) || localStorage.getItem('swish_active_niche') || 'coins');
+  const preferredNiche = String(localStorage.getItem('swish_active_niche') || user?.user_metadata?.preferred_niche || 'coins');
   const safeNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins';
   const needsOnboarding = !isOwner && user?.user_metadata?.onboarding_status === 'started';
 
@@ -109,7 +109,7 @@ function AppRoutes() {
           <Route path="/inventory/new" element={<InventoryNew />} />
           <Route path="/inventory/:id" element={<InventoryItem />} />
 
-          <Route path="/identify" element={<Navigate to={(() => { const active = isOwner ? (localStorage.getItem('swish_active_niche') || safeNiche) : safeNiche; return active === 'coins' ? '/identify/coins' : `/scan/${active === 'bicycles' ? 'bikes' : active === 'motocross' ? 'mx' : active}`; })()} replace />} />
+          <Route path="/identify" element={<Navigate to={(() => { const active = localStorage.getItem('swish_active_niche') || safeNiche; return active === 'coins' ? '/identify/coins' : `/scan/${active === 'bicycles' ? 'bikes' : active === 'motocross' ? 'mx' : active}`; })()} replace />} />
           <Route path="/identify/coins" element={<Identify />} />
           <Route path="/scan/:niche" element={<NicheCapture />} />
           <Route path="/acquisitions" element={<Acquisitions />} />
