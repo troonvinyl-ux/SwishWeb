@@ -192,7 +192,7 @@ export default function ListingNew() {
   const priceParam  = searchParams.get('price') || '';
 
   // Load linked inventory record to extract AI identification data
-  const { data: linkedItem } = useTableRow('inventory', itemIdParam || null);
+  const { data: linkedItem } = useTableRow('items', itemIdParam || null);
   const inv = linkedItem as Record<string, unknown> | null;
 
   // Initial param pre-fill (lightweight — just the URL params)
