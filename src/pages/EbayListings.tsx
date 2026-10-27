@@ -4,6 +4,7 @@ import { formatCurrency, formatDate, statusVariant, truncate } from '@/lib/utils
 import { RefreshCw, Search, ExternalLink, Plus } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { getActiveNicheId, getSpecialistIdsForNiche } from '@/lib/niche';
 import { Link } from 'react-router-dom';
 import { callEdgeFunction, getSupabaseClientAsync } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -14,12 +15,16 @@ export default function EbayListings() {
   const [status, setStatus] = useState('');
   const [syncing, setSyncing] = useState(false);
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  const activeNiche = getActiveNicheId();
+  const specialistIds = getSpecialistIdsForNiche(activeNiche);
 
   const { data, isLoading, error } = useTable('listings', {
+    select: '*, items!inner(specialist_id)',
     order: { column: 'created_at', ascending: false },
     search: search ? { column: 'title', query: search } : undefined,
     filter: { tenant_id: tenantId, ...(status ? { status } : {}) },
-    enabled: Boolean(tenantId),
+    inFilter: { 'items.specialist_id': specialistIds },
+    enabled: Boolean(tenantId) && specialistIds.length > 0,
   });
 
   const items = (data || []) as Record<string, unknown>[];
