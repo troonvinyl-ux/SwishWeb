@@ -4,23 +4,27 @@ import { Wallet, RefreshCw, TrendingUp, TrendingDown, AlertTriangle } from 'luci
 import { useQueryClient } from '@tanstack/react-query';
 import { callEdgeFunction, EdgeFunctionError, getSupabaseClientAsync } from '@/lib/supabase';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { getActiveNicheId, getSpecialistIdsForNiche } from '@/lib/niche';
 import { useState, useEffect } from 'react';
 import { formatDate } from '@/lib/utils';
 
 export default function Money() {
   const qc = useQueryClient();
   const [dateRange, setDateRange] = useState('30');
-  const { tenantId } = useCurrentTenantId();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  const specialistIds = getSpecialistIdsForNiche(getActiveNicheId());
 
   // Read the same canonical sales ledger used by the SWISH app. RLS remains
   // enforced by the existing backend; only eBay sales are included here.
   const { data: salesData, error: salesError } = useTable('sales', {
+    select: '*, items(specialist_id)',
     filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
     order: { column: 'sold_at', ascending: false },
     limit: 500,
     enabled: Boolean(tenantId),
   });
   const { data: ordersData, error: ordersError } = useTable('orders', {
+    select: '*, items(specialist_id)',
     filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
     order: { column: 'created_at', ascending: false },
     limit: 500,
@@ -71,8 +75,13 @@ export default function Money() {
     return () => { active = false; };
   }, [tenantId, dateRange]);
 
-  const sales    = (salesData || []) as Record<string, unknown>[];
-  const orders   = (ordersData || []) as Record<string, unknown>[];
+  const byNiche = (row: Record<string, unknown>) => {
+    const linked = row.items as Record<string, unknown> | Record<string, unknown>[] | null;
+    const linkedItems = Array.isArray(linked) ? linked : linked ? [linked] : [];
+    return linkedItems.some(item => specialistIds.includes(String(item.specialist_id || '')));
+  };
+  const sales    = ((salesData || []) as Record<string, unknown>[]).filter(byNiche);
+  const orders   = ((ordersData || []) as Record<string, unknown>[]).filter(byNiche);
   const fees     = (feesData || []) as Record<string, unknown>[];
   const payouts  = (payoutsData || []) as Record<string, unknown>[];
 
