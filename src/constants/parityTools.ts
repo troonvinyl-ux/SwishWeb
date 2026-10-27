@@ -11,25 +11,25 @@ export const PARITY_TOOLS: ParityTool[] = [
   {
     path: '/tools/islamic-batch', title: 'Islamic & countermark batch',
     summary: 'Capture both sides, add measurements and select specialist identification options.',
-    limitation: 'The dedicated batch workflow is not implemented in this web client. The existing coin capture screen handles one coin at a time; specialist service availability is determined by the backend.',
-    destination: '/identify', actionLabel: 'Open single-coin capture',
+    limitation: 'A dedicated web batch screen is now available. It sends each coin to the existing swish-islamic-identify Edge Function and displays returned evidence for review. Saving/confirming results into inventory remains a separate explicit action.',
+    destination: '/tools/islamic-batch', actionLabel: 'Open batch identification',
   },
   {
     path: '/tools/silver-batch', title: 'Silver batch processing',
     summary: 'Review coin images and measurement evidence before identification and valuation.',
-    limitation: 'The dedicated silver batch workflow is not implemented in this web client. Single-coin capture is available; this shortcut does not perform batch processing.',
-    destination: '/identify', actionLabel: 'Open single-coin capture',
+    limitation: 'The web client now supports multi-coin capture and sequential specialist identification using the existing backend. The native app's full silver commercial grouping, batch persistence and listing-strategy workflow is not yet fully ported.',
+    destination: '/tools/silver-batch', actionLabel: 'Open silver batch',
   },
   {
     path: '/tools/bike-flipper', title: 'Bike Flipper tools',
     summary: 'Record a bicycle’s identity, fit, mechanical condition and known faults.',
-    limitation: 'The existing bicycle form records user-entered details for review. Dedicated repair-cost and profit workflows are not implemented here, and manual estimates are not verified valuations.',
+    limitation: "Opens the existing bicycle capture workflow. The native app's dedicated repair-cost, profit-decision and buying recommendation logic still requires a web parity pass.",
     destination: '/scan/bikes', actionLabel: 'Open bicycle capture',
   },
   {
     path: '/tools/listing-preflight', title: 'Listing preflight',
     summary: 'Choose a listing, open its editor, save the draft and select Preflight.',
-    limitation: 'Preflight is invoked from a saved listing through the existing backend function. Its result and availability must be confirmed by the server; this directory does not run a check.',
+    limitation: 'Opens the listing workspace where a draft can be selected and its editor/preflight action run. A dedicated parity screen with the native app's full checklist and submit confirmation remains to be completed.',
     destination: '/listings', actionLabel: 'Choose a listing',
   },
 ];

@@ -46,6 +46,8 @@ import EbayLogs from '@/pages/EbayLogs';
 import Settings from '@/pages/Settings';
 import MasterAdmin from '@/pages/MasterAdmin';
 import ParityTools from '@/pages/ParityTools';
+import SpecialistTools from '@/pages/SpecialistTools';
+import StockCheck from '@/pages/StockCheck';
 import NotFound from '@/pages/NotFound';
 import SwishFlipHome from '@/pages/SwishFlipHome';
 import { getHostProduct } from '@/lib/productContext';
@@ -144,6 +146,7 @@ function AppRoutes() {
 
           {/* Inventory — /inventory/new BEFORE /inventory/:id to avoid "new" being treated as UUID */}
           <Route path="/inventory" element={<Inventory />} />
+          <Route path="/stock-check" element={<StockCheck />} />
           <Route path="/inventory/new" element={<InventoryNew />} />
           <Route path="/inventory/:id" element={<InventoryItem />} />
 
@@ -173,6 +176,12 @@ function AppRoutes() {
 
           {/* eBay */}
           <Route path="/ebay" element={<EbayHub />} />
+          <Route path="/ebay/account" element={<Settings />} />
+          <Route path="/ebay/admin" element={<MasterAdmin />} />
+          <Route path="/ebay/categories" element={<EbayHub />} />
+          <Route path="/ebay/csv" element={<EbayImport />} />
+          <Route path="/ebay/draft-sync-test" element={<EbayLogs />} />
+          <Route path="/stock-listing/:id" element={<InventoryItem />} />
           <Route path="/ebay/listings" element={<EbayListings />} />
           <Route path="/ebay/orders" element={<EbayOrders />} />
           <Route path="/ebay/messages" element={<EbayMessages />} />
@@ -186,10 +195,10 @@ function AppRoutes() {
 
           {/* Current app specialist tools / parity */}
           <Route path="/tools" element={<ParityTools />} />
-          <Route path="/tools/islamic-batch" element={<ParityTools />} />
-          <Route path="/tools/silver-batch" element={<ParityTools />} />
-          <Route path="/tools/bike-flipper" element={<ParityTools />} />
-          <Route path="/tools/listing-preflight" element={<ParityTools />} />
+          <Route path="/tools/islamic-batch" element={<SpecialistTools />} />
+          <Route path="/tools/silver-batch" element={<SpecialistTools />} />
+          <Route path="/tools/bike-flipper" element={<Navigate to="/scan/bikes" replace />} />
+          <Route path="/tools/listing-preflight" element={<Listings />} />
 
           {/* Settings */}
           <Route path="/settings" element={<Settings />} />

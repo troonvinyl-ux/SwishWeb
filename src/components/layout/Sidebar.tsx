@@ -2,7 +2,7 @@ import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import {
-  LayoutDashboard, Package, Coins, ShoppingBag, Lightbulb, Tag, ShoppingCart,
+  LayoutDashboard, Package, Coins, ShoppingBag, Lightbulb, Tag, ShoppingCart, ClipboardCheck,
   Truck, TrendingUp, BarChart3, Wallet, CheckSquare, Terminal, Settings,
   LogOut, ChevronDown, ChevronRight, Zap, RefreshCw, AlertCircle, ClipboardList, Sparkles, Crown
 } from 'lucide-react';
@@ -45,6 +45,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: 'Stock',
     items: [
       { label: 'Inventory', to: '/inventory', icon: Package },
+      { label: 'Stock Check', to: '/stock-check', icon: ClipboardCheck },
       { label: 'Identify / Scan', to: '/identify', icon: Coins },
       { label: 'Acquisitions', to: '/acquisitions', icon: ShoppingBag },
       { label: 'Opportunities', to: '/opportunities', icon: Lightbulb },
