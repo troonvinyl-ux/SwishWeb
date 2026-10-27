@@ -2,7 +2,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -48,26 +48,7 @@ import MasterAdmin from '@/pages/MasterAdmin';
 import ParityTools from '@/pages/ParityTools';
 import NotFound from '@/pages/NotFound';
 import SwishFlipHome from '@/pages/SwishFlipHome';
-import SwishFlipHome from '@/pages/SwishFlipHome';
-
-const NICHE_HOSTS: Record<string, string> = {
-  'coins.swishflip.co.uk': 'coins',
-  'mx.swishflip.co.uk': 'motocross',
-  'bikes.swishflip.co.uk': 'bicycles',
-  'clothes.swishflip.co.uk': 'clothing',
-  'threads.swishflip.co.uk': 'clothing',
-  'surplus.swishflip.co.uk': 'surplus_flip',
-};
-
-const hostname = window.location.hostname.toLowerCase().replace(/^www\./, '');
-const isSwishFlipMarketingHost = hostname === 'swishflip.co.uk';
-const hostNiche = NICHE_HOSTS[hostname];
-const isUnconfiguredNicheHost = hostname.endsWith('.swishflip.co.uk') && !hostNiche;
-
-function NicheComingSoon() {
-  const label = window.location.hostname.split('.')[0].replace(/[-_]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
-  return <main className="min-h-screen bg-[#080b12] text-white flex items-center justify-center p-6"><section className="max-w-xl rounded-3xl border border-white/10 bg-white/[.04] p-8 text-center"><div className="text-sm font-bold uppercase tracking-[.2em] text-lime-300">SWISHFLIP niche</div><h1 className="mt-4 text-4xl font-black">{label}</h1><p className="mt-4 leading-7 text-slate-300">This specialist entry point is reserved in the SWISHFLIP directory, but this niche workspace has not been activated yet.</p><a href="https://swishflip.co.uk/#explore" className="mt-7 inline-flex rounded-xl bg-lime-300 px-5 py-3 font-bold text-slate-950">Explore available niches</a></section></main>;
-}
+import { getHostProduct } from '@/lib/productContext';
 
 const currentHostname = window.location.hostname.toLowerCase().replace(/^www\./, '').split(':')[0];
 const isSwishFlipMarketingHost = currentHostname === 'swishflip.co.uk';
@@ -75,6 +56,7 @@ function NicheComingSoon() {
   const label = currentHostname.split('.')[0].replace(/[-_]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
   return <main className="min-h-screen bg-[#080b12] text-white flex items-center justify-center p-6"><section className="max-w-xl rounded-3xl border border-white/10 bg-white/[.04] p-8 text-center"><div className="text-sm font-bold uppercase tracking-[.2em] text-lime-300">SWISHFLIP niche</div><h1 className="mt-4 text-4xl font-black">{label}</h1><p className="mt-4 leading-7 text-slate-300">This specialist entry point is reserved in the SWISHFLIP directory, but this niche workspace has not been activated yet.</p><a href="https://swishflip.co.uk/#explore" className="mt-7 inline-flex rounded-xl bg-lime-300 px-5 py-3 font-bold text-slate-950">Explore available niches</a></section></main>;
 }
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -87,15 +69,13 @@ const queryClient = new QueryClient({
 
 function AppRoutes() {
   const { connectionStatus, loading, user } = useAuth();
-  // The apex domain is the public discovery splash page and must not depend on backend availability.
-  if (isSwishFlipMarketingHost && window.location.pathname === '/') return <SwishFlipHome />;
-  if (isUnconfiguredNicheHost) return <NicheComingSoon />;
-  // A niche subdomain is a fixed product entry point at its root path.
-  // Host context wins over browser-local selection so switching a saved local niche cannot cross product boundaries.
-  if (hostNiche && localStorage.getItem('swish_active_niche') !== hostNiche) localStorage.setItem('swish_active_niche', hostNiche);
+  const location = useLocation();
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
-  const preferredNiche = String(hostNiche || localStorage.getItem('swish_active_niche') || user?.user_metadata?.preferred_niche || 'coins');
-  const safeNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins';
+  const hostProduct = getHostProduct();
+  if (isSwishFlipMarketingHost && window.location.pathname === '/') return <SwishFlipHome />;
+  if (currentHostname.endsWith('.swishflip.co.uk') && !hostProduct) return <NicheComingSoon />;
+  const preferredNiche = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
+  const safeNiche = hostProduct?.id || (['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins');
   const needsOnboarding = !isOwner && user?.user_metadata?.onboarding_status === 'started';
 
   // Establishing backend connection
@@ -117,22 +97,36 @@ function AppRoutes() {
     );
   }
 
-  // Not signed in — login page handles needs_key state inline
+  // Not signed in — login page is branded from the current product domain.
   if (!user) return <LoginPage />;
+
+  // A product domain cannot be used to silently switch an account's niche.
+  // Existing backend entitlement metadata must agree with the requested product.
+  if (hostProduct && !isOwner && String(user.user_metadata?.preferred_niche || '') !== hostProduct.id) {
+    return <main className="min-h-screen flex items-center justify-center bg-background p-6"><section className="max-w-lg rounded-2xl border border-border bg-card p-8 text-center"><h1 className="text-2xl font-bold">Product access needs attention</h1><p className="mt-3 text-sm text-muted-foreground">This account is not currently assigned to {hostProduct.name}. Please contact support to correct the existing product entitlement. No other product workspace has been opened.</p></section></main>;
+  }
+
+  if (hostProduct && !isOwner) {
+    const path = location.pathname;
+    const commonAllowed = path === '/' || path === '/onboarding' || path.startsWith('/workspace/') || path === '/identify' || path.startsWith('/identify/') || path.startsWith('/scan/') || path.startsWith('/inventory') || path.startsWith('/listings') || path.startsWith('/orders') || path.startsWith('/dispatch') || path.startsWith('/repricing') || path.startsWith('/insights') || path.startsWith('/money') || path.startsWith('/ebay') || path.startsWith('/settings') || path === '/404';
+    const coinOnly = path.startsWith('/acquisitions') || path.startsWith('/opportunities') || path.startsWith('/review-required') || path.startsWith('/audit') || path.startsWith('/tools') || path.startsWith('/command-centre') || path.startsWith('/dashboard') || path.startsWith('/tasks');
+    const nonCoin = hostProduct.id !== 'coins';
+    if (!commonAllowed || (nonCoin && coinOnly)) return <Navigate to={`/workspace/${hostProduct.id}`} replace />;
+  }
 
   return (
     <AppLayout>
       <ErrorBoundary name="router">
         <Routes>
           <Route path="/" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
-          <Route path="/coins" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/coins`} replace />} />
-          <Route path="/mx" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/motocross`} replace />} />
-          <Route path="/bikes" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/bicycles`} replace />} />
-          <Route path="/threads" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/clothing`} replace />} />
-          <Route path="/clothes" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/clothing`} replace />} />
-          <Route path="/surplus" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/surplus_flip`} replace />} />
+          <Route path="/coins" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'coins' : safeNiche}`} replace />} />
+          <Route path="/mx" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'motocross' : safeNiche}`} replace />} />
+          <Route path="/bikes" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'bicycles' : safeNiche}`} replace />} />
+          <Route path="/threads" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'clothing' : safeNiche}`} replace />} />
+          <Route path="/clothes" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'clothing' : safeNiche}`} replace />} />
+          <Route path="/surplus" element={<Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${isOwner ? 'surplus_flip' : safeNiche}`} replace />} />
           <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/niches" element={needsOnboarding ? <Navigate to="/onboarding" replace /> : <NicheEntry />} />
+          <Route path="/niches" element={isOwner ? <NicheEntry /> : <Navigate to={needsOnboarding ? "/onboarding" : `/workspace/${safeNiche}`} replace />} />
           <Route path="/workspace/:niche" element={<NicheWorkspace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/command-centre" element={<CommandCentre />} />
@@ -142,7 +136,7 @@ function AppRoutes() {
           <Route path="/inventory/new" element={<InventoryNew />} />
           <Route path="/inventory/:id" element={<InventoryItem />} />
 
-          <Route path="/identify" element={<Navigate to={(() => { const active = localStorage.getItem('swish_active_niche') || safeNiche; return active === 'coins' ? '/identify/coins' : `/scan/${active === 'bicycles' ? 'bikes' : active === 'motocross' ? 'mx' : active}`; })()} replace />} />
+          <Route path="/identify" element={<Navigate to={(() => { const active = isOwner ? (localStorage.getItem('swish_active_niche') || safeNiche) : safeNiche; return active === 'coins' ? '/identify/coins' : `/scan/${active === 'bicycles' ? 'bikes' : active === 'motocross' ? 'mx' : active}`; })()} replace />} />
           <Route path="/identify/coins" element={<Identify />} />
           <Route path="/scan/:niche" element={<NicheCapture />} />
           <Route path="/acquisitions" element={<Acquisitions />} />
