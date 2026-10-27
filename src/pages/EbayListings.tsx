@@ -41,8 +41,25 @@ export default function EbayListings() {
       // Use the existing authoritative sync function and its tenant-scoped contract.
       const { error } = await callEdgeFunction('swish-ebay-sync', { tenantId, mode: 'full' }, sb);
       if (error) throw error;
-      toast.success('eBay listings sync completed');
-      await qc.invalidateQueries({ queryKey: ['listings'] });
+
+      // Reuse the Main App's server-side image pipeline after listing sync.
+      // It downloads the complete eBay gallery into permanent item-images storage.
+      const { error: imageError } = await callEdgeFunction(
+        'swish-image-download',
+        { tenantId, fixTitles: false },
+        sb,
+      );
+
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['listings'] }),
+        qc.invalidateQueries({ queryKey: ['items'] }),
+      ]);
+
+      if (imageError) {
+        toast.warning('Listings synced, but image download did not complete: ' + imageError.message);
+      } else {
+        toast.success('eBay listings and image sync completed');
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not sync eBay listings');
     } finally {
