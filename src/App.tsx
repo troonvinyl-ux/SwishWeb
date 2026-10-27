@@ -189,7 +189,7 @@ function AppRoutes() {
           <Route path="/tools" element={<ParityTools />} />
           <Route path="/tools/islamic-batch" element={<SpecialistTools />} />
           <Route path="/tools/silver-batch" element={<SpecialistTools />} />
-          <Route path="/tools/bike-flipper" element={<NicheCapture />} />
+          <Route path="/tools/bike-flipper" element={<Navigate to="/scan/bikes" replace />} />
           <Route path="/tools/listing-preflight" element={<Listings />} />
 
           {/* Settings */}
