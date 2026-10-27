@@ -27,6 +27,8 @@ import { callEdgeFunction, getSupabaseClient, getSupabaseClientAsync, EdgeFuncti
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useTable } from '@/hooks/useSupabaseQuery';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
+import { getActiveNicheId, getSpecialistIdsForNiche } from '@/lib/niche';
 import { formatCurrency } from '@/lib/utils';
 import {
   Camera, Upload, X, Zap, Loader2, AlertCircle, CheckCircle, Tag,
@@ -266,10 +268,14 @@ export default function Identify() {
 
   // Existing inventory search (for REQ-INV-002 — update path)
   const [inventorySearch, setInventorySearch] = useState('');
+  const { tenantId } = useCurrentTenantId();
+  const specialistIds = getSpecialistIdsForNiche(getActiveNicheId());
   const { data: inventoryResults } = useTable('items', {
+    filter: { tenant_id: tenantId },
+    inFilter: { specialist_id: specialistIds },
     search: { column: 'canonical_title', query: inventorySearch },
     limit: 10,
-    enabled: inventorySearch.length > 2,
+    enabled: Boolean(tenantId) && specialistIds.length > 0 && inventorySearch.length > 2,
   });
 
   // Voice note
