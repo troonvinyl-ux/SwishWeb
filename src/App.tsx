@@ -47,6 +47,7 @@ import Settings from '@/pages/Settings';
 import MasterAdmin from '@/pages/MasterAdmin';
 import ParityTools from '@/pages/ParityTools';
 import SpecialistTools from '@/pages/SpecialistTools';
+import StockCheck from '@/pages/StockCheck';
 import NotFound from '@/pages/NotFound';
 import SwishFlipHome from '@/pages/SwishFlipHome';
 import { getHostProduct } from '@/lib/productContext';
@@ -145,6 +146,7 @@ function AppRoutes() {
 
           {/* Inventory — /inventory/new BEFORE /inventory/:id to avoid "new" being treated as UUID */}
           <Route path="/inventory" element={<Inventory />} />
+          <Route path="/stock-check" element={<StockCheck />} />
           <Route path="/inventory/new" element={<InventoryNew />} />
           <Route path="/inventory/:id" element={<InventoryItem />} />
 
