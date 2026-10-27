@@ -178,14 +178,15 @@ export function useCount(
   filter?: Record<string, unknown>,
   inFilter?: Record<string, unknown[]>,
   enabled = true,
+  select = '*',
 ) {
   return useQuery({
-    queryKey: [table, 'count', filter, inFilter],
+    queryKey: [table, 'count', filter, inFilter, select],
     enabled,
     retry: false,
     queryFn: async () => {
       const sb = await getClient();
-      let q = sb.from(table).select('*', { count: 'exact', head: true });
+      let q = sb.from(table).select(select, { count: 'exact', head: true });
       if (filter) Object.entries(filter).forEach(([k, v]) => { if (v != null) q = q.eq(k, v); });
       if (inFilter) Object.entries(inFilter).forEach(([k, values]) => {
         if (Array.isArray(values) && values.length > 0) q = q.in(k, values);
