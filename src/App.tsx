@@ -61,7 +61,7 @@ const queryClient = new QueryClient({
 function AppRoutes() {
   const { connectionStatus, loading, user } = useAuth();
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
-  const preferredNiche = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
+  const preferredNiche = String((isOwner ? localStorage.getItem('swish_active_niche') : user?.user_metadata?.preferred_niche) || localStorage.getItem('swish_active_niche') || 'coins');
   const safeNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins';
   const needsOnboarding = !isOwner && user?.user_metadata?.onboarding_status === 'started';
 
