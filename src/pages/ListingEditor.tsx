@@ -220,7 +220,7 @@ export default function ListingEditor() {
           <button onClick={publish} disabled={publishing || !form.id} className="btn-ghost">
             <Send className="w-3.5 h-3.5" />{publishing ? 'Publishing…' : 'Publish'}
           </button>
-          <button onClick={save} disabled={upsert.isPending} className="btn-primary">
+          <button onClick={save} disabled={upsert.isPending || !tenantId} className="btn-primary">
             <Save className="w-3.5 h-3.5" />{upsert.isPending ? 'Saving…' : 'Save'}
           </button>
         </div>
