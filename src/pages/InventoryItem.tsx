@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTableRow, useUpdate, useDelete } from '@/hooks/useSupabaseQuery';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { callEdgeFunction, EdgeFunctionError } from '@/lib/supabase';
 import { formatCurrency, formatDate, formatDateTime, statusVariant } from '@/lib/utils';
 import { ArrowLeft, Edit2, Save, X, Trash2, Zap, RefreshCw, Package, Tag } from 'lucide-react';
@@ -9,7 +10,8 @@ import { toast } from 'sonner';
 export default function InventoryItem() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: item, isLoading, error, refetch } = useTableRow('items', id);
+  const { tenantId } = useCurrentTenantId();
+  const { data: item, isLoading, error, refetch } = useTableRow('items', id, '*', tenantId);
   const update = useUpdate('items');
   const del = useDelete('items');
   const [editing, setEditing] = useState(false);
