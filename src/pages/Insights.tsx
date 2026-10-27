@@ -29,9 +29,8 @@ export default function Insights() {
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const specialistIds = getSpecialistIdsForNiche(getActiveNicheId());
   const { data: ordersData } = useTable('orders', {
-    select: '*, items!inner(specialist_id)',
+    select: '*, items(specialist_id)',
     filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
-    inFilter: { 'items.specialist_id': specialistIds },
     order: { column: 'created_at', ascending: false }, limit: 100,
     enabled: Boolean(tenantId) && specialistIds.length > 0,
   });
@@ -42,7 +41,11 @@ export default function Insights() {
     enabled: Boolean(tenantId) && specialistIds.length > 0,
   });
 
-  const orders = (ordersData || []) as Record<string, unknown>[];
+  const orders = ((ordersData || []) as Record<string, unknown>[]).filter(order => {
+    const linked = order.items as Record<string, unknown> | Record<string, unknown>[] | null;
+    const linkedItems = Array.isArray(linked) ? linked : linked ? [linked] : [];
+    return linkedItems.some(item => specialistIds.includes(String(item.specialist_id || '')));
+  });
   const inventory = (inventoryData || []) as Record<string, unknown>[];
 
   // Aggregate orders by date for chart
