@@ -81,7 +81,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
   const [ebayOpen, setEbayOpen] = useState(false);
   const location = useLocation();
-  const activeNicheId = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
+  const activeNicheId = String((isOwner ? localStorage.getItem('swish_active_niche') : user?.user_metadata?.preferred_niche) || localStorage.getItem('swish_active_niche') || 'coins');
   const activeNicheName = ({ coins: 'SWISH Coins', motocross: 'SWISH MX', bicycles: 'SWISH Bikes', clothing: 'Threads Flip', surplus_flip: 'Surplus Flip' } as Record<string, string>)[activeNicheId] || 'SWISH';
   const workspacePath = `/workspace/${(['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(activeNicheId) ? activeNicheId : 'coins')}`;
   void location.pathname;
