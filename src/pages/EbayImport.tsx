@@ -159,15 +159,15 @@ export default function EbayImport() {
           if (!externalId || !title) { skipped++; continue; }
 
           const classifiedCategory = Object.entries(NICHE_CATEGORIES).find(([, ids]) => ids.includes(categoryId))?.[0];
-          const categoryNameMatch = CATEGORY_NAME_PATTERNS[nicheKey]?.test(categoryName) ?? false;
           const classifiedByCategoryName = Object.entries(CATEGORY_NAME_PATTERNS)
-            .find(([niche, pattern]) => niche !== nicheKey && pattern.test(categoryName))?.[0];
+            .find(([, pattern]) => pattern.test(categoryName))?.[0];
+          const categoryNameMatch = classifiedByCategoryName === nicheKey;
           const titleMatch = TITLE_PATTERNS[nicheKey]?.test(title) ?? false;
           // Known other-niche category IDs or names always win over title keywords.
           // Unknown category IDs can still be imported when category-name or title
           // evidence matches the active niche; otherwise the row is skipped.
           if ((classifiedCategory && classifiedCategory !== nicheKey) ||
-              (classifiedByCategoryName && !classifiedCategory && !categoryNameMatch) ||
+              (!classifiedCategory && classifiedByCategoryName && !categoryNameMatch) ||
               (!classifiedCategory && !categoryNameMatch && !titleMatch) ||
               (classifiedCategory && !selectedCategoryIds.includes(categoryId))) {
             skipped++;
