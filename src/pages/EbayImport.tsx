@@ -32,7 +32,12 @@ const TITLE_PATTERNS: Record<string, RegExp> = {
   bicycles: /\b(bicycle|bikes?|mountain bike|road bike|cycling|bmx|bike frame|bike wheel)\b/i,
   motocross: /\b(motocross|dirt bike|enduro|mx bike|off.?road motorcycle|ktm|husqvarna|crf\d|yz\d|kx\d)\b/i,
   coins: /\b(coin|coins|denarius|dirham|drachm|drachma|tanker|half dirham|silver coin|ancient coin|banknote)\b/i,
-  surplus_flip: /\\b(surplus|pallet|job lot|bulk lot|clearance lot|mixed lot|wholesale lot|manifest|liquidation)\\b/i,
+  trading_cards: /\b(pokemon|pokémon|trading card|sports card|magic the gathering|yu-gi-oh|mtg|tcg)\b/i,
+  antiques: /\b(antique|antiquarian|vintage pottery|ceramic|porcelain|militaria|pocket watch|antique furniture)\b/i,
+  fossils: /\b(fossil|ammonite|trilobite|petrified|ichthyosaur|dinosaur bone)\b/i,
+  beauty: /\b(skincare|makeup|cosmetic|perfume|fragrance|beauty product|lipstick|foundation|serum)\b/i,
+  tech: /\b(laptop|computer|tablet|smartphone|console|graphics card|processor|monitor|electronics)\b/i,
+  surplus_flip: /\b(surplus|pallet|job lot|bulk lot|clearance lot|mixed lot|wholesale lot|manifest|liquidation)\b/i,
 };
 
 function normaliseKey(value: unknown): string {
