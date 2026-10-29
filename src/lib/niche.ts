@@ -20,13 +20,13 @@ export type SwishNicheId =
 export const NICHE_SPECIALISTS: Record<SwishNicheId, string[]> = {
   coins: [
     'coins', 'coins_uk', 'coins_world', 'islamic_silver', 'banknotes', 'gold', 'silver',
-    'jewellery_precious_metals', 'ancient_artefacts', 'curiosities_collectibles',
+    'jewellery_precious_metals', 'ancient_artefacts',
   ],
   motocross: ['motocross', 'mx'],
   bicycles: ['bicycles', 'bikes'],
-  clothing: ['clothing', 'trainers_sneakers', 'clothing_specialist'],
+  clothing: ['clothing', 'trainers_sneakers'],
   trading_cards: ['pokemon_cards', 'trading_cards', 'cards'],
-  antiques: ['antiques', 'curiosities_collectibles'],
+  antiques: ['antiques', 'books'],
   fossils: ['fossils'],
   beauty: ['beauty'],
   tech: ['tech', 'retro_games', 'retro_consoles'],
