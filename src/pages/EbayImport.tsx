@@ -17,6 +17,8 @@ const NICHE_CATEGORIES: Record<string, string[]> = {
   clothing: ['1059', '11450', '15724', '15725', '152506', '175748'],
   trading_cards: ['183454', '2536', '261328', '261329', '261330', '246'],
   antiques: ['20081', '20091', '870', '261186', '550', '37958', '360', '14324', '14325', '50', '13956'],
+  // These niches rely on title/category-name classification until their eBay
+  // category IDs are confirmed from the current marketplace taxonomy.
   fossils: [],
   beauty: [],
   tech: [],
