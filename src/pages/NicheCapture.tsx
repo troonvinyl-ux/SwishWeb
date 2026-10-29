@@ -5,7 +5,7 @@ import { useInsert } from '@/hooks/useSupabaseQuery';
 import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
-import { getDefaultSpecialistForNiche, getSpecialistIdsForNiche, type SwishNicheId } from '@/lib/niche';
+import { getDefaultSpecialistForNiche, getSpecialistIdsForNiche, normaliseNicheId, type SwishNicheId } from '@/lib/niche';
 import { ArrowLeft, Save, Package, Shirt, Bike, Coins, Wrench, Gamepad2, Gem, FlaskConical, Monitor, Hammer, Sparkles, Camera, CheckCircle2, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -301,11 +301,15 @@ export default function NicheCapture() {
     if (!sb) { toast.error('Backend not connected'); return; }
     const attributes:Record<string,string> = {};
     config.fields.forEach(field => { if (f(field.key).trim()) attributes[field.key]=f(field.key).trim(); });
+    const canonicalNiche = normaliseNicheId(niche);
+    const canonicalSpecialistId = canonicalNiche
+      ? getDefaultSpecialistForNiche(canonicalNiche)
+      : config.specialistId;
     const row:Record<string,unknown> = {
       tenant_id:tenantId,
       canonical_title:f('title').trim(),
       description:f('description').trim(),
-      specialist_id: niche === 'bikes' ? getDefaultSpecialistForNiche('bicycles') : niche === 'mx' ? getDefaultSpecialistForNiche('motocross') : niche === 'surplus_flip' ? getDefaultSpecialistForNiche('surplus_flip') : config.specialistId,
+      specialist_id: canonicalSpecialistId,
       status:'review_required',
       disposition_decision:'pending',
       condition:f('condition'),
@@ -315,7 +319,7 @@ export default function NicheCapture() {
       expected_selling_price:f('sale_price').trim() ? Number(f('sale_price')) : null,
       media:[],
       warnings:niche === 'clothing' && clothingIdentified ? ['AI-generated clothing attributes require user review; authenticity is not guaranteed.'] : ['Manual review required: no verified niche-specific AI identification has been run.'],
-      tags:[config.specialistId],
+      tags:[canonicalSpecialistId],
     };
     insert.mutate(row,{onSuccess:async(saved)=>{
       const id=(saved as Record<string,unknown>)?.id as string;
