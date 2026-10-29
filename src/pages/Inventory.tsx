@@ -8,7 +8,27 @@ import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { getActiveNicheId, getSpecialistIdsForNiche } from '@/lib/niche';
 
 type InventoryTab = 'stock' | 'draft' | 'live' | 'sold';
-type Row = Record<string, any>;
+type Row = {
+  [key: string]: unknown;
+  id?: string;
+  item_id?: string;
+  status?: string;
+  title?: string;
+  listing_title?: string;
+  name?: string;
+  sku?: string;
+  price?: number | string;
+  valuation_mid?: number | string;
+  valuation?: number | string;
+  expected_selling_price?: number | string;
+  sale_price?: number | string;
+  image_url?: string;
+  image?: string;
+  media?: unknown[];
+  images?: unknown[];
+  items?: { name?: string; specialist_id?: string } | null;
+  url?: string;
+};
 const TABS: Array<{id: InventoryTab; label: string; icon: typeof Package}> = [
   { id: 'stock', label: 'In Stock', icon: Archive },
   { id: 'draft', label: 'Draft', icon: Pencil },
@@ -56,11 +76,10 @@ export default function Inventory() {
     const q = search.trim().toLowerCase();
     if (!q) return base;
     return base.filter(item => {
-      const linked = item.items || {};
       return [item.title, item.listing_title, item.name, item.sku]
         .some(value => String(value || '').toLowerCase().includes(q));
     });
-  }, [tab, search, stockQuery.data, listingsQuery.data]);
+  }, [tab, search, stock, drafts, live, soldItems]);
 
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ['items'] });
