@@ -43,16 +43,16 @@ const TITLE_PATTERNS: Record<string, RegExp> = {
 };
 
 const CATEGORY_NAME_PATTERNS: Record<string, RegExp> = {
-  coins: /\\b(coin|numismatic|banknote|currency|medal|token|bullion)\\b/i,
-  motocross: /\\b(motocross|enduro|dirt bike|motorcycle|motorbike|pit bike)\\b/i,
-  bicycles: /\\b(bicycle|cycling|mountain bike|road bike|bmx|electric bike)\\b/i,
-  clothing: /\\b(clothing|fashion|shoes|trainers|sneakers|apparel|garment)\\b/i,
-  trading_cards: /\\b(trading cards?|pokemon|pokémon|sports cards?|collectible card)\\b/i,
-  antiques: /\\b(antiques?|antiquarian|pottery|ceramics|watches|militaria|fine jewellery)\\b/i,
-  fossils: /\\b(fossils?|ammonites?|trilobites?|minerals? and crystals)\\b/i,
-  beauty: /\\b(health and beauty|skincare|skin care|makeup|cosmetics?|fragrances?|perfumes?)\\b/i,
-  tech: /\\b(computers?|laptops?|tablets?|mobile phones?|electronics|computer components)\\b/i,
-  surplus_flip: /\\b(job lots?|surplus|pallets?|wholesale lots?|clearance lots?|liquidation)\\b/i,
+  coins: /\b(coin|numismatic|banknote|currency|medal|token|bullion)\b/i,
+  motocross: /\b(motocross|enduro|dirt bike|motorcycle|motorbike|pit bike)\b/i,
+  bicycles: /\b(bicycle|cycling|mountain bike|road bike|bmx|electric bike)\b/i,
+  clothing: /\b(clothing|fashion|shoes|trainers|sneakers|apparel|garment)\b/i,
+  trading_cards: /\b(trading cards?|pokemon|pokémon|sports cards?|collectible card)\b/i,
+  antiques: /\b(antiques?|antiquarian|pottery|ceramics|watches|militaria|fine jewellery)\b/i,
+  fossils: /\b(fossils?|ammonites?|trilobites?|minerals? and crystals)\b/i,
+  beauty: /\b(health and beauty|skincare|skin care|makeup|cosmetics?|fragrances?|perfumes?)\b/i,
+  tech: /\b(computers?|laptops?|tablets?|mobile phones?|electronics|computer components)\b/i,
+  surplus_flip: /\b(job lots?|surplus|pallets?|wholesale lots?|clearance lots?|liquidation)\b/i,
 };
 
 function normaliseKey(value: unknown): string {
