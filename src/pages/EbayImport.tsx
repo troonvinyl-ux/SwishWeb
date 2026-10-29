@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getSupabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
-import { getActiveNicheId } from '@/lib/niche';
+import { getActiveNicheId, getDefaultSpecialistForNiche, getSpecialistIdsForNiche } from '@/lib/niche';
 import { Upload, Download, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -15,12 +15,17 @@ const NICHE_CATEGORIES: Record<string, string[]> = {
   motocross: ['6760', '6759', '10767', '10768', '6761', '26455'],
   bicycles: ['2904', '56197', '177831', '48647', '56199', '177832', '2906', '15279'],
   clothing: ['1059', '11450', '15724', '15725', '152506', '175748'],
+  trading_cards: ['183454', '2536', '261328', '261329', '261330', '246'],
+  antiques: ['20081', '20091', '870', '261186', '550', '37958', '360', '14324', '14325', '50', '13956'],
+  fossils: [],
+  beauty: [],
+  tech: [],
+  surplus_flip: [],
 };
 const NICHE_SPECIALIST: Record<string, string> = {
-  coins: 'coins', motocross: 'motocross', mx: 'motocross', bicycles: 'bicycles',
-  bikes: 'bicycles', cycling: 'bicycles', bike_flipper: 'bicycles', clothing: 'clothing', fashion: 'clothing',
-  trainers: 'clothing', trainers_sneakers: 'clothing', threads: 'clothing', threads_flip: 'clothing',
-  flipper_mx: 'motocross', 'surplus-flip': 'surplus_trader', surplus_flip: 'surplus_trader',
+  coins: 'coins', motocross: 'motocross', bicycles: 'bicycles',
+  clothing: 'clothing', trading_cards: 'pokemon_cards', antiques: 'antiques',
+  fossils: 'fossils', beauty: 'beauty', tech: 'tech', surplus_flip: 'surplus_trader',
 };
 const TITLE_PATTERNS: Record<string, RegExp> = {
   clothing: /\b(jacket|coat|dress|jeans|shirt|trousers|shoes|trainers|hoodie|jumper|sweater|blazer|suit|handbag|skirt|top|cardigan|boots|fashion|vintage clothing)\b/i,
@@ -78,18 +83,10 @@ export default function EbayImport() {
   };
 
   const activeNiche = getActiveNicheId();
-  const specialistId = NICHE_SPECIALIST[activeNiche] || 'coins';
-  const selectedCategoryIds = NICHE_CATEGORIES[specialistId] || NICHE_CATEGORIES[activeNiche] || [];
-  const nicheSpecialistIds = specialistId === 'clothing'
-    ? ['clothing', 'trainers_sneakers']
-    : specialistId === 'bicycles'
-      ? ['bicycles', 'bikes']
-      : specialistId === 'motocross'
-        ? ['motocross', 'mx']
-        : specialistId === 'surplus_trader'
-          ? ['surplus_trader', 'surplus_flip']
-          : ['coins', 'coins_uk', 'coins_world', 'coins_currency', 'banknotes', 'gold', 'silver', 'islamic_silver', 'ancient_artefacts', 'numismatic'];
-  const nicheKey = specialistId === 'motocross' ? 'motocross' : specialistId === 'bicycles' ? 'bicycles' : specialistId === 'clothing' ? 'clothing' : specialistId === 'surplus_trader' ? 'surplus_flip' : 'coins';
+  const specialistId = NICHE_SPECIALIST[activeNiche] || getDefaultSpecialistForNiche(activeNiche);
+  const selectedCategoryIds = NICHE_CATEGORIES[activeNiche] || [];
+  const nicheSpecialistIds = getSpecialistIdsForNiche(activeNiche);
+  const nicheKey = activeNiche;
 
   const handleFile = (files: FileList | null) => {
     if (!files?.[0]) return;
