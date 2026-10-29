@@ -42,6 +42,19 @@ const TITLE_PATTERNS: Record<string, RegExp> = {
   surplus_flip: /\b(surplus|pallet|job lot|bulk lot|clearance lot|mixed lot|wholesale lot|manifest|liquidation)\b/i,
 };
 
+const CATEGORY_NAME_PATTERNS: Record<string, RegExp> = {
+  coins: /\\b(coin|numismatic|banknote|currency|medal|token|bullion)\\b/i,
+  motocross: /\\b(motocross|enduro|dirt bike|motorcycle|motorbike|pit bike)\\b/i,
+  bicycles: /\\b(bicycle|cycling|mountain bike|road bike|bmx|electric bike)\\b/i,
+  clothing: /\\b(clothing|fashion|shoes|trainers|sneakers|apparel|garment)\\b/i,
+  trading_cards: /\\b(trading cards?|pokemon|pokémon|sports cards?|collectible card)\\b/i,
+  antiques: /\\b(antiques?|antiquarian|pottery|ceramics|watches|militaria|fine jewellery)\\b/i,
+  fossils: /\\b(fossils?|ammonites?|trilobites?|minerals? and crystals)\\b/i,
+  beauty: /\\b(health and beauty|skincare|skin care|makeup|cosmetics?|fragrances?|perfumes?)\\b/i,
+  tech: /\\b(computers?|laptops?|tablets?|mobile phones?|electronics|computer components)\\b/i,
+  surplus_flip: /\\b(job lots?|surplus|pallets?|wholesale lots?|clearance lots?|liquidation)\\b/i,
+};
+
 function normaliseKey(value: unknown): string {
   return String(value ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
@@ -146,9 +159,16 @@ export default function EbayImport() {
           if (!externalId || !title) { skipped++; continue; }
 
           const classifiedCategory = Object.entries(NICHE_CATEGORIES).find(([, ids]) => ids.includes(categoryId))?.[0];
+          const categoryNameMatch = CATEGORY_NAME_PATTERNS[nicheKey]?.test(categoryName) ?? false;
+          const classifiedByCategoryName = Object.entries(CATEGORY_NAME_PATTERNS)
+            .find(([niche, pattern]) => niche !== nicheKey && pattern.test(categoryName))?.[0];
           const titleMatch = TITLE_PATTERNS[nicheKey]?.test(title) ?? false;
+          // Known other-niche category IDs or names always win over title keywords.
+          // Unknown category IDs can still be imported when category-name or title
+          // evidence matches the active niche; otherwise the row is skipped.
           if ((classifiedCategory && classifiedCategory !== nicheKey) ||
-              (!classifiedCategory && !titleMatch) ||
+              (classifiedByCategoryName && !classifiedCategory && !categoryNameMatch) ||
+              (!classifiedCategory && !categoryNameMatch && !titleMatch) ||
               (classifiedCategory && !selectedCategoryIds.includes(categoryId))) {
             skipped++;
             continue;
