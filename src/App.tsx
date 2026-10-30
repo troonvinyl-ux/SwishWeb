@@ -84,8 +84,13 @@ function AppRoutes() {
     '/clothes': 'clothing',
     '/threads': 'clothing',
     '/surplus': 'surplus_flip',
-  }[location.pathname as '/coins' | '/mx' | '/bikes' | '/clothes' | '/threads' | '/surplus'];
-  const safeNiche = hostProduct?.id || routeProduct || (['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins');
+    '/cards': 'trading_cards',
+    '/antiques': 'antiques',
+    '/fossils': 'fossils',
+    '/beauty': 'beauty',
+    '/tech': 'tech',
+  }[location.pathname as '/coins' | '/mx' | '/bikes' | '/clothes' | '/threads' | '/surplus' | '/cards' | '/antiques' | '/fossils' | '/beauty' | '/tech'];
+  const safeNiche = hostProduct?.id || routeProduct || (['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip', 'trading_cards', 'antiques', 'fossils', 'beauty', 'tech'].includes(preferredNiche) ? preferredNiche : 'coins');
   const needsOnboarding = !isOwner && user?.user_metadata?.onboarding_status === 'started';
   const entryWorkspace = needsOnboarding ? '/onboarding' : `/workspace/${safeNiche}`;
 
@@ -134,10 +139,15 @@ function AppRoutes() {
           <Route path="/bikes" element={<Navigate to={entryWorkspace} replace />} />
           <Route path="/threads" element={<Navigate to={entryWorkspace} replace />} />
           <Route path="/clothes" element={<Navigate to={entryWorkspace} replace />} />
-          <Route path="/surplus" element={<Navigate to={entryWorkspace} replace />} />
-          <Route path="/electronics" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
-          <Route path="/games" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
-          <Route path="/home" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
+          <Route path="/surplus" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/surplus_flip"} replace />} />
+          <Route path="/cards" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/trading_cards"} replace />} />
+          <Route path="/antiques" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/antiques"} replace />} />
+          <Route path="/fossils" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/fossils"} replace />} />
+          <Route path="/beauty" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/beauty"} replace />} />
+          <Route path="/tech" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/tech"} replace />} />
+          <Route path="/electronics" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/tech"} replace />} />
+          <Route path="/games" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/trading_cards"} replace />} />
+          <Route path="/home" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/antiques"} replace />} />
           <Route path="/workspace/:niche" element={<NicheWorkspace />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/niches" element={<NicheEntry />} />
