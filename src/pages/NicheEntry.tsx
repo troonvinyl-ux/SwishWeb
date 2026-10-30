@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
-import { getSpecialistIdsForNiche, type SwishNicheId } from '@/lib/niche';
+import { getSpecialistIdsForNiche, normaliseNicheId, type SwishNicheId } from '@/lib/niche';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Info, CheckCircle2, Circle, Coins, Bike, Shirt, Wrench, Package, Search, ShieldCheck, Grid3X3, Construction } from 'lucide-react';
@@ -20,6 +20,8 @@ type Niche = {
 };
 
 const OWNER_EMAIL = 'troonvinyl@gmail.com';
+// Set VITE_SWISH_NICHE on branded deployments to lock this web app to one niche.
+const BUILD_NICHE = normaliseNicheId(import.meta.env.VITE_SWISH_NICHE);
 const NICHES: Niche[] = [
   { id: 'coins', name: 'SWISH Coins', tagline: 'Identify, value and flip coins & collectibles', colour: '#F5C842', specialistCount: 8, marketplaces: ['eBay'], acquisitionSources: ['Auctions', 'Car boot sales', 'eBay'], categories: ['coins', 'islamic silver', 'banknotes', 'gold', '+4 more'], icon: Coins },
   { id: 'motocross', name: 'SWISH MX', tagline: 'Buy, prep and flip motocross & off-road bikes', colour: '#EF4444', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['eBay', 'Facebook Marketplace', 'Gumtree'], categories: ['motocross'], icon: Wrench },
@@ -35,6 +37,7 @@ export default function NicheEntry() {
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const [query, setQuery] = useState('');
   const [activeId, setActiveId] = useState(() => {
+    if (BUILD_NICHE) return BUILD_NICHE;
     const stored = localStorage.getItem('swish_active_niche') || String(user?.user_metadata?.preferred_niche || 'coins');
     return NICHES.some(n => n.id === stored) ? stored : 'coins';
   });
@@ -53,18 +56,19 @@ export default function NicheEntry() {
       return [] as string[];
     },
   });
-  const enabled = useMemo(() => isOwner ? NICHES.map(n => n.id) : NICHES.filter(n => getSpecialistIdsForNiche(n.id as SwishNicheId).some(id => activeSpecialists.includes(id))).map(n => n.id), [isOwner, activeSpecialists]);
-  const niches = useMemo(() => NICHES.filter(n => (n.name + ' ' + n.tagline + ' ' + n.categories.join(' ')).toLowerCase().includes(query.toLowerCase())), [query]);
+  const enabled = useMemo(() => BUILD_NICHE ? [BUILD_NICHE] : isOwner ? NICHES.map(n => n.id) : NICHES.filter(n => getSpecialistIdsForNiche(n.id as SwishNicheId).some(id => activeSpecialists.includes(id))).map(n => n.id), [isOwner, activeSpecialists]);
+  const niches = useMemo(() => NICHES.filter(n => (!BUILD_NICHE || n.id === BUILD_NICHE) && (n.name + ' ' + n.tagline + ' ' + n.categories.join(' ')).toLowerCase().includes(query.toLowerCase())), [query]);
   useEffect(() => { if (!tenantLoading && !entitlementsLoading && enabled.length && !enabled.includes(activeId)) { const first = enabled[0]; setActiveId(first); localStorage.setItem('swish_active_niche', first); localStorage.setItem('swish_active_niche_name', NICHES.find(n => n.id === first)?.name || first); } }, [tenantLoading, entitlementsLoading, enabled, activeId]);
 
   const selectNiche = (niche: Niche) => {
+    if (BUILD_NICHE && niche.id !== BUILD_NICHE) return;
     setActiveId(niche.id);
     localStorage.setItem('swish_active_niche', niche.id);
     localStorage.setItem('swish_active_niche_name', niche.name);
   };
   const toggleEnabled = (id: string) => {
     // Browser storage must never grant access to an unentitled niche.
-    if (enabled.includes(id)) selectNiche(NICHES.find(n => n.id === id) || NICHES[0]);
+    if (!BUILD_NICHE && enabled.includes(id)) selectNiche(NICHES.find(n => n.id === id) || NICHES[0]);
   };
   const done = () => {
     if (tenantLoading || entitlementsLoading) return;
@@ -83,7 +87,7 @@ export default function NicheEntry() {
         <div className="vertical-heading"><h1>SWISH Verticals</h1><p>Select your trading niche</p></div>
         {isOwner ? <button className="vertical-admin" onClick={() => navigate('/master-admin')} aria-label="Open Master Admin"><ShieldCheck className="w-6 h-6" /></button> : <span className="vertical-admin-placeholder" />}
       </header>
-      <div className="vertical-info"><Info className="w-4 h-4 shrink-0 mt-0.5" /><span>ONE SWISH ENGINE — switch between the niches included in your subscription. Your eBay connection is shared; inventory and workflows stay niche-scoped.</span></div>
+      <div className="vertical-info"><Info className="w-4 h-4 shrink-0 mt-0.5" /><span>{BUILD_NICHE ? 'This branded SWISH app is locked to its specialist niche. Inventory and workflows stay niche-scoped.' : 'ONE SWISH ENGINE — switch between the niches included in your subscription. Your eBay connection is shared; inventory and workflows stay niche-scoped.'}</span></div>
       <section className="vertical-content" aria-label="Trading niches">
         <div className="vertical-search"><Search className="w-4 h-4" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search niches…" aria-label="Search niches" /></div>
         <div className="vertical-list">
