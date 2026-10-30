@@ -81,6 +81,12 @@ export function normaliseNicheId(value: unknown): SwishNicheId | null {
 }
 
 export function getActiveNicheId(): SwishNicheId {
+  // A branded web deployment can be pinned at build time, matching the native
+  // SWISH_NICHE build profiles. This must outrank browser storage so a Threads
+  // deployment can never inherit a previous Coins session's UI/query context.
+  const buildNiche = normaliseNicheId(import.meta.env.VITE_SWISH_NICHE);
+  if (buildNiche) return buildNiche;
+
   // A registered product hostname is authoritative for that product's UI queries.
   // This prevents stale localStorage from another niche leaking into a standalone domain.
   try {
