@@ -42,6 +42,21 @@ const CONFIGS: Record<string, WorkspaceConfig> = {
     { label: 'Profits', detail: 'Track margins and realised sales', icon: BarChart3, to: '/money' },
     { label: 'Insights', detail: 'Review market and style insights', icon: Lightbulb, to: '/insights' },
   ] },
+  trading_cards: { id: 'trading_cards', name: 'Card Flipper', tagline: 'Identify, value and sell trading cards', detail: 'Pokémon · TCG · sports cards · collector sets', accent: '#8B5CF6', icon: Sparkles, scan: 'Scan Card', actions: [
+    { label: 'Scan Card', detail: 'Identify card, set and edition', icon: Camera, to: '/scan/cards' }, { label: 'My Cards', detail: 'Review saved card inventory', icon: Package, to: '/inventory' }, { label: 'Value & Research', detail: 'Review market values and opportunities', icon: BarChart3, to: '/opportunities' }, { label: 'List & Sell', detail: 'Prepare card listings', icon: Tag, to: '/listings' }, { label: 'Orders & Dispatch', detail: 'Track completed sales', icon: ShoppingCart, to: '/orders' },
+  ] },
+  antiques: { id: 'antiques', name: 'Antique Flipper', tagline: 'Discover the story. Understand the value.', detail: 'Antiques · vintage · collectables · books', accent: '#D97706', icon: Lightbulb, scan: 'Identify Antique', actions: [
+    { label: 'Identify Antique', detail: 'Research an object, maker and era', icon: Camera, to: '/scan/antiques' }, { label: 'My Antiques', detail: 'Review saved antiques and collectables', icon: Package, to: '/inventory' }, { label: 'Value Opportunities', detail: 'Review valuations and potential margins', icon: BarChart3, to: '/opportunities' }, { label: 'List & Sell', detail: 'Prepare marketplace listings', icon: Tag, to: '/listings' }, { label: 'Orders & Dispatch', detail: 'Track sales and fulfilment', icon: ShoppingCart, to: '/orders' },
+  ] },
+  fossils: { id: 'fossils', name: 'Fossil Flipper', tagline: 'Identify specimens. Discover their value.', detail: 'Fossils · minerals · geology · specimens', accent: '#06B6D4', icon: Sparkles, scan: 'Identify Specimen', actions: [
+    { label: 'Identify Specimen', detail: 'Identify a fossil, mineral or specimen', icon: Camera, to: '/scan/fossils' }, { label: 'My Specimens', detail: 'Review saved fossils and minerals', icon: Package, to: '/inventory' }, { label: 'Research & Value', detail: 'Review market values and opportunities', icon: BarChart3, to: '/opportunities' }, { label: 'List & Sell', detail: 'Prepare specimen listings', icon: Tag, to: '/listings' }, { label: 'Orders & Dispatch', detail: 'Track sales and fulfilment', icon: ShoppingCart, to: '/orders' },
+  ] },
+  beauty: { id: 'beauty', name: 'Beauty Flipper', tagline: 'Turn beauty stock into resale opportunities.', detail: 'Cosmetics · fragrance · skincare · haircare', accent: '#F43F5E', icon: Sparkles, scan: 'Identify Product', actions: [
+    { label: 'Identify Product', detail: 'Recognise beauty products and variants', icon: Camera, to: '/scan/beauty' }, { label: 'My Beauty Stock', detail: 'Review saved product inventory', icon: Package, to: '/inventory' }, { label: 'Value Opportunities', detail: 'Review prices and potential margins', icon: BarChart3, to: '/opportunities' }, { label: 'List & Sell', detail: 'Prepare beauty listings', icon: Tag, to: '/listings' }, { label: 'Orders & Dispatch', detail: 'Track sales and fulfilment', icon: ShoppingCart, to: '/orders' },
+  ] },
+  tech: { id: 'tech', name: 'Tech Flipper', tagline: 'Know the device. Know the value.', detail: 'Phones · consoles · computers · gadgets', accent: '#3B82F6', icon: Wrench, scan: 'Identify Tech', actions: [
+    { label: 'Identify Tech', detail: 'Recognise devices, models and variants', icon: Camera, to: '/scan/tech' }, { label: 'My Tech Stock', detail: 'Review saved devices and gadgets', icon: Package, to: '/inventory' }, { label: 'Value Opportunities', detail: 'Review market prices and margins', icon: BarChart3, to: '/opportunities' }, { label: 'List & Sell', detail: 'Prepare marketplace listings', icon: Tag, to: '/listings' }, { label: 'Orders & Dispatch', detail: 'Track sales and fulfilment', icon: ShoppingCart, to: '/orders' },
+  ] },
   surplus_flip: { id: 'surplus_flip', name: 'Surplus Flip', tagline: 'Turn job lots and pallet manifests into eBay listings', detail: 'Job lots · pallets · wholesale · returns', accent: '#14B8A6', icon: Package, scan: 'Match Product', actions: [
     { label: 'Import Manifest', detail: 'Bring a supplier manifest into SWISH', icon: Package, to: '/tools' },
     { label: 'Match Product Photo', detail: 'Identify product and packaging', icon: Camera, to: '/identify' },
@@ -76,7 +91,7 @@ export default function NicheWorkspace() {
   const { user } = useAuth();
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
   const preferred = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
-  const allowedNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferred) ? preferred : 'coins';
+  const allowedNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip', 'trading_cards', 'antiques', 'fossils', 'beauty', 'tech'].includes(preferred) ? preferred : 'coins';
   const config = useMemo(() => CONFIGS[niche] || CONFIGS.coins, [niche]);
   const BrandIcon = config.icon;
   const { data: inventoryCount } = useCount('inventory');
