@@ -5,7 +5,7 @@ import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 import { getSpecialistIdsForNiche, normaliseNicheId, type SwishNicheId } from '@/lib/niche';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Info, CheckCircle2, Circle, Coins, Bike, Shirt, Wrench, Package, Search, ShieldCheck, Grid3X3, Construction } from 'lucide-react';
+import { Info, CheckCircle2, Circle, Coins, Bike, Shirt, Wrench, Package, Search, ShieldCheck, Grid3X3, Construction, Watch, Gem, Heart, Smartphone } from 'lucide-react';
 
 type Niche = {
   id: string;
@@ -28,6 +28,11 @@ const NICHES: Niche[] = [
   { id: 'bicycles', name: 'SWISH Bikes', tagline: 'Identify, value and flip bicycles', colour: '#22C55E', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Facebook Marketplace', 'eBay', 'Gumtree'], categories: ['bicycles'], icon: Bike },
   { id: 'clothing', name: 'Threads Flip', tagline: 'Turn fashion into opportunity.', colour: '#E91E8C', specialistCount: 2, marketplaces: ['eBay'], acquisitionSources: ['Charity shops', 'Car boot sales', 'eBay'], categories: ['Vintage', 'Designer', 'Streetwear', 'High Street', 'Sustainable', 'Trainers', 'Accessories', 'Sportswear'], icon: Shirt },
   { id: 'surplus_flip', name: 'Surplus Flip', tagline: 'Turn job lots and pallet manifests into eBay listings', colour: '#14B8A6', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Job lots', 'Pallets', 'Wholesale manifests'], categories: ['Job lots', 'Pallets', 'Wholesale', 'Returns'], icon: Package },
+  { id: 'trading_cards', name: 'Card Flipper', tagline: 'Identify, assess and sell trading cards and TCG collectibles', colour: '#8B5CF6', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Card shops', 'Collections', 'Auctions'], categories: ['Trading cards', 'Pokémon', 'Sports cards', 'TCG'], icon: Package },
+  { id: 'antiques', name: 'Antique Flipper', tagline: 'Research and value antiques, vintage and collectables', colour: '#D97706', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Auctions', 'Estate sales', 'Antique fairs'], categories: ['Antiques', 'Vintage', 'Collectables', 'Books'], icon: Watch },
+  { id: 'fossils', name: 'Fossil Flipper', tagline: 'Identify fossils, minerals and specimens', colour: '#06B6D4', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Fossil fairs', 'Collections', 'Auctions'], categories: ['Fossils', 'Minerals', 'Specimens', 'Geology'], icon: Gem },
+  { id: 'beauty', name: 'Beauty Flipper', tagline: 'Identify and value beauty, fragrance and skincare stock', colour: '#F43F5E', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Clearance', 'Wholesale', 'Retail returns'], categories: ['Cosmetics', 'Fragrance', 'Skincare', 'Haircare'], icon: Heart },
+  { id: 'tech', name: 'Tech Flipper', tagline: 'Identify and value phones, consoles and gadgets', colour: '#3B82F6', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Trade-ins', 'Clearance', 'Customer returns'], categories: ['Phones', 'Consoles', 'Computers', 'Gadgets'], icon: Smartphone },
 ];
 
 export default function NicheEntry() {
