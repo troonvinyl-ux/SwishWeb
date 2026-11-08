@@ -61,5 +61,5 @@ export function scanPhotoStoragePath(itemId: string, slot: string, file: File): 
   const extension = namedExtension?.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10)
     || ({ 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' } as Record<string, string>)[file.type]
     || 'jpg';
-  return `${itemId}/${Date.now()}_${safeSlot}.${extension}`;
+  return `${itemId}/${safeSlot}_${crypto.randomUUID()}.${extension}`;
 }
