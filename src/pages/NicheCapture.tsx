@@ -69,8 +69,8 @@ export default function NicheCapture() {
     },
   });
   const isSupportedNiche = canonicalNicheId !== null;
-  const nicheAllowed = isSupportedNiche && (isOwner || getSpecialistIdsForNiche(canonicalNicheId).some(id => activeSpecialists.includes(id)));
-  useEffect(() => { if (nicheAllowed && isSupportedNiche) { localStorage.setItem('swish_active_niche', canonicalNicheId); document.documentElement.dataset.niche = canonicalNicheId; } }, [nicheAllowed, isSupportedNiche, canonicalNicheId]);
+  const nicheAllowed = canonicalNicheId !== null && (isOwner || getSpecialistIdsForNiche(canonicalNicheId).some(id => activeSpecialists.includes(id)));
+  useEffect(() => { if (nicheAllowed && canonicalNicheId) { localStorage.setItem('swish_active_niche', canonicalNicheId); document.documentElement.dataset.niche = canonicalNicheId; } }, [nicheAllowed, isSupportedNiche, canonicalNicheId]);
   const insert = useInsert('items', tenantId);
   const config = useMemo(() => CONFIG[niche] || CONFIG[normaliseNicheId(niche) === 'trading_cards' ? 'cards' : niche] || CONFIG.generic, [niche]);
   const Icon = config.icon;
