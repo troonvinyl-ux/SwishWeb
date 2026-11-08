@@ -51,6 +51,7 @@ import StockCheck from '@/pages/StockCheck';
 import NotFound from '@/pages/NotFound';
 import SwishFlipHome from '@/pages/SwishFlipHome';
 import { getHostProduct } from '@/lib/productContext';
+import { normaliseNicheId } from '@/lib/niche';
 
 const currentHostname = window.location.hostname.toLowerCase().replace(/^www\./, '').split(':')[0];
 const isSwishFlipMarketingHost = currentHostname === 'swishflip.co.uk';
@@ -85,7 +86,7 @@ function AppRoutes() {
     '/threads': 'clothing',
     '/surplus': 'surplus_flip',
   }[location.pathname as '/coins' | '/mx' | '/bikes' | '/clothes' | '/threads' | '/surplus'];
-  const safeNiche = hostProduct?.id || routeProduct || (['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(preferredNiche) ? preferredNiche : 'coins');
+  const safeNiche = hostProduct?.id || routeProduct || normaliseNicheId(preferredNiche) || 'coins';
   const needsOnboarding = !isOwner && user?.user_metadata?.onboarding_status === 'started';
   const entryWorkspace = needsOnboarding ? '/onboarding' : `/workspace/${safeNiche}`;
 
@@ -230,3 +231,4 @@ const App = () => (
 );
 
 export default App;
+

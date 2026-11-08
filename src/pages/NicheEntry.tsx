@@ -5,7 +5,7 @@ import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 import { getSpecialistIdsForNiche, type SwishNicheId } from '@/lib/niche';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Info, CheckCircle2, Circle, Coins, Bike, Shirt, Wrench, Package, Search, ShieldCheck, Grid3X3, Construction } from 'lucide-react';
+import { Info, CheckCircle2, Circle, Coins, Bike, Shirt, Wrench, Package, Search, ShieldCheck, Grid3X3, Construction, Gamepad2, Watch, Gem, Palette, Smartphone } from 'lucide-react';
 
 type Niche = {
   id: string;
@@ -25,6 +25,11 @@ const NICHES: Niche[] = [
   { id: 'motocross', name: 'SWISH MX', tagline: 'Buy, prep and flip motocross & off-road bikes', colour: '#EF4444', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['eBay', 'Facebook Marketplace', 'Gumtree'], categories: ['motocross'], icon: Wrench },
   { id: 'bicycles', name: 'SWISH Bikes', tagline: 'Identify, value and flip bicycles', colour: '#22C55E', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Facebook Marketplace', 'eBay', 'Gumtree'], categories: ['bicycles'], icon: Bike },
   { id: 'clothing', name: 'Threads Flip', tagline: 'Turn fashion into opportunity.', colour: '#E91E8C', specialistCount: 2, marketplaces: ['eBay'], acquisitionSources: ['Charity shops', 'Car boot sales', 'eBay'], categories: ['Vintage', 'Designer', 'Streetwear', 'High Street', 'Sustainable', 'Trainers', 'Accessories', 'Sportswear'], icon: Shirt },
+  { id: 'trading_cards', name: 'SWISH Cards', tagline: 'Grade, value and flip trading cards', colour: '#FACC15', specialistCount: 2, marketplaces: ['eBay'], acquisitionSources: ['Local shops', 'Collections', 'eBay'], categories: ['Pokémon', 'Sports', 'TCG', 'Condition'], icon: Gamepad2 },
+  { id: 'antiques', name: 'SWISH Antiques', tagline: 'Identify, value and sell antiques & collectibles', colour: '#D8AD52', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Auctions', 'Estate sales', 'Antique shops'], categories: ['Ceramics', 'Furniture', 'Silver', 'Art'], icon: Watch },
+  { id: 'fossils', name: 'SWISH Fossils', tagline: 'Identify, value and sell fossils & minerals', colour: '#8B5CF6', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Fossil shows', 'Rock shops', 'Collectors'], categories: ['Fossils', 'Minerals', 'Specimens', 'Provenance'], icon: Gem },
+  { id: 'beauty', name: 'SWISH Beauty', tagline: 'Source and flip beauty products at scale', colour: '#F472B6', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Wholesale', 'Clearance sales', 'Returns'], categories: ['Fragrance', 'Skincare', 'Cosmetics', 'Batch codes'], icon: Palette },
+  { id: 'tech', name: 'Tech Flipper', tagline: 'Identify, value and flip technology', colour: '#06B6D4', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Clearance stock', 'Auctions', 'Local listings'], categories: ['Phones', 'Consoles', 'Gadgets', 'Tested stock'], icon: Smartphone },
   { id: 'surplus_flip', name: 'Surplus Flip', tagline: 'Turn job lots and pallet manifests into eBay listings', colour: '#14B8A6', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Job lots', 'Pallets', 'Wholesale manifests'], categories: ['Job lots', 'Pallets', 'Wholesale', 'Returns'], icon: Package },
 ];
 
@@ -113,3 +118,4 @@ export default function NicheEntry() {
     </main>
   );
 }
+

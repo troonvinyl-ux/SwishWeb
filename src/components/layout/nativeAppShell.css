@@ -1,0 +1,139 @@
+/*
+ * Web adaptation of the native SWISH module dashboard.  These classes avoid
+ * changing the established data views while giving every specialist route the
+ * same quick-list, stage, metrics and tool rhythm as the mobile app.
+ */
+.native-workspace {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2px 0 2rem;
+}
+
+.native-workspace-quick-list {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 72px;
+  margin: 0 -0.75rem 1.25rem;
+  padding: 14px max(1rem, calc((100vw - 960px) / 2));
+  color: #101014;
+  background: var(--workspace-accent);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--workspace-accent) 22%, transparent);
+}
+.native-workspace-quick-list:hover { filter: brightness(1.04); }
+.native-workspace-quick-list:focus-visible,
+.native-workspace-action:focus-visible,
+.native-workspace-switch:focus-visible { outline: 2px solid var(--workspace-accent); outline-offset: 3px; }
+.native-workspace-quick-list strong,
+.native-workspace-quick-list small { display: block; }
+.native-workspace-quick-list strong { font-size: 16px; font-weight: 800; letter-spacing: -0.015em; }
+.native-workspace-quick-list small { margin-top: 2px; font-size: 12px; font-weight: 600; opacity: .78; }
+.native-workspace-quick-icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid rgb(0 0 0 / .12);
+  border-radius: 14px;
+  background: rgb(255 255 255 / .22);
+}
+.native-workspace-quick-icon svg { width: 22px; height: 22px; }
+.native-workspace-quick-arrow { width: 21px; height: 21px; flex: 0 0 auto; }
+
+.native-workspace-heading { display: flex; align-items: center; gap: 13px; margin: 0 0 16px; }
+.native-workspace-heading-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 16px;
+  color: var(--workspace-accent);
+  background: color-mix(in srgb, var(--workspace-accent) 13%, hsl(var(--card)));
+}
+.native-workspace-heading-icon svg { width: 25px; height: 25px; }
+.native-workspace-heading small,
+.native-workspace-section-heading > span {
+  display: block;
+  color: var(--workspace-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .13em;
+  line-height: 1.4;
+}
+.native-workspace-heading h1 { margin: 3px 0 0; font-size: clamp(1.25rem, 3vw, 1.65rem); font-weight: 800; letter-spacing: -.035em; }
+.native-workspace-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 8px 10px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 11px;
+  color: hsl(var(--muted-foreground));
+  font-size: 11px;
+  font-weight: 700;
+}
+.native-workspace-switch:hover { color: hsl(var(--foreground)); border-color: color-mix(in srgb, var(--workspace-accent) 55%, hsl(var(--border))); }
+.native-workspace-switch span { color: var(--workspace-accent); }
+
+.native-workspace-banner {
+  position: relative;
+  display: flex;
+  min-height: 192px;
+  overflow: hidden;
+  align-items: flex-end;
+  border: 1px solid color-mix(in srgb, var(--workspace-accent) 50%, hsl(var(--border)));
+  border-radius: 22px;
+  background: hsl(var(--card));
+  box-shadow: 0 14px 34px rgb(0 0 0 / .14);
+}
+.native-workspace-banner > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: .85; }
+.native-workspace-banner-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgb(0 0 0 / .05) 5%, rgb(0 0 0 / .28) 42%, rgb(4 5 8 / .92) 100%); }
+.native-workspace-banner-copy { position: relative; z-index: 1; width: 100%; padding: 19px; }
+.native-workspace-banner-copy p { max-width: 620px; margin: 0; color: #fff; font-size: clamp(1.28rem, 3vw, 1.85rem); font-weight: 800; line-height: 1.1; letter-spacing: -.035em; text-wrap: balance; }
+.native-workspace-banner-copy span { display: block; margin-top: 9px; color: rgb(255 255 255 / .84); font-size: 11px; font-weight: 700; letter-spacing: .065em; line-height: 1.45; text-transform: uppercase; }
+
+.native-workspace-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 15px 0 25px; padding: 15px 8px; border: 1px solid hsl(var(--border)); border-radius: 18px; background: hsl(var(--card)); }
+.native-workspace-metrics > div { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 4px; border-right: 1px solid hsl(var(--border)); }
+.native-workspace-metrics > div:last-child { border-right: 0; }
+.native-workspace-metrics strong { color: var(--workspace-accent); font-size: clamp(1.45rem, 4vw, 1.9rem); font-variant-numeric: tabular-nums; font-weight: 800; line-height: 1; }
+.native-workspace-metrics span { color: hsl(var(--muted-foreground)); font-size: 11px; font-weight: 600; }
+
+.native-workspace-section-heading { margin: 0 0 13px; }
+.native-workspace-section-heading p { margin: 4px 0 0; color: hsl(var(--muted-foreground)); font-size: 13px; }
+.native-workspace-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.native-workspace-action { display: flex; min-height: 140px; flex-direction: column; align-items: flex-start; gap: 11px; padding: 17px; border: 1px solid color-mix(in srgb, var(--workspace-accent) 46%, hsl(var(--border))); border-radius: 18px; background: hsl(var(--card)); box-shadow: 0 8px 22px rgb(0 0 0 / .08); transition: transform .16s ease, border-color .16s ease, background .16s ease; }
+.native-workspace-action:hover { transform: translateY(-2px); border-color: var(--workspace-accent); background: color-mix(in srgb, var(--workspace-accent) 6%, hsl(var(--card))); }
+.native-workspace-action-icon { display: grid; width: 43px; height: 43px; place-items: center; border-radius: 14px; color: var(--workspace-accent); background: color-mix(in srgb, var(--workspace-accent) 14%, transparent); }
+.native-workspace-action-icon svg { width: 23px; height: 23px; }
+.native-workspace-action-copy { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
+.native-workspace-action-copy strong { color: hsl(var(--foreground)); font-size: 14px; font-weight: 750; line-height: 1.25; }
+.native-workspace-action-copy small { color: hsl(var(--muted-foreground)); font-size: 12px; line-height: 1.42; }
+.native-workspace-action-arrow { width: 17px; height: 17px; margin-top: auto; color: var(--workspace-accent); }
+
+.native-workspace-guidance { display: flex; align-items: flex-start; gap: 11px; margin-top: 18px; padding: 15px; border-radius: 17px; background: color-mix(in srgb, var(--workspace-accent) 10%, hsl(var(--card))); color: hsl(var(--foreground)); }
+.native-workspace-guidance > svg { width: 21px; height: 21px; flex: 0 0 auto; color: var(--workspace-accent); }
+.native-workspace-guidance span { display: flex; flex-direction: column; gap: 3px; }
+.native-workspace-guidance strong { font-size: 13px; font-weight: 750; }
+.native-workspace-guidance small { color: hsl(var(--muted-foreground)); font-size: 12px; line-height: 1.5; }
+
+@media (min-width: 1024px) {
+  .native-workspace-quick-list { margin: -1.5rem -1.5rem 1.7rem; padding-left: calc(max(1.5rem, (100vw - 1198px) / 2)); padding-right: calc(max(1.5rem, (100vw - 1198px) / 2)); }
+  .native-workspace { padding-top: 0; }
+}
+@media (max-width: 520px) {
+  .native-workspace { padding-bottom: 1rem; }
+  .native-workspace-quick-list { margin-top: -0.75rem; margin-bottom: 1rem; }
+  .native-workspace-quick-list strong { font-size: 14px; }
+  .native-workspace-quick-list small { font-size: 11px; }
+  .native-workspace-banner { min-height: 178px; border-radius: 19px; }
+  .native-workspace-banner-copy { padding: 15px; }
+  .native-workspace-actions { grid-template-columns: 1fr; gap: 9px; }
+  .native-workspace-action { min-height: 0; flex-direction: row; align-items: center; gap: 12px; padding: 13px; }
+  .native-workspace-action-icon { width: 42px; height: 42px; flex: 0 0 auto; }
+  .native-workspace-action-arrow { margin: 0 0 0 auto; flex: 0 0 auto; }
+}
+
