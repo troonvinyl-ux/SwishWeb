@@ -123,7 +123,7 @@ export default function NicheCapture() {
         if (typeof title === 'string' && title.trim()) next.title = title.trim();
         config.fields.forEach(field => {
           const candidate = attributes[field.key] ?? result[field.key];
-          if ((typeof candidate === 'string' && candidate.trim() && !/^(unknown|not established|n\\/a)$/i.test(candidate.trim())) || typeof candidate === 'number') next[field.key] = String(candidate);
+          if ((typeof candidate === 'string' && candidate.trim() && !/^(unknown|not established|n\/a)$/i.test(candidate.trim())) || typeof candidate === 'number') next[field.key] = String(candidate);
         });
         return next;
       });

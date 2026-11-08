@@ -1,41 +1,52 @@
-/** Shared browser photo preparation for all SWISH specialist scanners.
- * The original File remains available for inventory storage; the compressed
- * data URL is used only for AI inference. Never fabricate missing evidence.
- */
-export type ScanPhoto = { slotId: string; label: string; file: File };
-export type PreparedScan = { images: string[]; imageLabels: string[]; slots: string[] };
+/** Browser photo preparation only; uses SWISH's existing item-images path contract. */
+export interface ScanPhoto {
+  slotId: string;
+  label: string;
+  file: File;
+}
 
-export async function prepareScanPhotos(
-  photos: readonly ScanPhoto[],
-  maxDimension = 1024,
-  jpegQuality = 0.65,
-): Promise<PreparedScan> {
-  if (!Number.isFinite(maxDimension) || maxDimension < 1) throw new Error('Invalid photo dimension');
-  if (!Number.isFinite(jpegQuality) || jpegQuality <= 0 || jpegQuality > 1) throw new Error('Invalid JPEG quality');
-  const images = await Promise.all(photos.map(async ({ file }) => {
-    if (!file.type.startsWith('image/')) throw new Error('Please select an image file');
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error('Unable to read image'));
-      reader.readAsDataURL(file);
-    });
-    return new Promise<string>((resolve, reject) => {
-      const source = new Image();
-      source.onload = () => {
-        const scale = Math.min(1, maxDimension / Math.max(source.naturalWidth, source.naturalHeight));
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.max(1, Math.round(source.naturalWidth * scale));
-        canvas.height = Math.max(1, Math.round(source.naturalHeight * scale));
-        const context = canvas.getContext('2d');
-        if (!context) { reject(new Error('Image processing is unavailable')); return; }
-        context.drawImage(source, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', jpegQuality));
-      };
-      source.onerror = () => reject(new Error('Unable to decode image'));
-      source.src = dataUrl;
-    });
-  }));
+export interface PreparedScanPhotos {
+  images: string[];
+  imageLabels: string[];
+  slots: string[];
+}
+
+async function preparePhoto(file: File): Promise<string> {
+  if (!file.size) throw new Error('The selected photo is empty');
+  if (file.type && !file.type.startsWith('image/')) {
+    throw new Error('Please select an image file');
+  }
+  const sourceUrl = URL.createObjectURL(file);
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const source = new Image();
+    source.onload = () => {
+      URL.revokeObjectURL(sourceUrl);
+      resolve(source);
+    };
+    source.onerror = () => {
+      URL.revokeObjectURL(sourceUrl);
+      reject(new Error('Could not decode the selected photo. Try a JPEG or PNG image.'));
+    };
+    source.src = sourceUrl;
+  });
+  if (!image.naturalWidth || !image.naturalHeight) {
+    throw new Error('The selected photo has no readable dimensions');
+  }
+  // Match specialist capture: max 1024px, JPEG quality 0.65.
+  const scale = Math.min(1, 1024 / Math.max(image.naturalWidth, image.naturalHeight));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Photo processing is unavailable in this browser');
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', 0.65);
+}
+
+export async function prepareScanPhotos(photos: readonly ScanPhoto[]): Promise<PreparedScanPhotos> {
+  if (!photos.length) throw new Error('Add a photo before identifying the item');
+  // Promise.all preserves the profile order and alignment with labels and slots.
+  const images = await Promise.all(photos.map(photo => preparePhoto(photo.file)));
   return {
     images,
     imageLabels: photos.map(photo => photo.label),
@@ -43,8 +54,12 @@ export async function prepareScanPhotos(
   };
 }
 
-export function scanPhotoStoragePath(itemId: string, slotId: string, file: File): string {
-  const safeSlot = slotId.replace(/[^a-z0-9_-]/gi, '-');
-  const suffix = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
-  return `${itemId}/${safeSlot}-${crypto.randomUUID()}.${suffix}`;
+export function scanPhotoStoragePath(itemId: string, slot: string, file: File): string {
+  if (!/^[a-z0-9_-]+$/i.test(itemId)) throw new Error('A valid inventory item ID is required');
+  const safeSlot = slot.replace(/[^a-z0-9_-]/gi, '-').slice(0, 64) || 'photo';
+  const namedExtension = file.name.includes('.') ? file.name.split('.').pop() : '';
+  const extension = namedExtension?.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10)
+    || ({ 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' } as Record<string, string>)[file.type]
+    || 'jpg';
+  return `${itemId}/${Date.now()}_${safeSlot}.${extension}`;
 }
