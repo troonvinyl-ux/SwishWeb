@@ -6,7 +6,7 @@ import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { SCAN_PROFILES } from '@/lib/sharedScanFlow';
-import { scanPhotoStoragePath } from '@/lib/sharedScanPhotos';
+import { prepareScanPhotos, scanPhotoStoragePath } from '@/lib/sharedScanPhotos';
 import { getDefaultSpecialistForNiche, getSpecialistIdsForNiche, normaliseNicheId, type SwishNicheId } from '@/lib/niche';
 import { ArrowLeft, Save, Package, Shirt, Bike, Coins, Wrench, Gamepad2, Gem, FlaskConical, Monitor, Hammer, Sparkles, Camera, CheckCircle2, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -82,7 +82,59 @@ export default function NicheCapture() {
   const setEvidencePhoto = (slot:string,file?:File) => {
     if (!file) return;
     setEvidencePhotos(previous => ({...previous,[slot]:file}));
+    setEvidenceIdentified(false);
+    setEvidenceAiResult(null);
     setEvidencePreviews(previous => ({...previous,[slot]:URL.createObjectURL(file)}));
+  };
+  const [identifyingEvidence, setIdentifyingEvidence] = useState(false);
+  const [evidenceIdentified, setEvidenceIdentified] = useState(false);
+  const [evidenceAiError, setEvidenceAiError] = useState('');
+  const [evidenceAiResult, setEvidenceAiResult] = useState<Record<string, unknown> | null>(null);
+  const identifyEvidence = async () => {
+    if (!scanProfile) return;
+    const missing = scanProfile.evidence.filter(slot => slot.required && !evidencePhotos[slot.id]);
+    if (missing.length) { toast.error('Add required photos: ' + missing.map(slot => slot.label).join(', ')); return; }
+    setIdentifyingEvidence(true);
+    setEvidenceAiError('');
+    try {
+      const photos = scanProfile.evidence.filter(slot => evidencePhotos[slot.id]).map(slot => ({
+        slotId: slot.id, label: slot.label, file: evidencePhotos[slot.id],
+      }));
+      const prepared = await prepareScanPhotos(photos);
+      const sb = getSupabaseClient() || await getSupabaseClientAsync();
+      if (!sb) throw new Error('SWISH backend is not connected');
+      const { data, error } = await sb.functions.invoke('swish-identify', {
+        body: {
+          images: prepared.images,
+          imageLabels: prepared.imageLabels,
+          specialistId: getDefaultSpecialistForNiche(canonicalNicheId),
+          acquisitionContext: scanProfile.name + ': identify only details supported by the photographed evidence. Flag uncertain identity, model, condition and authenticity; never invent attributes or prices.',
+          knownAttributes: { existingAttributes: { niche: canonicalNicheId, photoSlots: prepared.slots } },
+        },
+      });
+      if (error) throw new Error(error.message || 'Identification request failed');
+      const result = (data?.identification || data?.result?.identification || data?.result || data) as Record<string, unknown>;
+      if (!result || typeof result !== 'object' || !Object.keys(result).length) throw new Error('No identification returned');
+      const record = (value: unknown): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+      const attributes = { ...record(result.attributesInferred), ...record(result.attributes), ...record(result.attributesConfirmed) };
+      setForm(previous => {
+        const next = { ...previous };
+        const title = result.canonicalTitle ?? result.title ?? attributes.canonicalTitle;
+        if (typeof title === 'string' && title.trim()) next.title = title.trim();
+        config.fields.forEach(field => {
+          const candidate = attributes[field.key] ?? result[field.key];
+          if ((typeof candidate === 'string' && candidate.trim() && !/^(unknown|not established|n\\/a)$/i.test(candidate.trim())) || typeof candidate === 'number') next[field.key] = String(candidate);
+        });
+        return next;
+      });
+      setEvidenceAiResult(result);
+      setEvidenceIdentified(true);
+      toast.success('AI suggestions ready — confirm and edit the details before saving');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Identification failed';
+      setEvidenceAiError(message);
+      toast.error(message);
+    } finally { setIdentifyingEvidence(false); }
   };
   const [clothingPhotos, setClothingPhotos] = useState<Record<string, File | null>>({ brand: null, garment: null, detail: null });
   const clothingFileInputs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -331,7 +383,7 @@ export default function NicheCapture() {
       valuation_mid:f('valuation').trim() ? Number(f('valuation')) : null,
       expected_selling_price:f('sale_price').trim() ? Number(f('sale_price')) : null,
       media:[],
-      warnings:niche === 'clothing' && clothingIdentified ? ['AI-generated clothing attributes require user review; authenticity is not guaranteed.'] : ['Manual review required: no verified niche-specific AI identification has been run.', ...(!f('title').trim() ? ['Identity and title still need confirmation before listing.'] : [])],
+      warnings:(niche === 'clothing' ? clothingIdentified : evidenceIdentified) ? ['AI-suggested attributes require user confirmation; identity and authenticity are not guaranteed.'] : ['Manual review required: no verified niche-specific AI identification has been run.', ...(!f('title').trim() ? ['Identity and title still need confirmation before listing.'] : [])],
       tags:[canonicalSpecialistId],
     };
     insert.mutate(row,{onSuccess:async(saved)=>{
@@ -442,8 +494,14 @@ export default function NicheCapture() {
   return <div className="space-y-4 animate-fade-in max-w-4xl" style={{'--workspace-accent':'#ff557e'} as React.CSSProperties}>
     <div className="flex items-center gap-3"><Link to={'/workspace/'+niche} className="btn-ghost py-1.5 px-2"><ArrowLeft className="w-4 h-4"/></Link><div className="flex-1"><h1 className="page-title">{config.name}: scan & assess</h1><p className="page-subtitle">Capture item details, review them, then save to the specialist inventory.</p></div></div>
     <div className="swish-card p-4 flex gap-3 items-start"><Icon className="w-6 h-6 swish-gold shrink-0 mt-1"/><div><h2 className="font-semibold">{config.name} workflow</h2><p className="text-sm text-muted-foreground mt-1">{config.description}</p>{niche==='coins'&&<p className="text-xs mt-2">Coin Flipper keeps its dedicated obverse/reverse identification workflow.</p>}</div></div>
-    <div className="swish-card p-4 space-y-4"><h2 className="font-semibold">1. Identify the item</h2>{scanProfile && <div className="rounded-xl border border-border p-3 text-sm"><p className="font-medium">Shared capture evidence</p><p className="text-muted-foreground mt-1">{scanProfile.evidence.map(slot => `${slot.label}${slot.required ? " (required)" : " (optional)"}`).join(" · ")}{scanProfile.barcode ? " · Barcode supported" : ""}</p><p className="text-xs text-muted-foreground mt-1">Capture guidance only; automated scanning and eBay submission are not yet enabled on this page.</p></div>}<p className="text-xs text-muted-foreground">This form records evidence and user-confirmed details. It does not claim an AI identification has run.</p>
-      {scanProfile && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{scanProfile.evidence.map(slot => <label key={slot.id} className="rounded-xl border border-border p-2 cursor-pointer"><span className="block text-sm font-medium">{slot.label}{slot.required ? " *" : ""}</span><span className="block text-xs text-muted-foreground">Take photo or choose image</span><input className="mt-2 block w-full text-xs" type="file" accept="image/*" capture="environment" onChange={event => setEvidencePhoto(slot.id,event.target.files?.[0])}/>{evidencePreviews[slot.id] && <img src={evidencePreviews[slot.id]} alt={`${slot.label} evidence`} className="mt-2 aspect-square w-full rounded-lg object-contain" />}</label>)}</div>}
+    <div className="swish-card p-4 space-y-4"><h2 className="font-semibold">1. Identify the item</h2>{scanProfile && <div className="rounded-xl border border-border p-3 text-sm"><p className="font-medium">Shared capture evidence</p><p className="text-muted-foreground mt-1">{scanProfile.evidence.map(slot => `${slot.label}${slot.required ? " (required)" : " (optional)"}`).join(" · ")}{scanProfile.barcode ? " · Barcode supported" : ""}</p><p className="text-xs text-muted-foreground mt-1">Photograph the required evidence, identify with SWISH AI, then confirm the suggestions. Saving does not publish to eBay.</p></div>}<p className="text-xs text-muted-foreground">This form records evidence and user-confirmed details. It does not claim an AI identification has run.</p>
+      {scanProfile && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{scanProfile.evidence.map(slot => <label key={slot.id} className="rounded-xl border border-border p-2 cursor-pointer"><span className="block text-sm font-medium">{slot.label}{slot.required ? " *" : ""}</span><span className="block text-xs text-muted-foreground">Take photo or choose image</span><input className="mt-2 block w-full text-xs" type="file" accept="image/*" onChange={event => setEvidencePhoto(slot.id,event.target.files?.[0])}/>{evidencePreviews[slot.id] && <img src={evidencePreviews[slot.id]} alt={`${slot.label} evidence`} className="mt-2 aspect-square w-full rounded-lg object-contain" />}</label>)}</div>}
+      {scanProfile && niche !== 'coins' && <div className="space-y-2">
+        <button type="button" className="btn-primary w-full justify-center" onClick={() => void identifyEvidence()} disabled={identifyingEvidence || !scanProfile.evidence.filter(slot => slot.required).every(slot => Boolean(evidencePhotos[slot.id]))}><Sparkles className="h-4 w-4"/>{identifyingEvidence ? 'Identifying…' : 'Identify from photos'}</button>
+        {evidenceAiError && <p role="alert" className="text-sm text-red-500">{evidenceAiError}</p>}
+        {evidenceIdentified && <p className="text-sm text-muted-foreground"><CheckCircle2 className="mr-1 inline h-4 w-4"/>AI suggestions filled in below. Confirm or correct them before saving; identity and authenticity are not verified.</p>}
+        {evidenceAiResult && <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">View identification evidence</summary><pre className="mt-2 whitespace-pre-wrap break-words">{JSON.stringify(evidenceAiResult, null, 2)}</pre></details>}
+      </div>}
       <div><label className="text-xs text-muted-foreground">Item title *</label><input className="input-field mt-1" value={f('title')} onChange={e=>setF('title',e.target.value)} placeholder={niche==='clothing'?'e.g. Vintage Nike track jacket size L':'Item title'}/></div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{config.fields.map(field=><div key={field.key}><label className="text-xs text-muted-foreground">{field.label}</label>{field.type==='select'?<select className="input-field mt-1" value={f(field.key)} onChange={e=>setF(field.key,e.target.value)}><option value="">Select…</option>{(field.options||[]).map(option=><option key={option} value={option}>{option}</option>)}</select>:<input className="input-field mt-1" type={field.type||'text'} value={f(field.key)} onChange={e=>setF(field.key,e.target.value)} placeholder={field.placeholder||field.label}/>}</div>)}</div>
       <div><label className="text-xs text-muted-foreground">Description / notes</label><textarea className="input-field mt-1" rows={4} value={f('description')} onChange={e=>setF('description',e.target.value)} placeholder="Visible details, label text, measurements, included accessories and evidence…"/></div>
