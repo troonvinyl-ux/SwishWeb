@@ -25,5 +25,7 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Lint
         run: npm run lint
+      - name: Niche mapping regression check
+        run: npm run test:niches
       - name: Build
         run: npm run build
