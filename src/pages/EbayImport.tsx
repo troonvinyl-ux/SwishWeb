@@ -24,11 +24,6 @@ const NICHE_CATEGORIES: Record<string, string[]> = {
   tech: [],
   surplus_flip: [],
 };
-const NICHE_SPECIALIST: Record<string, string> = {
-  coins: 'coins', motocross: 'motocross', bicycles: 'bicycles',
-  clothing: 'clothing', trading_cards: 'pokemon_cards', antiques: 'antiques',
-  fossils: 'fossils', beauty: 'beauty', tech: 'tech', surplus_flip: 'surplus_trader',
-};
 const TITLE_PATTERNS: Record<string, RegExp> = {
   clothing: /\b(jacket|coat|dress|jeans|shirt|trousers|shoes|trainers|hoodie|jumper|sweater|blazer|suit|handbag|skirt|top|cardigan|boots|fashion|vintage clothing)\b/i,
   bicycles: /\b(bicycle|bikes?|mountain bike|road bike|cycling|bmx|bike frame|bike wheel)\b/i,
@@ -103,7 +98,9 @@ export default function EbayImport() {
   };
 
   const activeNiche = getActiveNicheId();
-  const specialistId = NICHE_SPECIALIST[activeNiche] || getDefaultSpecialistForNiche(activeNiche);
+  // Creation, filtering, and capture must share one canonical specialist map.
+  // Keeping it in lib/niche avoids imports drifting from the active workspace.
+  const specialistId = getDefaultSpecialistForNiche(activeNiche);
   const selectedCategoryIds = NICHE_CATEGORIES[activeNiche] || [];
   const nicheSpecialistIds = getSpecialistIdsForNiche(activeNiche);
   const nicheKey = activeNiche;

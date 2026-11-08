@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { callEdgeFunction, EdgeFunctionError, getSupabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTable } from '@/hooks/useSupabaseQuery';
@@ -8,7 +8,7 @@ import { Wallet, RefreshCw, AlertTriangle } from 'lucide-react';
 
 export default function EbayFinances() {
   const { user } = useAuth();
-  const { tenantId } = useCurrentTenantId();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
   const [summaryError, setSummaryError] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -20,22 +20,21 @@ export default function EbayFinances() {
     enabled: Boolean(tenantId),
   });
 
-  const loadSummary = async () => {
+  const loadSummary = useCallback(async () => {
+    // Wait for the membership-backed workspace resolver rather than treating
+    // the initial null tenant as an eBay API error.
+    if (tenantLoading) {
+      setLoading(true);
+      return;
+    }
     setLoading(true);
     setSummaryError('');
     try {
       const sb = getSupabaseClient();
       if (!sb || !user) throw new Error('Please sign in again before loading eBay finances.');
-      const { data: membership, error: membershipError } = await sb
-        .from('tenant_memberships')
-        .select('tenant_id')
-        .eq('user_id', user.id)
-        .limit(1)
-        .maybeSingle();
-      if (membershipError) throw membershipError;
-      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready.');
+      if (!tenantId) throw new Error('Your SWISH workspace is not ready.');
       const { data, error } = await callEdgeFunction<Record<string, unknown>>('swish-ebay-finances', {
-        tenantId: membership.tenant_id, route: 'get_summary', daysBack: 90,
+        tenantId, route: 'get_summary', daysBack: 90,
       }, sb);
       if (error) throw error;
       const apiSummary = (data?.summary || {}) as Record<string, unknown>;
@@ -46,9 +45,9 @@ export default function EbayFinances() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tenantId, tenantLoading, user]);
 
-  useEffect(() => { loadSummary(); }, []);
+  useEffect(() => { void loadSummary(); }, [loadSummary]);
 
   const txItems = (financialRows || []) as Record<string, unknown>[];
   const payoutItems = txItems.filter(t => t.transaction_type === 'PAYOUT');

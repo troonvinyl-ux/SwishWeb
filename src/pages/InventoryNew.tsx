@@ -26,9 +26,12 @@ const DEFAULT_FORM = {
 
 export default function InventoryNew() {
   const navigate = useNavigate();
-  const insert = useInsert('items');
   const { user } = useAuth();
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  // Keep both the mutation and payload scoped to the resolved workspace. This
+  // prevents a tenant change between render and save from writing outside the
+  // active SWISH workspace.
+  const insert = useInsert('items', tenantId);
   const activeNiche = getActiveNicheId();
   const [form, setForm] = useState<Record<string, unknown>>(DEFAULT_FORM);
 
