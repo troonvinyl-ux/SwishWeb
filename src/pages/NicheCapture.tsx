@@ -296,7 +296,9 @@ export default function NicheCapture() {
   const save = async () => {
     if (niche === 'coins') { navigate('/identify'); return; }
     if (niche === 'clothing' && !clothingIdentified) { toast.error('Photograph the brand label and run Threads Flip identification before saving'); return; }
-    if (!f('title').trim()) { toast.error('The AI needs to identify an item title before saving. Run identification, then review or edit the title.'); return; }
+    // Saving a private review draft must not depend on a successful identification.
+    // Publishing is a separate, explicitly approved operation with stricter preflight.
+    const draftTitle = f('title').trim() || 'Unidentified item — review required';
     if (!user?.id) { toast.error('Please sign in before creating inventory'); return; }
     if (!tenantId || tenantLoading) { toast.error('Your SWISH workspace is not ready.'); return; }
     const sb = getSupabaseClient() || await getSupabaseClientAsync();
@@ -309,7 +311,7 @@ export default function NicheCapture() {
       : config.specialistId;
     const row:Record<string,unknown> = {
       tenant_id:tenantId,
-      canonical_title:f('title').trim(),
+      canonical_title:draftTitle,
       description:f('description').trim(),
       specialist_id: canonicalSpecialistId,
       status:'review_required',
@@ -320,7 +322,7 @@ export default function NicheCapture() {
       valuation_mid:f('valuation').trim() ? Number(f('valuation')) : null,
       expected_selling_price:f('sale_price').trim() ? Number(f('sale_price')) : null,
       media:[],
-      warnings:niche === 'clothing' && clothingIdentified ? ['AI-generated clothing attributes require user review; authenticity is not guaranteed.'] : ['Manual review required: no verified niche-specific AI identification has been run.'],
+      warnings:niche === 'clothing' && clothingIdentified ? ['AI-generated clothing attributes require user review; authenticity is not guaranteed.'] : ['Manual review required: no verified niche-specific AI identification has been run.', ...(!f('title').trim() ? ['Identity and title still need confirmation before listing.'] : [])],
       tags:[canonicalSpecialistId],
     };
     insert.mutate(row,{onSuccess:async(saved)=>{
