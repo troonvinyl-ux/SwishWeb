@@ -121,10 +121,31 @@ export default function NicheCapture() {
       setForm(previous => {
         const next = { ...previous };
         const title = result.canonicalTitle ?? result.title ?? attributes.canonicalTitle;
-        if (typeof title === 'string' && title.trim()) next.title = title.trim();
+        if (typeof title === 'string' && title.trim() && !next.title?.trim()) next.title = title.trim();
+        const aliases: Record<string, string[]> = {
+          brand: ['manufacturer', 'maker', 'brandName', 'make'],
+          model: ['modelNumber', 'modelName', 'sku', 'productModel'],
+          category: ['objectType', 'productType', 'itemType', 'deviceType'],
+          condition: ['conditionAssessment', 'itemCondition'],
+          material: ['composition', 'materials'],
+          period: ['era', 'datePeriod'],
+          size: ['taggedSize', 'dimensions'],
+          colour: ['color', 'primaryColor'],
+          issues: ['faults', 'damage', 'defects'],
+          specs: ['specifications', 'technicalSpecifications'],
+        };
         config.fields.forEach(field => {
-          const candidate = attributes[field.key] ?? result[field.key];
-          if ((typeof candidate === 'string' && candidate.trim() && !/^(unknown|not established|n\/a)$/i.test(candidate.trim())) || typeof candidate === 'number') next[field.key] = String(candidate);
+          const keys = [field.key, ...(aliases[field.key] ?? [])];
+          const candidate = keys.map(key => attributes[key] ?? result[key]).find(value =>
+            (typeof value === 'string' && value.trim() && !/^(unknown|not established|n\/a)$/i.test(value.trim())) ||
+            (typeof value === 'number' && Number.isFinite(value))
+          );
+          if (candidate === undefined) return;
+          const value = String(candidate).trim();
+          // Never insert an AI value that the field's fixed options cannot represent.
+          if (field.type === 'select' && field.options && !field.options.includes(value)) return;
+          // Preserve details the user has already entered rather than silently overwriting them.
+          if (!next[field.key]?.trim()) next[field.key] = value;
         });
         return next;
       });
