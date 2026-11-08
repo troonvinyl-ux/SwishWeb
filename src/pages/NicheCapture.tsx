@@ -75,6 +75,14 @@ export default function NicheCapture() {
   const Icon = config.icon;
   const scanProfile = SCAN_PROFILES[canonicalNicheId];
   const [form, setForm] = useState<Record<string,string>>({status:'review'});
+  const [evidencePhotos, setEvidencePhotos] = useState<Record<string,File>>({});
+  const [evidencePreviews, setEvidencePreviews] = useState<Record<string,string>>({});
+  useEffect(() => () => { Object.values(evidencePreviews).forEach(url => URL.revokeObjectURL(url)); }, [evidencePreviews]);
+  const setEvidencePhoto = (slot:string,file?:File) => {
+    if (!file) return;
+    setEvidencePhotos(previous => ({...previous,[slot]:file}));
+    setEvidencePreviews(previous => ({...previous,[slot]:URL.createObjectURL(file)}));
+  };
   const [clothingPhotos, setClothingPhotos] = useState<Record<string, File | null>>({ brand: null, garment: null, detail: null });
   const clothingFileInputs = useRef<Record<string, HTMLInputElement | null>>({});
   const clothingCameraInputs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -327,6 +335,23 @@ export default function NicheCapture() {
     };
     insert.mutate(row,{onSuccess:async(saved)=>{
       const id=(saved as Record<string,unknown>)?.id as string;
+      if (niche !== 'clothing' && id) {
+        const mediaUrls:string[] = [];
+        let uploadFailures = 0;
+        for (const [slot,file] of Object.entries(evidencePhotos)) {
+          const safeSlot = slot.replace(/[^a-z0-9_-]/gi,'-');
+          const path = `${id}/${safeSlot}-${Date.now()}.${file.type === 'image/png' ? 'png' : 'jpg'}`;
+          const {error:uploadError} = await sb.storage.from('item-images').upload(path,file,{contentType:file.type || 'image/jpeg'});
+          if (uploadError) { uploadFailures++; continue; }
+          const {data:urlData} = sb.storage.from('item-images').getPublicUrl(path);
+          if (urlData?.publicUrl) mediaUrls.push(urlData.publicUrl);
+        }
+        if (mediaUrls.length) {
+          const {error:mediaError} = await sb.from('items').update({media:mediaUrls}).eq('id',id).eq('tenant_id',tenantId);
+          if (mediaError) toast.error('Item saved, but photo links could not be attached: '+mediaError.message);
+        }
+        if (uploadFailures) toast.error(`Item saved, but ${uploadFailures} photo(s) failed to upload. Please check the item before listing.`);
+      }
       if (niche === 'clothing' && id) {
         const photoSlots = [['brand','brand-label'],['garment','garment-front'],['detail','care-label-detail']] as const;
         const mediaUrls: string[] = [];
@@ -418,6 +443,7 @@ export default function NicheCapture() {
     <div className="flex items-center gap-3"><Link to={'/workspace/'+niche} className="btn-ghost py-1.5 px-2"><ArrowLeft className="w-4 h-4"/></Link><div className="flex-1"><h1 className="page-title">{config.name}: scan & assess</h1><p className="page-subtitle">Capture item details, review them, then save to the specialist inventory.</p></div></div>
     <div className="swish-card p-4 flex gap-3 items-start"><Icon className="w-6 h-6 swish-gold shrink-0 mt-1"/><div><h2 className="font-semibold">{config.name} workflow</h2><p className="text-sm text-muted-foreground mt-1">{config.description}</p>{niche==='coins'&&<p className="text-xs mt-2">Coin Flipper keeps its dedicated obverse/reverse identification workflow.</p>}</div></div>
     <div className="swish-card p-4 space-y-4"><h2 className="font-semibold">1. Identify the item</h2>{scanProfile && <div className="rounded-xl border border-border p-3 text-sm"><p className="font-medium">Shared capture evidence</p><p className="text-muted-foreground mt-1">{scanProfile.evidence.map(slot => `${slot.label}${slot.required ? " (required)" : " (optional)"}`).join(" · ")}{scanProfile.barcode ? " · Barcode supported" : ""}</p><p className="text-xs text-muted-foreground mt-1">Capture guidance only; automated scanning and eBay submission are not yet enabled on this page.</p></div>}<p className="text-xs text-muted-foreground">This form records evidence and user-confirmed details. It does not claim an AI identification has run.</p>
+      {scanProfile && <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{scanProfile.evidence.map(slot => <label key={slot.id} className="rounded-xl border border-border p-2 cursor-pointer"><span className="block text-sm font-medium">{slot.label}{slot.required ? " *" : ""}</span><span className="block text-xs text-muted-foreground">Take photo or choose image</span><input className="mt-2 block w-full text-xs" type="file" accept="image/*" capture="environment" onChange={event => setEvidencePhoto(slot.id,event.target.files?.[0])}/>{evidencePreviews[slot.id] && <img src={evidencePreviews[slot.id]} alt={`${slot.label} evidence`} className="mt-2 aspect-square w-full rounded-lg object-contain" />}</label>)}</div>}
       <div><label className="text-xs text-muted-foreground">Item title *</label><input className="input-field mt-1" value={f('title')} onChange={e=>setF('title',e.target.value)} placeholder={niche==='clothing'?'e.g. Vintage Nike track jacket size L':'Item title'}/></div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{config.fields.map(field=><div key={field.key}><label className="text-xs text-muted-foreground">{field.label}</label>{field.type==='select'?<select className="input-field mt-1" value={f(field.key)} onChange={e=>setF(field.key,e.target.value)}><option value="">Select…</option>{(field.options||[]).map(option=><option key={option} value={option}>{option}</option>)}</select>:<input className="input-field mt-1" type={field.type||'text'} value={f(field.key)} onChange={e=>setF(field.key,e.target.value)} placeholder={field.placeholder||field.label}/>}</div>)}</div>
       <div><label className="text-xs text-muted-foreground">Description / notes</label><textarea className="input-field mt-1" rows={4} value={f('description')} onChange={e=>setF('description',e.target.value)} placeholder="Visible details, label text, measurements, included accessories and evidence…"/></div>
