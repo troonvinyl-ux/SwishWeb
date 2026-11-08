@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { SCAN_PROFILES } from '@/lib/sharedScanFlow';
 import { prepareScanPhotos, scanPhotoStoragePath } from '@/lib/sharedScanPhotos';
-import { getDefaultSpecialistForNiche, getSpecialistIdsForNiche, normaliseNicheId, type SwishNicheId } from '@/lib/niche';
+import { getDefaultSpecialistForNiche, getSpecialistIdsForNiche, normaliseNicheId } from '@/lib/niche';
 import { ArrowLeft, Save, Package, Shirt, Bike, Coins, Wrench, Gamepad2, Gem, FlaskConical, Monitor, Hammer, Sparkles, Camera, CheckCircle2, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -52,7 +52,7 @@ export default function NicheCapture() {
   const { user } = useAuth();
   const isOwner = user?.email?.toLowerCase() === 'troonvinyl@gmail.com';
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
-  const canonicalNicheId = (niche === 'bikes' ? 'bicycles' : niche === 'mx' ? 'motocross' : niche) as SwishNicheId;
+  const canonicalNicheId = normaliseNicheId(niche);
   const { data: activeSpecialists = [], isLoading: entitlementsLoading } = useQuery({
     queryKey: ['capture_niche_entitlements', tenantId],
     enabled: Boolean(tenantId) && !isOwner,
@@ -68,13 +68,13 @@ export default function NicheCapture() {
       return [] as string[];
     },
   });
-  const isSupportedNiche = ['coins', 'motocross', 'bicycles', 'clothing', 'surplus_flip'].includes(canonicalNicheId);
-  const nicheAllowed = isOwner || (isSupportedNiche && getSpecialistIdsForNiche(canonicalNicheId).some(id => activeSpecialists.includes(id)));
+  const isSupportedNiche = canonicalNicheId !== null;
+  const nicheAllowed = isSupportedNiche && (isOwner || getSpecialistIdsForNiche(canonicalNicheId).some(id => activeSpecialists.includes(id)));
   useEffect(() => { if (nicheAllowed && isSupportedNiche) { localStorage.setItem('swish_active_niche', canonicalNicheId); document.documentElement.dataset.niche = canonicalNicheId; } }, [nicheAllowed, isSupportedNiche, canonicalNicheId]);
   const insert = useInsert('items', tenantId);
-  const config = useMemo(() => CONFIG[niche] || CONFIG.generic, [niche]);
+  const config = useMemo(() => CONFIG[niche] || CONFIG[normaliseNicheId(niche) === 'trading_cards' ? 'cards' : niche] || CONFIG.generic, [niche]);
   const Icon = config.icon;
-  const scanProfile = SCAN_PROFILES[canonicalNicheId];
+  const scanProfile = canonicalNicheId ? SCAN_PROFILES[canonicalNicheId] : undefined;
   const [form, setForm] = useState<Record<string,string>>({status:'review'});
   const [evidencePhotos, setEvidencePhotos] = useState<Record<string,File>>({});
   const [evidencePreviews, setEvidencePreviews] = useState<Record<string,string>>({});
@@ -107,7 +107,7 @@ export default function NicheCapture() {
         body: {
           images: prepared.images,
           imageLabels: prepared.imageLabels,
-          specialistId: getDefaultSpecialistForNiche(canonicalNicheId),
+          specialistId: getDefaultSpecialistForNiche(canonicalNicheId ?? 'coins'),
           acquisitionContext: scanProfile.name + ': identify only details supported by the photographed evidence. Flag uncertain identity, model, condition and authenticity; never invent attributes or prices.',
           knownAttributes: { existingAttributes: { niche: canonicalNicheId, photoSlots: prepared.slots } },
         },
