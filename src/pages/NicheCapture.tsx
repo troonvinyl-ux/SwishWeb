@@ -409,8 +409,12 @@ export default function NicheCapture() {
       tags:[canonicalSpecialistId],
     };
     insert.mutate(row,{onSuccess:async(saved)=>{
-      const id=(saved as Record<string,unknown>)?.id as string;
-      if (niche !== 'clothing' && id) {
+      const id=(saved as Record<string,unknown>)?.id as string | undefined;
+      if (!id) {
+        toast.error('Inventory response did not include an item ID. Please check inventory before trying again.');
+        return;
+      }
+      if (niche !== 'clothing') {
         const mediaUrls:string[] = [];
         let uploadFailures = 0;
         for (const [slot,file] of Object.entries(evidencePhotos)) {
@@ -426,7 +430,7 @@ export default function NicheCapture() {
         }
         if (uploadFailures) toast.error(`Item saved, but ${uploadFailures} photo(s) failed to upload. Please check the item before listing.`);
       }
-      if (niche === 'clothing' && id) {
+      if (niche === 'clothing') {
         const photoSlots = [['brand','brand-label'],['garment','garment-front'],['detail','care-label-detail']] as const;
         const mediaUrls: string[] = [];
         for (const [slot, label] of photoSlots) {
@@ -444,7 +448,7 @@ export default function NicheCapture() {
         }
       }
       toast.success(clothingIdentified ? 'Threads Flip item saved for review' : 'Saved to specialist inventory — review required');
-      navigate(id?'/inventory/'+id:'/inventory');
+      navigate('/inventory/'+id);
     },onError:e=>toast.error(e.message)});
   };
   if (!isOwner && (tenantLoading || entitlementsLoading)) return <div className="p-8 text-center text-muted-foreground">Checking your SWISH niche access…</div>;
