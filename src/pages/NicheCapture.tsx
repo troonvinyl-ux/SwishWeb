@@ -6,6 +6,7 @@ import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { SCAN_PROFILES } from '@/lib/sharedScanFlow';
+import { scanPhotoStoragePath } from '@/lib/sharedScanPhotos';
 import { getDefaultSpecialistForNiche, getSpecialistIdsForNiche, normaliseNicheId, type SwishNicheId } from '@/lib/niche';
 import { ArrowLeft, Save, Package, Shirt, Bike, Coins, Wrench, Gamepad2, Gem, FlaskConical, Monitor, Hammer, Sparkles, Camera, CheckCircle2, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -339,8 +340,7 @@ export default function NicheCapture() {
         const mediaUrls:string[] = [];
         let uploadFailures = 0;
         for (const [slot,file] of Object.entries(evidencePhotos)) {
-          const safeSlot = slot.replace(/[^a-z0-9_-]/gi,'-');
-          const path = `${id}/${safeSlot}-${Date.now()}.${file.type === 'image/png' ? 'png' : 'jpg'}`;
+          const path = scanPhotoStoragePath(id, slot, file);
           const {error:uploadError} = await sb.storage.from('item-images').upload(path,file,{contentType:file.type || 'image/jpeg'});
           if (uploadError) { uploadFailures++; continue; }
           const {data:urlData} = sb.storage.from('item-images').getPublicUrl(path);
@@ -358,7 +358,7 @@ export default function NicheCapture() {
         for (const [slot, label] of photoSlots) {
           const file = clothingPhotos[slot];
           if (!file) continue;
-          const path = `${id}/${label}-${Date.now()}.jpg`;
+          const path = scanPhotoStoragePath(id, label, file);
           const { error: uploadError } = await sb.storage.from('item-images').upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
           if (uploadError) { toast.error(`Item saved, but ${label} photo upload failed: ${uploadError.message}`); continue; }
           const { data: publicUrl } = sb.storage.from('item-images').getPublicUrl(path);
