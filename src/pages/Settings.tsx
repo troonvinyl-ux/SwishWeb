@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { getSupabaseClient } from '@/lib/supabase';
 import { Settings as SettingsIcon, User, Bell, Shield, Save, Bot, Radio, ShieldCheck, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
+const LOCAL_VECTOR_PAIRING_URL = 'http://127.0.0.1:8788/v1/pair';
+
 export default function Settings() {
-  const { user, signOut } = useAuth();
+  const { user, session, signOut } = useAuth();
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const [profile, setProfile] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
+  const [pairingVector, setPairingVector] = useState(false);
   const [tab, setTab] = useState('profile');
 
   useEffect(() => {
@@ -27,6 +32,38 @@ export default function Settings() {
     if (error) toast.error(error.message);
     else toast.success('Profile saved');
     setSaving(false);
+  };
+
+  const pairVectorOnThisComputer = async () => {
+    if (!session?.access_token || !tenantId) {
+      toast.error('Your SWISH workspace is still loading. Please try again in a moment.');
+      return;
+    }
+    setPairingVector(true);
+    try {
+      // This only contacts the loopback bridge running on this exact PC. The
+      // bridge accepts this request solely from swishflip.co.uk, validates the
+      // ordinary user JWT (never a service role), and never returns it here.
+      const response = await fetch(LOCAL_VECTOR_PAIRING_URL, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'omit',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken: session.access_token, tenantId }),
+        // Chromium's Local Network Access model may ask the user to permit
+        // this deliberate loopback connection. Older browsers ignore it.
+        targetAddressSpace: 'loopback',
+      } as RequestInit & { targetAddressSpace: 'loopback' });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result?.ok) {
+        throw new Error(typeof result?.error === 'string' ? result.error : 'The local Vector bridge did not accept pairing.');
+      }
+      toast.success('This computer is paired. Vector can now give safe SWISH updates.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not reach the local Vector bridge.');
+    } finally {
+      setPairingVector(false);
+    }
   };
 
   const TABS = [
@@ -173,8 +210,26 @@ export default function Settings() {
               <ol className="list-decimal space-y-2 pl-5 text-muted-foreground marker:text-primary">
                 <li>Finish WirePod setup and confirm Vector is visible on your local network.</li>
                 <li>Copy <code className="rounded bg-secondary px-1.5 py-0.5 text-foreground">vector-bridge/.env.example</code> to <code className="rounded bg-secondary px-1.5 py-0.5 text-foreground">vector-bridge/.env</code> on the companion computer.</li>
-                <li>Use the precise tenant ID and a normal, RLS-scoped user token—never a service-role key—then run <code className="rounded bg-secondary px-1.5 py-0.5 text-foreground">npm run vector:bridge</code>.</li>
+                <li>Start <code className="rounded bg-secondary px-1.5 py-0.5 text-foreground">npm run vector:bridge</code> on that same computer. It waits safely until you pair it below.</li>
+                <li>Select <strong className="text-foreground">Pair this PC</strong>. The bridge receives only your current RLS-scoped session and workspace scope over loopback; it rejects service-role credentials and never sends your session back to the browser.</li>
               </ol>
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="text-sm font-semibold">Pair this PC</div>
+                    <p className="mt-1 max-w-lg text-xs leading-5 text-muted-foreground">Use this only on the computer running the local bridge. Your browser may ask to allow this site to access its local companion service; allow it only when you have started the SWISH bridge yourself.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={pairVectorOnThisComputer}
+                    disabled={pairingVector || tenantLoading || !tenantId || !session?.access_token}
+                    className="btn-primary shrink-0 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Radio className="h-3.5 w-3.5" />
+                    {pairingVector ? 'Pairing…' : tenantLoading ? 'Loading workspace…' : 'Pair this PC'}
+                  </button>
+                </div>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <a href="https://github.com/troonvinyl-ux/SwishWeb/blob/main/vector-bridge/README.md" target="_blank" rel="noreferrer" className="btn-primary">
                   <ExternalLink className="h-3.5 w-3.5" />Open Vector setup guide
@@ -206,3 +261,4 @@ export default function Settings() {
     </div>
   );
 }
+
