@@ -33,9 +33,16 @@ policies remain the second line of protection.
 ## Configure
 
 1. Copy `.env.example` to `.env` in this `vector-bridge` directory.
-2. Fill in the backend URL, the public SWISH anon key, your ordinary **user**
-   access token, the exact tenant ID, WirePod URL, and Vector serial.
+2. Fill in the backend URL, the public SWISH anon key, WirePod URL, Vector
+   serial, and a long `BRIDGE_SHARED_SECRET`. Leave `SWISH_ACCESS_TOKEN` and
+   `SWISH_TENANT_ID` blank for first-time setup.
 3. Keep `.env` only on this private computer. It is already ignored by Git.
+
+The normal SWISH web app can supply the two blank values through its deliberate
+**Pair this PC** action. It sends the current, ordinary user session and
+resolved workspace scope only to the bridge at `127.0.0.1` on the same PC. The
+bridge accepts this request only from the configured `SWISH_WEB_ORIGIN` and
+never returns either value to the browser.
 
 `SWISH_ACCESS_TOKEN` must be an ordinary user JWT. The bridge rejects a JWT
 whose role is `service_role`. Do not give the bridge an eBay secret, a Supabase
@@ -50,6 +57,15 @@ From the repository root:
 npm run vector:bridge
 ```
 
+The first run listens only on loopback and says it is waiting for a deliberate
+browser pairing. In the signed-in SWISH web app, go to **Settings → Vector**
+and choose **Pair this PC**. Only do this on the computer running the bridge.
+Your browser may ask whether `swishflip.co.uk` can reach its local companion
+service; approve that permission only after confirming you started this bridge
+yourself.
+
+After pairing, the bridge verifies WirePod, stores the explicitly scoped
+session locally in the ignored `.env`, and begins its normal polling cycle.
 On its first successful cycle, the bridge stores a local cursor and remains
 quiet. It announces only rows created after that point. Stop it with
 `Ctrl+C`.
@@ -104,9 +120,12 @@ command. It does not run arbitrary text passed from Vector.
 
 ## Security boundaries
 
-- The hosted SwishWeb page never calls `escapepod.local` directly. That avoids
-  mixed-content/CORS failures and prevents a browser session from controlling a
-  robot on the local network.
+- The hosted SwishWeb page makes one deliberate, user-triggered request only to
+  `http://127.0.0.1:<BRIDGE_PORT>/v1/pair`. It never calls WirePod directly
+  and cannot issue robot-control commands.
+- Pairing is available only when the bridge binds to loopback. The local server
+  allows the one configured HTTPS SWISH origin, responds to standard CORS and
+  local-network preflights, and returns no session or tenant values.
 - Only fixed, privacy-safe phrases are generated for alerts. The bridge does
   not read buyer names, addresses, titles, prices, or messages.
 - All SWISH reads include `tenant_id=eq.<SWISH_TENANT_ID>` and use the user's
@@ -123,3 +142,4 @@ WirePod custom intents/voice-provider configuration varies by installation.
 The bridge includes a Windows same-PC handoff script, but it does not alter
 WirePod's voice configuration automatically. Review the exact Custom Intent
 fields shown by your installed WirePod version before saving it.
+
