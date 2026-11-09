@@ -1,6 +1,8 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 
 const LOCAL_WIREPOD_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
+const DEFAULT_SWISH_WEB_ORIGIN = 'https://swishflip.co.uk';
 
 function asBoolean(value, fallback) {
   if (value == null || value === '') return fallback;
@@ -53,14 +55,11 @@ export function isLocalWirePodUrl(value) {
   }
 }
 
-export function validateConfig(env) {
+function readBridgeBaseConfig(env) {
   const backendUrl = requireValue(env, 'SWISH_BACKEND_URL').replace(/\/$/, '');
   const anonymousKey = requireValue(env, 'SWISH_ANON_KEY');
-  const accessToken = requireValue(env, 'SWISH_ACCESS_TOKEN');
-  const tenantId = requireValue(env, 'SWISH_TENANT_ID');
   const wirePodUrl = requireValue(env, 'WIREPOD_URL').replace(/\/$/, '');
   const serial = requireValue(env, 'VECTOR_SERIAL');
-  const payload = readJwtPayload(accessToken);
 
   if (!/^https:\/\//i.test(backendUrl)) {
     throw new Error('SWISH_BACKEND_URL must use HTTPS.');
@@ -71,12 +70,6 @@ export function validateConfig(env) {
   if (!/^[a-zA-Z0-9_-]{4,128}$/.test(serial)) {
     throw new Error('VECTOR_SERIAL contains unsupported characters.');
   }
-  if (!/^[a-zA-Z0-9-]{8,128}$/.test(tenantId)) {
-    throw new Error('SWISH_TENANT_ID must be an explicit tenant identifier.');
-  }
-  if (payload.role === 'service_role') {
-    throw new Error('Refusing a service-role token. Use an ordinary signed-in SWISH user token.');
-  }
 
   const bindHost = String(env.BRIDGE_BIND_HOST || '127.0.0.1').trim();
   const sharedSecret = String(env.BRIDGE_SHARED_SECRET || '').trim();
@@ -84,11 +77,9 @@ export function validateConfig(env) {
     throw new Error('A non-loopback bridge needs a BRIDGE_SHARED_SECRET of at least 32 characters.');
   }
 
-  return Object.freeze({
+  return {
     backendUrl,
     anonymousKey,
-    accessToken,
-    tenantId,
     wirePodUrl,
     serial,
     pollIntervalMs: parsePositiveInt(env.POLL_INTERVAL_SECONDS, 60, 'POLL_INTERVAL_SECONDS', 30) * 1_000,
@@ -97,7 +88,50 @@ export function validateConfig(env) {
     bindHost,
     bridgePort: parsePositiveInt(env.BRIDGE_PORT, 8788, 'BRIDGE_PORT', 1),
     sharedSecret,
-  });
+  };
+}
+
+function readAllowedPairingOrigin(env) {
+  const candidate = String(env.SWISH_WEB_ORIGIN || DEFAULT_SWISH_WEB_ORIGIN).trim();
+  let origin;
+  try {
+    origin = new URL(candidate);
+  } catch {
+    throw new Error('SWISH_WEB_ORIGIN must be a valid HTTPS origin.');
+  }
+  if (origin.protocol !== 'https:' || origin.origin !== candidate.replace(/\/$/, '')) {
+    throw new Error('SWISH_WEB_ORIGIN must be an HTTPS origin without a path.');
+  }
+  return origin.origin;
+}
+
+/**
+ * Configuration safe to load before a browser has explicitly paired this PC.
+ * Pairing is restricted to loopback so an internet host can never receive a
+ * SWISH user session through this listener.
+ */
+export function validatePairingConfig(env) {
+  const config = readBridgeBaseConfig(env);
+  if (!LOOPBACK_HOSTS.has(config.bindHost)) {
+    throw new Error('Browser pairing is only available when BRIDGE_BIND_HOST is loopback.');
+  }
+  return Object.freeze({ ...config, pairingOrigin: readAllowedPairingOrigin(env) });
+}
+
+export function validateConfig(env) {
+  const baseConfig = readBridgeBaseConfig(env);
+  const accessToken = requireValue(env, 'SWISH_ACCESS_TOKEN');
+  const tenantId = requireValue(env, 'SWISH_TENANT_ID');
+  const payload = readJwtPayload(accessToken);
+
+  if (!/^[a-zA-Z0-9-]{8,128}$/.test(tenantId)) {
+    throw new Error('SWISH_TENANT_ID must be an explicit tenant identifier.');
+  }
+  if (payload.role === 'service_role') {
+    throw new Error('Refusing a service-role token. Use an ordinary signed-in SWISH user token.');
+  }
+
+  return Object.freeze({ ...baseConfig, accessToken, tenantId });
 }
 
 export function parseDotEnv(source) {
@@ -117,7 +151,7 @@ export function parseDotEnv(source) {
   return values;
 }
 
-export async function loadConfig(envPath, processEnv = process.env) {
+export async function loadEnvironment(envPath, processEnv = process.env) {
   let fileValues = {};
   try {
     fileValues = parseDotEnv(await readFile(envPath, 'utf8'));
@@ -127,5 +161,33 @@ export async function loadConfig(envPath, processEnv = process.env) {
     }
     throw error;
   }
-  return validateConfig({ ...fileValues, ...processEnv });
+  return { ...fileValues, ...processEnv };
 }
+
+export async function loadConfig(envPath, processEnv = process.env) {
+  return validateConfig(await loadEnvironment(envPath, processEnv));
+}
+
+/**
+ * Persist only the two short-lived, RLS-scoped pairing values. Nothing is
+ * returned to the browser, and callers must validate both values first.
+ */
+export async function savePairingCredentials(envPath, credentials) {
+  const source = await readFile(envPath, 'utf8');
+  const nextValues = {
+    SWISH_ACCESS_TOKEN: String(credentials.accessToken || '').trim(),
+    SWISH_TENANT_ID: String(credentials.tenantId || '').trim(),
+  };
+  let found = new Set();
+  const lines = source.split(/\r?\n/).map(line => {
+    const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=/);
+    if (!match || !(match[1] in nextValues)) return line;
+    found.add(match[1]);
+    return `${match[1]}=${nextValues[match[1]]}`;
+  });
+  for (const [key, value] of Object.entries(nextValues)) {
+    if (!found.has(key)) lines.push(`${key}=${value}`);
+  }
+  await writeFile(envPath, lines.join('\n'), 'utf8');
+}
+
