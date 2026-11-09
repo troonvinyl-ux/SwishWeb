@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { callEdgeFunction } from '@/lib/supabase';
 import { getSupabaseClient } from '@/lib/supabase';
-import { Settings as SettingsIcon, User, Bell, Shield, RefreshCw, Save } from 'lucide-react';
+import { Settings as SettingsIcon, User, Bell, Shield, Save, Bot, Radio, ShieldCheck, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Settings() {
@@ -33,6 +33,7 @@ export default function Settings() {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'business', label: 'Business', icon: SettingsIcon },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'vector', label: 'Vector', icon: Bot },
     { id: 'security', label: 'Security', icon: Shield },
   ];
 
@@ -144,6 +145,48 @@ export default function Settings() {
           <button onClick={saveProfile} disabled={saving} className="btn-primary mt-2">
             <Save className="w-3.5 h-3.5" />{saving ? 'Saving…' : 'Save Preferences'}
           </button>
+        </div>
+      )}
+
+      {tab === 'vector' && (
+        <div className="space-y-4">
+          <div className="swish-card overflow-hidden">
+            <div className="border-b border-border bg-primary/5 p-5">
+              <div className="flex items-start gap-3">
+                <div className="rounded-xl bg-primary/15 p-2.5 text-primary"><Bot className="h-5 w-5" /></div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold">SWISH Vector Companion</h3>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">Turn a WirePod-connected Vector into a private desk companion for safe SWISH updates and aggregate workspace status.</p>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-4 p-5 text-sm">
+              <div className="flex gap-3 rounded-xl border border-border bg-secondary/30 p-3 text-muted-foreground">
+                <Radio className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <p><strong className="text-foreground">Runs locally, not in this browser.</strong> The companion bridge runs on a private computer that can reach WirePod. SwishWeb never attempts to control a robot directly from an HTTPS browser session.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-border p-3"><span className="text-xs font-semibold text-foreground">Alerts</span><p className="mt-1 text-xs leading-5 text-muted-foreground">Announce new orders and optional inventory additions without customer or item details.</p></div>
+                <div className="rounded-xl border border-border p-3"><span className="text-xs font-semibold text-foreground">Status</span><p className="mt-1 text-xs leading-5 text-muted-foreground">Speak only aggregate inventory, live-listing, and order counts.</p></div>
+                <div className="rounded-xl border border-border p-3"><span className="text-xs font-semibold text-foreground">Safety</span><p className="mt-1 text-xs leading-5 text-muted-foreground">No movement, camera, buyer data, eBay secrets, or service-role access.</p></div>
+              </div>
+              <ol className="list-decimal space-y-2 pl-5 text-muted-foreground marker:text-primary">
+                <li>Finish WirePod setup and confirm Vector is visible on your local network.</li>
+                <li>Copy <code className="rounded bg-secondary px-1.5 py-0.5 text-foreground">vector-bridge/.env.example</code> to <code className="rounded bg-secondary px-1.5 py-0.5 text-foreground">vector-bridge/.env</code> on the companion computer.</li>
+                <li>Use the precise tenant ID and a normal, RLS-scoped user token—never a service-role key—then run <code className="rounded bg-secondary px-1.5 py-0.5 text-foreground">npm run vector:bridge</code>.</li>
+              </ol>
+              <div className="flex flex-wrap gap-2">
+                <a href="https://github.com/troonvinyl-ux/SwishWeb/blob/main/vector-bridge/README.md" target="_blank" rel="noreferrer" className="btn-primary">
+                  <ExternalLink className="h-3.5 w-3.5" />Open Vector setup guide
+                </a>
+                <Link to="/orders" className="btn-secondary">Review Orders</Link>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-3 rounded-xl border border-border bg-secondary/30 p-4 text-xs leading-5 text-muted-foreground">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <p>Connection status is intentionally shown by the local bridge, not guessed here. The bridge verifies the exact configured tenant and WirePod endpoint before it announces anything.</p>
+          </div>
         </div>
       )}
 

@@ -9,7 +9,9 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:niches": "node scripts/verify-niche-map.mjs"
+    "test:niches": "node scripts/verify-niche-map.mjs",
+    "test:vector": "node --test vector-bridge/test/vector-bridge.test.mjs",
+    "vector:bridge": "node vector-bridge/src/index.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# A local-only Swish Vector Companion configuration and its non-sensitive
+# polling cursor. Never commit a WirePod URL, user JWT, or companion secret.
+vector-bridge/.env
+vector-bridge/.swish-vector-state.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
