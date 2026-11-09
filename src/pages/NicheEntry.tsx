@@ -5,7 +5,7 @@ import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 import { getSpecialistIdsForNiche, normaliseNicheId, type SwishNicheId } from '@/lib/niche';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Info, CheckCircle2, Circle, Coins, Bike, Shirt, Wrench, Package, Search, ShieldCheck, Grid3X3, Construction, Gamepad2, Watch, Gem, Palette, Smartphone } from 'lucide-react';
+import { Info, CheckCircle2, Circle, Coins, Bike, Shirt, Wrench, Package, Search, ShieldCheck, Grid3X3, Construction, Gamepad2, Watch, Gem, Palette, Smartphone, Sparkles } from 'lucide-react';
 
 type Niche = {
   id: string;
