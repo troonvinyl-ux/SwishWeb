@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
+import { once } from 'node:events';
 import test from 'node:test';
-import { isLocalWirePodUrl, parseDotEnv, validateConfig } from '../src/config.mjs';
+import { isLocalWirePodUrl, parseDotEnv, validateConfig, validatePairingConfig } from '../src/config.mjs';
 import { parseCommand, executeCommand } from '../src/commands.mjs';
+import { startBridgeServer } from '../src/server.mjs';
 import { privacySafeSpeech } from '../src/wirepod-client.mjs';
 import { getRowsCreatedAfter, statusPhrase } from '../src/swish-client.mjs';
 
@@ -30,6 +32,7 @@ test('only accepts local WirePod endpoints', () => {
 test('rejects elevated and remote bridge configuration', () => {
   assert.throws(() => validateConfig(env({ SWISH_ACCESS_TOKEN: serviceJwt })), /service-role token/);
   assert.throws(() => validateConfig(env({ WIREPOD_URL: 'https://wirepod.example.com' })), /private-network/);
+  assert.throws(() => validatePairingConfig(env({ BRIDGE_BIND_HOST: '0.0.0.0' })), /loopback/);
 });
 
 test('parses a conservative local bridge configuration', () => {
@@ -72,3 +75,52 @@ test('polling requests include the explicit tenant scope and the user bearer tok
   assert.equal(requests[0].headers.Authorization, `Bearer ${userJwt}`);
   assert.equal(requests[0].headers.apikey, 'public-anon-key');
 });
+
+test('browser pairing is restricted to the configured SWISH origin and never echoes credentials', async t => {
+  const runtime = validateConfig(env());
+  const pairingConfig = { ...validatePairingConfig(env()), bridgePort: 0 };
+  let currentRuntime = null;
+  let pairedCredentials = null;
+  const server = startBridgeServer(pairingConfig, {
+    getRuntimeConfig: () => currentRuntime,
+    savePairing: async credentials => {
+      pairedCredentials = credentials;
+      currentRuntime = runtime;
+    },
+  });
+  await once(server, 'listening');
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  const { port } = server.address();
+  const endpoint = `http://127.0.0.1:${port}/v1/pair`;
+
+  const rejected = await fetch(endpoint, {
+    method: 'POST',
+    headers: { Origin: 'https://untrusted.example', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accessToken: userJwt, tenantId: runtime.tenantId }),
+  });
+  assert.equal(rejected.status, 403);
+
+  const preflight = await fetch(endpoint, {
+    method: 'OPTIONS',
+    headers: {
+      Origin: 'https://swishflip.co.uk',
+      'Access-Control-Request-Method': 'POST',
+      'Access-Control-Request-Private-Network': 'true',
+    },
+  });
+  assert.equal(preflight.status, 204);
+  assert.equal(preflight.headers.get('access-control-allow-origin'), 'https://swishflip.co.uk');
+  assert.equal(preflight.headers.get('access-control-allow-private-network'), 'true');
+
+  const paired = await fetch(endpoint, {
+    method: 'POST',
+    headers: { Origin: 'https://swishflip.co.uk', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accessToken: userJwt, tenantId: runtime.tenantId }),
+  });
+  const response = await paired.json();
+  assert.equal(paired.status, 200);
+  assert.deepEqual(response, { ok: true, paired: true });
+  assert.deepEqual(pairedCredentials, { accessToken: userJwt, tenantId: runtime.tenantId });
+  assert.notEqual(JSON.stringify(response).includes(userJwt), true);
+});
+
