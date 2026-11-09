@@ -15,7 +15,9 @@ export type SwishNicheId =
   | 'fossils'
   | 'beauty'
   | 'tech'
-  | 'surplus_flip';
+  | 'surplus_flip'
+  | 'tunes_flip'
+  | 'collectibles';
 
 export const NICHE_SPECIALISTS: Record<SwishNicheId, string[]> = {
   coins: [
@@ -31,6 +33,11 @@ export const NICHE_SPECIALISTS: Record<SwishNicheId, string[]> = {
   beauty: ['beauty'],
   tech: ['tech', 'retro_games', 'retro_consoles'],
   surplus_flip: ['surplus_trader', 'surplus_flip'],
+  // Tunes Flip and Collectibles Flipper intentionally resolve through the
+  // same shared item/listing engine as the other products. These are the
+  // canonical specialist ownership keys emitted by the native module registry.
+  tunes_flip: ['vinyl_records'],
+  collectibles: ['collectibles'],
 };
 
 export const NICHE_DEFAULT_SPECIALIST: Record<SwishNicheId, string> = {
@@ -44,6 +51,8 @@ export const NICHE_DEFAULT_SPECIALIST: Record<SwishNicheId, string> = {
   beauty: 'beauty',
   tech: 'tech',
   surplus_flip: 'surplus_trader',
+  tunes_flip: 'vinyl_records',
+  collectibles: 'collectibles',
 };
 
 const NICHE_ALIASES: Record<string, SwishNicheId> = {
@@ -51,6 +60,7 @@ const NICHE_ALIASES: Record<string, SwishNicheId> = {
   mx: 'motocross',
   motocross: 'motocross',
   bikes: 'bicycles',
+  bicycle: 'bicycles',
   bicycles: 'bicycles',
   threads: 'clothing',
   threads_flip: 'clothing',
@@ -71,6 +81,12 @@ const NICHE_ALIASES: Record<string, SwishNicheId> = {
   surplus: 'surplus_flip',
   surplus_flip: 'surplus_flip',
   surplus_trader: 'surplus_flip',
+  tunes_flip: 'tunes_flip',
+  tunes: 'tunes_flip',
+  music: 'tunes_flip',
+  vinyl_records: 'tunes_flip',
+  collectibles: 'collectibles',
+  collectibles_flipper: 'collectibles',
 };
 
 const VALID_NICHES = Object.keys(NICHE_SPECIALISTS) as SwishNicheId[];
@@ -120,3 +136,4 @@ export function getSpecialistIdsForNiche(niche: SwishNicheId = getActiveNicheId(
 export function getDefaultSpecialistForNiche(niche: SwishNicheId = getActiveNicheId()): string {
   return NICHE_DEFAULT_SPECIALIST[niche];
 }
+

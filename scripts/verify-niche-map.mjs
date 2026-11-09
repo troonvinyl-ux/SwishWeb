@@ -25,6 +25,7 @@ const routeAliases = {
   coins: 'coins',
   mx: 'motocross',
   bikes: 'bicycles',
+  bicycle: 'bicycles',
   threads: 'clothing',
   cards: 'trading_cards',
   antique_flipper: 'antiques',
@@ -32,6 +33,14 @@ const routeAliases = {
   beauty_flipper: 'beauty',
   tech_flipper: 'tech',
   surplus: 'surplus_flip',
+  tunes_flip: 'tunes_flip',
+  'tunes-flip': 'tunes_flip',
+  tunes: 'tunes_flip',
+  music: 'tunes_flip',
+  vinyl_records: 'tunes_flip',
+  collectibles: 'collectibles',
+  collectibles_flipper: 'collectibles',
+  'collectibles-flipper': 'collectibles',
 };
 
 for (const [alias, expectedNiche] of Object.entries(routeAliases)) {
@@ -43,10 +52,28 @@ for (const [alias, expectedNiche] of Object.entries(routeAliases)) {
   );
 }
 
-const [capture, importer, inventory] = await Promise.all([
+const canonicalNiches = [
+  'coins', 'motocross', 'bicycles', 'clothing', 'trading_cards', 'antiques',
+  'fossils', 'beauty', 'tech', 'surplus_flip', 'tunes_flip', 'collectibles',
+];
+assert.deepEqual(
+  Object.keys(niche.NICHE_SPECIALISTS).sort(),
+  [...canonicalNiches].sort(),
+  'the web niche registry must expose every native production product',
+);
+assert.deepEqual(niche.getSpecialistIdsForNiche('tunes_flip'), ['vinyl_records']);
+assert.equal(niche.getDefaultSpecialistForNiche('tunes_flip'), 'vinyl_records');
+assert.deepEqual(niche.getSpecialistIdsForNiche('collectibles'), ['collectibles']);
+assert.equal(niche.getDefaultSpecialistForNiche('collectibles'), 'collectibles');
+
+const [capture, importer, inventory, workspace, scanFlow, entry, ebayHub] = await Promise.all([
   readFile(resolve(root, 'src/pages/NicheCapture.tsx'), 'utf8'),
   readFile(resolve(root, 'src/pages/EbayImport.tsx'), 'utf8'),
   readFile(resolve(root, 'src/pages/Inventory.tsx'), 'utf8'),
+  readFile(resolve(root, 'src/pages/NicheWorkspace.tsx'), 'utf8'),
+  readFile(resolve(root, 'src/lib/sharedScanFlow.ts'), 'utf8'),
+  readFile(resolve(root, 'src/pages/NicheEntry.tsx'), 'utf8'),
+  readFile(resolve(root, 'src/pages/EbayHub.tsx'), 'utf8'),
 ]);
 
 assert.match(capture, /specialist_id:\s*canonicalSpecialistId/);
@@ -54,5 +81,17 @@ assert.match(capture, /getDefaultSpecialistForNiche\(canonicalNiche\)/);
 assert.match(importer, /const specialistId = getDefaultSpecialistForNiche\(activeNiche\)/);
 assert.doesNotMatch(importer, /const NICHE_SPECIALIST/);
 assert.match(inventory, /getSpecialistIdsForNiche\(niche\)/);
+assert.match(capture, /tunes_flip/);
+assert.match(capture, /collectibles/);
+assert.match(scanFlow, /tunes_flip/);
+assert.match(scanFlow, /collectibles/);
+assert.match(workspace, /id: 'tunes_flip'/);
+assert.match(workspace, /id: 'collectibles'/);
+assert.match(workspace, /items!inner\(specialist_id\)/);
+assert.match(entry, /name: 'Tunes Flip'/);
+assert.match(entry, /name: 'Collectibles Flipper'/);
+assert.match(ebayHub, /useCurrentTenantId/);
+assert.doesNotMatch(ebayHub, /from\('tenant_memberships'\)/);
 
-console.log('Niche route, capture, import, and inventory mappings are aligned.');
+console.log('All twelve niche route, capture, workspace, inventory, import, and eBay mappings are aligned.');
+

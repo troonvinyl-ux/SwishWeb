@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -8,8 +9,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
-import { useCount } from '@/hooks/useSupabaseQuery';
-import { getSpecialistIdsForNiche, type SwishNicheId } from '@/lib/niche';
+import { useCount, useTable } from '@/hooks/useSupabaseQuery';
+import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
+import { getSpecialistIdsForNiche, normaliseNicheId, type SwishNicheId } from '@/lib/niche';
 import coinArtwork from '@/assets/niches/coin-flipper.webp';
 import mxArtwork from '@/assets/niches/mx-flipper.webp';
 import bikeArtwork from '@/assets/niches/bike-flipper.svg';
@@ -19,6 +21,7 @@ import antiqueArtwork from '@/assets/niches/antique-flipper.svg';
 import fossilArtwork from '@/assets/niches/fossil-flipper.webp';
 import beautyArtwork from '@/assets/niches/beauty-flipper.webp';
 import techArtwork from '@/assets/niches/tech-flipper.webp';
+import swishHero from '@/assets/swish-hero.jpg';
 
 type Action = { label: string; detail: string; icon: LucideIcon; to: string };
 type WorkspaceConfig = {
@@ -133,6 +136,32 @@ const CONFIGS: Record<SwishNicheId, WorkspaceConfig> = {
     ],
     guidance: 'Select the manifest line first, then capture barcode, packaging, condition and sellable quantity.',
   },
+  tunes_flip: {
+    id: 'tunes_flip', name: 'Tunes Flip', shortName: 'Music', headline: 'Find the exact pressing. Describe it with confidence. Sell the right release.',
+    detail: 'Vinyl · singles · CDs · cassettes · box sets · pressings', accent: '#A855F7', artwork: swishHero, icon: Sparkles, scan: 'Identify Music',
+    actions: [
+      { label: 'Identify Music', detail: 'Capture a release, labels and its catalogue detail.', icon: ScanLine, to: '/identify' },
+      { label: 'Music Research', detail: 'Review market signals and opportunity context.', icon: Sparkles, to: '/insights' },
+      { label: 'My Collection', detail: 'Review saved releases and condition evidence.', icon: Package, to: '/inventory' },
+      { label: 'eBay Hub', detail: 'Create, publish and monitor music listings.', icon: Store, to: '/ebay' },
+      { label: 'Orders', detail: 'Track sales and dispatch.', icon: ShoppingCart, to: '/orders' },
+      { label: 'List & Sell', detail: 'Prepare a release listing with evidence.', icon: Tag, to: '/listings' },
+    ],
+    guidance: 'Photograph front and rear packaging, labels or disc face, barcode and catalogue number. Capture matrix or runout detail where applicable, record media and sleeve condition separately, and show inserts, marks, warps, seam splits or missing parts. Confirm the exact pressing where possible; photos alone do not prove playback quality.',
+  },
+  collectibles: {
+    id: 'collectibles', name: 'Collectibles Flipper', shortName: 'Collectibles', headline: 'Capture the details collectors care about before you price the find.',
+    detail: 'Toys · comics · games · memorabilia · vintage finds', accent: '#F97316', artwork: swishHero, icon: Package, scan: 'Scan Barcode',
+    actions: [
+      { label: 'Quick List', detail: 'Capture an item and start a practical resale record.', icon: Camera, to: '/identify' },
+      { label: 'Scan Barcode', detail: 'Scan packaging or labels where a barcode is available.', icon: ScanLine, to: '/identify' },
+      { label: 'Inventory', detail: 'Review collectibles, accessories and condition evidence.', icon: Package, to: '/inventory' },
+      { label: 'Research', detail: 'Review market signals and opportunity context.', icon: Sparkles, to: '/insights' },
+      { label: 'eBay Hub', detail: 'Create, publish and monitor listings.', icon: Store, to: '/ebay' },
+      { label: 'Orders', detail: 'Track sold collectibles and dispatch.', icon: ShoppingCart, to: '/orders' },
+    ],
+    guidance: 'Photograph the complete item, packaging, edition numbers, labels, stamps and maker marks. Show accessories, completeness and missing parts; record damage, repairs, wear or restoration. Include dimensions or scale where useful, and retain provenance or collection information when available.',
+  },
 };
 
 const OWNER_EMAIL = 'troonvinyl@gmail.com';
@@ -148,22 +177,61 @@ export default function NicheWorkspace() {
   const { user } = useAuth();
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const isOwner = user?.email?.toLowerCase() === OWNER_EMAIL;
-  const preferred = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
-  const config = useMemo(() => CONFIGS[niche as SwishNicheId] || CONFIGS.coins, [niche]);
-  const allowedNiche = CONFIGS[preferred as SwishNicheId] ? preferred : 'coins';
-  const specialists = getSpecialistIdsForNiche(config.id);
-  const queryReady = Boolean(tenantId) && specialists.length > 0;
+  const canonicalRouteNiche = normaliseNicheId(niche);
+  // An unknown route must never borrow the Coins dashboard. It is surfaced
+  // explicitly through the niche selector rather than misrepresenting data.
+  const config = useMemo(() => canonicalRouteNiche ? CONFIGS[canonicalRouteNiche] : undefined, [canonicalRouteNiche]);
+  const specialists = config ? getSpecialistIdsForNiche(config.id) : [];
+  const { data: activeSpecialists = [], isLoading: entitlementsLoading, error: entitlementsError, refetch: refetchEntitlements } = useQuery({
+    queryKey: ['workspace_niche_entitlements', tenantId],
+    enabled: Boolean(tenantId) && !isOwner,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const sb = getSupabaseClient() || await getSupabaseClientAsync();
+      if (!sb || !tenantId) return [] as string[];
+      const { data, error } = await sb.from('tenants').select('active_specialists').eq('id', tenantId).maybeSingle();
+      if (error) throw error;
+      const raw = data?.active_specialists;
+      if (Array.isArray(raw)) return raw.map(String);
+      if (typeof raw === 'string') { try { const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed.map(String) : []; } catch { return []; } }
+      return [] as string[];
+    },
+  });
+  const firstEntitledNiche = useMemo(() => (Object.keys(CONFIGS) as SwishNicheId[]).find(candidate =>
+    getSpecialistIdsForNiche(candidate).some(specialist => activeSpecialists.includes(specialist)),
+  ), [activeSpecialists]);
+  const nicheAllowed = Boolean(config) && (isOwner || specialists.some(specialist => activeSpecialists.includes(specialist)));
+  // Tenant, niche and entitlement resolution all complete before a data query
+  // starts. Browser storage remains a visual preference, never authorisation.
+  const queryReady = Boolean(tenantId) && nicheAllowed && specialists.length > 0;
   const inventory = useCount('items', { tenant_id: tenantId }, { specialist_id: specialists }, queryReady);
   const sold = useCount('items', { tenant_id: tenantId, status: 'sold' }, { specialist_id: specialists }, queryReady);
-  const listed = useCount('items', { tenant_id: tenantId, status: 'listed' }, { specialist_id: specialists }, queryReady);
-  const Icon = config.icon;
-  const number = (value: number | undefined) => tenantLoading || !queryReady ? '—' : value ?? '—';
+  const liveListings = useTable('listings', {
+    select: 'id, status, items!inner(specialist_id)',
+    filter: { tenant_id: tenantId, marketplace_id: 'ebay' },
+    inFilter: { 'items.specialist_id': specialists },
+    enabled: queryReady,
+  });
+  const live = ((liveListings.data || []) as Record<string, unknown>[]).filter(listing =>
+    ['active', 'live'].includes(String(listing.status || '').toLowerCase()),
+  ).length;
+  const metricsLoading = tenantLoading || (!isOwner && entitlementsLoading) || inventory.isLoading || sold.isLoading || liveListings.isLoading;
+  const metricsError = liveListings.error;
+  const Icon = config?.icon || Package;
+  const number = (value: number | undefined) => metricsError ? 'Unavailable' : metricsLoading || !queryReady ? '—' : value ?? '—';
 
   useEffect(() => {
-    if (isOwner || config.id === allowedNiche) activateWorkspace(config);
-  }, [allowedNiche, config, isOwner]);
+    if (config && nicheAllowed) activateWorkspace(config);
+  }, [config, nicheAllowed]);
 
-  if (!isOwner && config.id !== allowedNiche) return <Navigate to={`/workspace/${allowedNiche}`} replace />;
+  if (!config) return <Navigate to="/niches" replace />;
+  if (!isOwner && !tenantLoading && !entitlementsLoading && entitlementsError) {
+    return <div role="alert" className="swish-card max-w-xl p-6"><h1 className="text-xl font-bold">Workspace access could not be verified</h1><p className="mt-2 text-sm text-muted-foreground">We have not loaded any specialist data. Check your connection and retry before opening this workspace.</p><button type="button" className="btn-secondary mt-4" onClick={() => void refetchEntitlements()}>Retry access check</button></div>;
+  }
+  if (!isOwner && !tenantLoading && !entitlementsLoading && !nicheAllowed) {
+    if (firstEntitledNiche) return <Navigate to={`/workspace/${firstEntitledNiche}`} replace />;
+    return <div className="swish-card max-w-xl p-6"><h1 className="text-xl font-bold">No specialist workspace is available</h1><p className="mt-2 text-sm text-muted-foreground">Your tenant does not currently include access to this specialist workspace. Ask the workspace owner to assign a specialist before trying again.</p><Link to="/settings" className="btn-secondary mt-4">Account settings</Link></div>;
+  }
 
   return (
     <div className="native-workspace" style={{ '--workspace-accent': config.accent } as React.CSSProperties}>
@@ -193,9 +261,10 @@ export default function NicheWorkspace() {
 
       <section className="native-workspace-metrics" aria-label={`${config.shortName} workspace summary`}>
         <div><strong>{number(inventory.data)}</strong><span>Inventory</span></div>
-        <div><strong>{number(listed.data)}</strong><span>Live</span></div>
+        <div><strong>{number(live)}</strong><span>Live</span></div>
         <div><strong>{number(sold.data)}</strong><span>Sold</span></div>
       </section>
+      {metricsError && <div role="alert" className="native-workspace-guidance"><CheckCircle2 /><span><strong>Workspace totals are temporarily unavailable</strong><small>{metricsError instanceof Error ? metricsError.message : 'We could not load live marketplace data.'} <button type="button" onClick={() => void liveListings.refetch()} className="underline">Retry</button></small></span></div>}
 
       <div className="native-workspace-section-heading">
         <span>YOUR {config.shortName.toUpperCase()} WORKSPACE</span>

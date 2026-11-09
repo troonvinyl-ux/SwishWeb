@@ -50,7 +50,7 @@ import SpecialistTools from '@/pages/SpecialistTools';
 import StockCheck from '@/pages/StockCheck';
 import NotFound from '@/pages/NotFound';
 import SwishFlipHome from '@/pages/SwishFlipHome';
-import { getHostProduct } from '@/lib/productContext';
+import { getHostProduct, getRouteProduct } from '@/lib/productContext';
 import { normaliseNicheId } from '@/lib/niche';
 
 const currentHostname = window.location.hostname.toLowerCase().replace(/^www\./, '').split(':')[0];
@@ -78,14 +78,7 @@ function AppRoutes() {
   if (isSwishFlipMarketingHost && window.location.pathname === '/') return <SwishFlipHome />;
   if (currentHostname.endsWith('.swishflip.co.uk') && !hostProduct) return <NicheComingSoon />;
   const preferredNiche = String(user?.user_metadata?.preferred_niche || localStorage.getItem('swish_active_niche') || 'coins');
-  const routeProduct = {
-    '/coins': 'coins',
-    '/mx': 'motocross',
-    '/bikes': 'bicycles',
-    '/clothes': 'clothing',
-    '/threads': 'clothing',
-    '/surplus': 'surplus_flip',
-  }[location.pathname as '/coins' | '/mx' | '/bikes' | '/clothes' | '/threads' | '/surplus'];
+  const routeProduct = getRouteProduct(location.pathname)?.id;
   const safeNiche = hostProduct?.id || routeProduct || normaliseNicheId(preferredNiche) || 'coins';
   const needsOnboarding = !isOwner && user?.user_metadata?.onboarding_status === 'started';
   const entryWorkspace = needsOnboarding ? '/onboarding' : `/workspace/${safeNiche}`;
@@ -136,9 +129,20 @@ function AppRoutes() {
           <Route path="/threads" element={<Navigate to={entryWorkspace} replace />} />
           <Route path="/clothes" element={<Navigate to={entryWorkspace} replace />} />
           <Route path="/surplus" element={<Navigate to={entryWorkspace} replace />} />
-          <Route path="/electronics" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
-          <Route path="/games" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
-          <Route path="/home" element={<Navigate to={needsOnboarding ? "/onboarding" : "/workspace/coins"} replace />} />
+          <Route path="/cards" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/games" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/antiques" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/home" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/fossils" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/beauty" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/tech" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/electronics" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/tunes" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/tunes-flip" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/music" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/vinyl_records" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/collectibles" element={<Navigate to={entryWorkspace} replace />} />
+          <Route path="/collectibles-flipper" element={<Navigate to={entryWorkspace} replace />} />
           <Route path="/workspace/:niche" element={<NicheWorkspace />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/niches" element={<NicheEntry />} />
@@ -151,7 +155,7 @@ function AppRoutes() {
           <Route path="/inventory/new" element={<InventoryNew />} />
           <Route path="/inventory/:id" element={<InventoryItem />} />
 
-          <Route path="/identify" element={<Navigate to={(() => { const active = isOwner ? (localStorage.getItem('swish_active_niche') || safeNiche) : safeNiche; return active === 'coins' ? '/identify/coins' : `/scan/${active === 'bicycles' ? 'bikes' : active === 'motocross' ? 'mx' : active}`; })()} replace />} />
+          <Route path="/identify" element={<Navigate to={(() => { const active = isOwner ? (normaliseNicheId(localStorage.getItem('swish_active_niche')) || safeNiche) : safeNiche; return active === 'coins' ? '/identify/coins' : `/scan/${active === 'bicycles' ? 'bikes' : active === 'motocross' ? 'mx' : active}`; })()} replace />} />
           <Route path="/identify/coins" element={<Identify />} />
           <Route path="/scan/:niche" element={<NicheCapture />} />
           <Route path="/acquisitions" element={<Acquisitions />} />

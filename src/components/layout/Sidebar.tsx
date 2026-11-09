@@ -83,7 +83,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const [ebayOpen, setEbayOpen] = useState(false);
   const location = useLocation();
   const activeNicheId = String(localStorage.getItem('swish_active_niche') || user?.user_metadata?.preferred_niche || 'coins');
-  const activeNicheName = ({ coins: 'SWISH Coins', motocross: 'SWISH MX', bicycles: 'SWISH Bikes', clothing: 'SWISH Clothing', trading_cards: 'SWISH Cards', antiques: 'SWISH Antiques', fossils: 'SWISH Fossils', beauty: 'SWISH Beauty', tech: 'Tech Flipper', surplus_flip: 'Surplus Flip' } as Record<string, string>)[activeNicheId] || 'SWISH';
+  const activeNicheName = ({ coins: 'SWISH Coins', motocross: 'SWISH MX', bicycles: 'SWISH Bikes', clothing: 'SWISH Clothing', trading_cards: 'SWISH Cards', antiques: 'SWISH Antiques', fossils: 'SWISH Fossils', beauty: 'SWISH Beauty', tech: 'Tech Flipper', surplus_flip: 'Surplus Flip', tunes_flip: 'Tunes Flip', collectibles: 'Collectibles Flipper' } as Record<string, string>)[activeNicheId] || 'SWISH';
   void location.pathname;
 
   const handleSignOut = async () => { await signOut(); };

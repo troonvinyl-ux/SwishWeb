@@ -1,4 +1,4 @@
-export type ProductId = 'coins' | 'motocross' | 'bicycles' | 'clothing' | 'surplus_flip' | 'trading_cards' | 'antiques' | 'fossils' | 'beauty' | 'tech';
+export type ProductId = 'coins' | 'motocross' | 'bicycles' | 'clothing' | 'surplus_flip' | 'trading_cards' | 'antiques' | 'fossils' | 'beauty' | 'tech' | 'tunes_flip' | 'collectibles';
 
 export interface ProductContext {
   id: ProductId;
@@ -22,6 +22,11 @@ export const PRODUCTS: ProductContext[] = [
   { id: 'fossils', name: 'Fossil Flipper', shortName: 'Fossil Flipper', description: 'Identify fossils, minerals and specimens for resale.', collectionLabel: 'My Specimens', captureLabel: 'Identify Specimen', accent: '#06B6D4', hostnames: ['fossils.swishflip.co.uk'] },
   { id: 'beauty', name: 'Beauty Flipper', shortName: 'Beauty Flipper', description: 'Identify and value beauty, fragrance and skincare products.', collectionLabel: 'My Beauty Stock', captureLabel: 'Identify Product', accent: '#F43F5E', hostnames: ['beauty.swishflip.co.uk'] },
   { id: 'tech', name: 'Tech Flipper', shortName: 'Tech Flipper', description: 'Identify, assess and value phones, consoles and gadgets.', collectionLabel: 'My Tech Stock', captureLabel: 'Identify Tech', accent: '#3B82F6', hostnames: ['tech.swishflip.co.uk'] },
+  // These web entries deliberately have no standalone hostname yet. Route and
+  // entitlement resolution use their canonical IDs; a future branded domain
+  // can be registered here without changing the shared engine.
+  { id: 'tunes_flip', name: 'Tunes Flip', shortName: 'Music', description: 'Identify and sell vinyl, CDs, cassettes and collectable releases.', collectionLabel: 'My Collection', captureLabel: 'Identify Music', accent: '#A855F7', hostnames: [] },
+  { id: 'collectibles', name: 'Collectibles Flipper', shortName: 'Collectibles', description: 'Identify, value and list toys, comics, games and memorabilia.', collectionLabel: 'My Collectibles', captureLabel: 'Scan Barcode', accent: '#F97316', hostnames: [] },
 ];
 
 const PATH_PRODUCT: Record<string, ProductId> = {
@@ -39,6 +44,14 @@ const PATH_PRODUCT: Record<string, ProductId> = {
   '/beauty': 'beauty',
   '/electronics': 'tech',
   '/tech': 'tech',
+  '/tunes': 'tunes_flip',
+  '/tunes-flip': 'tunes_flip',
+  '/tunes_flip': 'tunes_flip',
+  '/music': 'tunes_flip',
+  '/vinyl_records': 'tunes_flip',
+  '/collectibles': 'collectibles',
+  '/collectibles-flipper': 'collectibles',
+  '/collectibles_flipper': 'collectibles',
 };
 
 /** Production hostname is the product selector. Local development retains the existing route-based selector. */
@@ -59,3 +72,4 @@ export function getProductForEntry(hostname?: string, pathname?: string): Produc
 export function isValidProductId(value: unknown): value is ProductId {
   return typeof value === 'string' && PRODUCTS.some(product => product.id === value);
 }
+

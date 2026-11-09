@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { callEdgeFunction, EdgeFunctionError, getSupabaseClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTable } from '@/hooks/useSupabaseQuery';
+import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { RefreshCw, CheckCircle, AlertCircle, Link2, Link2Off, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,34 +15,11 @@ export default function EbayHub() {
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState('');
-  const [tenantId, setTenantId] = useState<string | null>(null);
   const connectedNoticeShown = useRef(false);
   const qc = useQueryClient();
-
-  // Resolve the current user's workspace before querying its eBay connector.
-  // This keeps account status tenant-scoped even if a user belongs to multiple
-  // workspaces; RLS remains an additional boundary, not the only filter.
-  useEffect(() => {
-    if (!user) {
-      setTenantId(null);
-      return;
-    }
-    const sb = getSupabaseClient();
-    if (!sb) return;
-    let active = true;
-    const loadTenant = async () => {
-      const { data, error } = await sb
-        .from('tenant_memberships')
-        .select('tenant_id')
-        .eq('user_id', user.id)
-        .limit(1)
-        .maybeSingle();
-      if (!active || error) return;
-      setTenantId(data?.tenant_id ?? null);
-    };
-    void loadTenant();
-    return () => { active = false; };
-  }, [user]);
+  // eBay is a shared engine. Use the same canonical tenant resolution as the
+  // specialist workspaces; never choose an arbitrary membership row here.
+  const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
 
   const { data: accounts, isLoading } = useTable('marketplace_connectors', {
     // Never select credential_ref or any token payload into the browser.
@@ -123,52 +101,10 @@ export default function EbayHub() {
     connectedNoticeShown.current = false;
     try {
       const sb = getSupabaseClient();
-      if (!sb || !user) throw new Error('Please sign in again before connecting eBay.');
-      const { data: initialMembership, error: membershipError } = await sb
-        .from('tenant_memberships')
-        .select('tenant_id')
-        .eq('user_id', user.id)
-        .limit(1)
-        .maybeSingle();
-      if (membershipError) throw membershipError;
-
-      let membership = initialMembership;
-
-      // Web signup may finish before the tenant provisioning trigger has run.
-      // Use the same existing provisioning RPC as the mobile app; never invent
-      // a tenant id or bypass the tenant-membership security boundary.
-      if (!membership?.tenant_id) {
-        const storeName = String(
-          user.user_metadata?.full_name ||
-          user.email?.split('@')[0] ||
-          'My',
-        ).trim() + "'s Store";
-        const slugBase = storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'swish-store';
-        const slug = `${slugBase}-${Date.now().toString(36)}`;
-        const { data: provisionedTenantId, error: provisionError } = await sb.rpc('swish_provision_tenant', {
-          p_user_id: user.id,
-          p_tenant_name: storeName,
-          p_slug: slug,
-        });
-        if (provisionError) throw new Error(`Could not initialise your SWISH workspace: ${provisionError.message}`);
-        const { data: refreshedMembership, error: refreshedMembershipError } = await sb
-          .from('tenant_memberships')
-          .select('tenant_id')
-          .eq('user_id', user.id)
-          .limit(1)
-          .maybeSingle();
-        if (refreshedMembershipError) throw refreshedMembershipError;
-        membership = refreshedMembership?.tenant_id
-          ? refreshedMembership
-          : provisionedTenantId
-            ? { tenant_id: String(provisionedTenantId) }
-            : null;
-      }
-      if (!membership?.tenant_id) throw new Error('Your SWISH workspace could not be initialised. Please complete setup or contact support.');
-      setTenantId(membership.tenant_id);
+      if (!sb || !user || !tenantId) throw new Error('Your SWISH workspace is not ready. Complete setup before connecting eBay.');
       const { data, error } = await callEdgeFunction<Record<string, unknown>>('swish-ebay-oauth', {
         action: 'start_subscriber_authorization',
-        tenantId: membership.tenant_id,
+        tenantId,
       }, sb);
       if (error) throw error;
       const url = data?.consentUrl;
@@ -191,19 +127,11 @@ export default function EbayHub() {
     setSyncError('');
     try {
       const sb = getSupabaseClient();
-      if (!sb || !user) throw new Error('Please sign in again before syncing eBay.');
-      const { data: membership, error: membershipError } = await sb
-        .from('tenant_memberships')
-        .select('tenant_id')
-        .eq('user_id', user.id)
-        .limit(1)
-        .maybeSingle();
-      if (membershipError) throw membershipError;
-      if (!membership?.tenant_id) throw new Error('Your SWISH workspace is not ready. Complete setup before syncing eBay.');
+      if (!sb || !user || !tenantId) throw new Error('Your SWISH workspace is not ready. Complete setup before syncing eBay.');
 
       const { data, error } = await callEdgeFunction<Record<string, unknown>>(
         'swish-ebay-sync',
-        { tenantId: membership.tenant_id, mode: 'full' },
+        { tenantId, mode: 'full' },
         sb,
       );
       if (error) {
@@ -257,7 +185,7 @@ export default function EbayHub() {
 
       {/* Account status card */}
       <div className="swish-card p-5">
-        {isLoading ? (
+        {isLoading || tenantLoading ? (
           <p className="text-sm text-muted-foreground">Loading account…</p>
         ) : (
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -289,7 +217,7 @@ export default function EbayHub() {
                   {syncing ? 'Syncing…' : 'Sync Now'}
                 </button>
               )}
-              <button onClick={handleConnect} disabled={connecting} className="btn-primary">
+              <button onClick={handleConnect} disabled={connecting || tenantLoading || !tenantId} className="btn-primary">
                 {isConnected
                   ? <Link2 className="w-3.5 h-3.5" />
                   : <Link2Off className="w-3.5 h-3.5" />}
@@ -343,3 +271,4 @@ export default function EbayHub() {
     </div>
   );
 }
+

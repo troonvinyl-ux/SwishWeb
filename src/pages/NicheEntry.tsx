@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
-import { getSpecialistIdsForNiche, type SwishNicheId } from '@/lib/niche';
+import { getSpecialistIdsForNiche, normaliseNicheId, type SwishNicheId } from '@/lib/niche';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Info, CheckCircle2, Circle, Coins, Bike, Shirt, Wrench, Package, Search, ShieldCheck, Grid3X3, Construction, Gamepad2, Watch, Gem, Palette, Smartphone } from 'lucide-react';
@@ -31,6 +31,8 @@ const NICHES: Niche[] = [
   { id: 'beauty', name: 'SWISH Beauty', tagline: 'Source and flip beauty products at scale', colour: '#F472B6', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Wholesale', 'Clearance sales', 'Returns'], categories: ['Fragrance', 'Skincare', 'Cosmetics', 'Batch codes'], icon: Palette },
   { id: 'tech', name: 'Tech Flipper', tagline: 'Identify, value and flip technology', colour: '#06B6D4', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Clearance stock', 'Auctions', 'Local listings'], categories: ['Phones', 'Consoles', 'Gadgets', 'Tested stock'], icon: Smartphone },
   { id: 'surplus_flip', name: 'Surplus Flip', tagline: 'Turn job lots and pallet manifests into eBay listings', colour: '#14B8A6', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Job lots', 'Pallets', 'Wholesale manifests'], categories: ['Job lots', 'Pallets', 'Wholesale', 'Returns'], icon: Package },
+  { id: 'tunes_flip', name: 'Tunes Flip', tagline: 'Identify and sell music media with pressing evidence', colour: '#A855F7', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Record shops', 'Collections', 'Car boot sales'], categories: ['Vinyl', 'Singles', 'CDs', 'Pressings'], icon: Sparkles },
+  { id: 'collectibles', name: 'Collectibles Flipper', tagline: 'Research and list toys, comics, games and memorabilia', colour: '#F97316', specialistCount: 1, marketplaces: ['eBay'], acquisitionSources: ['Collections', 'Clearance stock', 'Car boot sales'], categories: ['Toys', 'Comics', 'Games', 'Memorabilia'], icon: Package },
 ];
 
 export default function NicheEntry() {
@@ -40,7 +42,7 @@ export default function NicheEntry() {
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const [query, setQuery] = useState('');
   const [activeId, setActiveId] = useState(() => {
-    const stored = localStorage.getItem('swish_active_niche') || String(user?.user_metadata?.preferred_niche || 'coins');
+    const stored = normaliseNicheId(localStorage.getItem('swish_active_niche') || String(user?.user_metadata?.preferred_niche || 'coins')) || 'coins';
     return NICHES.some(n => n.id === stored) ? stored : 'coins';
   });
   const { data: activeSpecialists = [], isLoading: entitlementsLoading } = useQuery({
@@ -111,7 +113,7 @@ export default function NicheEntry() {
           })}
           {niches.length === 0 && <p className="py-8 text-center text-muted-foreground">No niches match that search.</p>}
         </div>
-        <div className="vertical-coming"><Construction className="w-5 h-5 shrink-0" /><div><strong>More verticals coming</strong><p>Electronics · Musical instruments · Sports equipment · Golf · Watches · Vinyl records · Comics</p></div></div>
+        <div className="vertical-coming"><Construction className="w-5 h-5 shrink-0" /><div><strong>More verticals coming</strong><p>Musical instruments · Sports equipment · Golf · Watches · Tools · Homeware</p></div></div>
         <div className="vertical-note"><Grid3X3 className="w-4 h-4 shrink-0" /><div><strong>ONE PLATFORM, MANY NICHES</strong><p>Your inventory, eBay integration, AI engine, valuation and orders share one platform. Switching niche changes the specialist context; existing backend access controls remain authoritative.</p></div></div>
       </section>
       <footer className="vertical-done"><button onClick={done} disabled={tenantLoading || entitlementsLoading || enabled.length === 0}><CheckCircle2 className="w-5 h-5" />Done — Using {NICHES.find(n => n.id === activeId)?.name || 'SWISH'}</button></footer>

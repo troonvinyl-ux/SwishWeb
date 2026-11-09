@@ -20,7 +20,27 @@ export const SCAN_PROFILES: Record<string, ScanProfile> = {
   tech: { name: 'Tech Flipper', barcode: true, evidence: [slot('device','Device'),slot('model','Model / serial label',false)] },
   surplus_flip: { name: 'Surplus Flip', barcode: true, evidence: [slot('lot','Lot or item'),slot('manifest','Manifest / label',false)] },
   tools: { name: 'Tool Flipper', barcode: true, evidence: [slot('tool','Tool'),slot('model','Model / rating plate',false)] },
-  tunes: { name: 'Tunes Flip', barcode: true, evidence: [slot('front','Cover'),slot('back','Rear / barcode'),slot('media','Disc / label',false)] },
+  tunes_flip: {
+    name: 'Tunes Flip',
+    barcode: true,
+    evidence: [
+      slot('front', 'Front packaging'),
+      slot('back', 'Rear / barcode / catalogue number'),
+      slot('media', 'Record label or disc face'),
+      slot('matrix', 'Matrix / runout detail', false),
+      slot('condition', 'Media and sleeve condition', false),
+    ],
+  },
+  collectibles: {
+    name: 'Collectibles Flipper',
+    barcode: true,
+    evidence: [
+      slot('item', 'Complete item'),
+      slot('packaging', 'Packaging / edition / maker mark'),
+      slot('accessories', 'Accessories and completeness', false),
+      slot('condition', 'Damage, wear or restoration', false),
+    ],
+  },
 };
 export function missingEvidence(profile: ScanProfile, supplied: ReadonlySet<string>): string[] {
   return profile.evidence.filter(s => s.required && !supplied.has(s.id)).map(s => s.label);
@@ -37,3 +57,4 @@ export function publicationBlockers(value: ListingReadiness): string[] {
 }
 export function canSaveDraft(): boolean { return true; }
 export function canPublish(value: ListingReadiness): boolean { return publicationBlockers(value).length === 0; }
+
