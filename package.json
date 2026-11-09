@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "test:niches": "node scripts/verify-niche-map.mjs",
     "test:vector": "node --test vector-bridge/test/vector-bridge.test.mjs",
-    "vector:bridge": "node vector-bridge/src/index.mjs"
+    "vector:bridge": "node vector-bridge/src/index.mjs",
+    "vector:status": "node vector-bridge/src/intent-command.mjs status",
+    "vector:test": "node vector-bridge/src/intent-command.mjs test"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

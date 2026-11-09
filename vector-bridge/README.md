@@ -69,6 +69,39 @@ Set a long `BRIDGE_SHARED_SECRET` before calling the endpoint. The default
 binding is loopback-only; keep it that way unless you specifically need a
 trusted LAN service to call it.
 
+## WirePod Custom Intent on this Windows PC
+
+When WirePod is installed on the same Windows PC as this bridge, it can invoke
+the local `status` endpoint without exposing it to the LAN.
+
+1. Set `BRIDGE_BIND_HOST=127.0.0.1` and a random `BRIDGE_SHARED_SECRET` of at
+   least 32 characters in `.env`.
+2. Start the bridge with `npm run vector:bridge` and leave that process running.
+3. Test the local handoff from PowerShell (it does not print your secret):
+
+   ```powershell
+   powershell.exe -NoProfile -File .\vector-bridge\scripts\wirepod-swish.ps1 -Command test
+   ```
+
+4. In WirePod, open **Custom Intents** and choose **Add a custom intent**.
+   Use these safe speech fields:
+
+   - Name: `SWISH Status`
+   - Description: `Speak aggregate SWISH workspace status`
+   - Intent: `intent_greeting_hello`
+   - Utterances: `swish status`, `check swish`, `how is swish doing`
+
+5. For the execution program and arguments, use the script at
+   `vector-bridge/scripts/wirepod-swish.ps1` with the `status` argument. The
+   exact labels and argument layout vary by WirePod version, so check the
+   fields shown by your installed page before saving. Do not place the
+   `BRIDGE_SHARED_SECRET` in the intent form: the script reads it only from the
+   ignored local `.env` file.
+
+The script calls only `http://127.0.0.1:<BRIDGE_PORT>/v1/command`, presents its
+bridge secret as a local request header, and accepts only the `status` or `test`
+command. It does not run arbitrary text passed from Vector.
+
 ## Security boundaries
 
 - The hosted SwishWeb page never calls `escapepod.local` directly. That avoids
@@ -87,7 +120,6 @@ trusted LAN service to call it.
 ## Known limitation
 
 WirePod custom intents/voice-provider configuration varies by installation.
-The bridge is ready to speak a `status` response when a trusted local intent
-forwards that command, but it does not change WirePod's voice configuration for
-you. That configuration should be made only after confirming the exact
-WirePod version and local-network address.
+The bridge includes a Windows same-PC handoff script, but it does not alter
+WirePod's voice configuration automatically. Review the exact Custom Intent
+fields shown by your installed WirePod version before saving it.
