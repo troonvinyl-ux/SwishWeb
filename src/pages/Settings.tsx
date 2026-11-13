@@ -76,6 +76,22 @@ export default function Settings() {
 
   return (
     <div className="space-y-6 animate-fade-in max-w-2xl">
+      {/* Shared web More navigation: keep the existing settings and expose the native niche switcher. */}
+      <nav aria-label="More menu" className="swish-card p-4 space-y-3">
+        <h2 className="text-lg font-bold">More</h2>
+        <Link to="/niches" className="flex items-center justify-between rounded-xl border border-primary/40 bg-primary/10 px-4 py-4 font-semibold text-foreground">
+          <span>Switch niche <span className="block text-xs font-normal text-muted-foreground">Choose another specialist workspace included in your membership</span></span>
+          <span aria-hidden="true" className="text-primary text-xl">↗</span>
+        </Link>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <Link to="/ebay" className="rounded-lg border border-border p-3">eBay account &amp; tools</Link>
+          <Link to="/orders" className="rounded-lg border border-border p-3">Orders</Link>
+          <Link to="/inventory" className="rounded-lg border border-border p-3">Inventory</Link>
+          <Link to="/listings" className="rounded-lg border border-border p-3">Listings</Link>
+        </div>
+        {user?.email?.toLowerCase() === 'troonvinyl@gmail.com' && <Link to="/master-admin" className="block rounded-lg border border-border p-3 text-sm">Master Admin</Link>}
+        <button type="button" onClick={() => void signOut()} className="w-full rounded-lg border border-border p-3 text-left text-sm">Sign out</button>
+      </nav>
       <div className="page-header">
         <h1 className="page-title">Settings</h1>
         <p className="page-subtitle">Manage your account and application settings</p>
