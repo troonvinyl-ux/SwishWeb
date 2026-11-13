@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { callEdgeFunction, EdgeFunctionError } from '@/lib/supabase';
+import { callEdgeFunction, EdgeFunctionError, getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
+import { normaliseNicheId } from '@/lib/niche';
 import { useTable, useCount } from '@/hooks/useSupabaseQuery';
 import { useCurrentTenantId } from '@/hooks/useCurrentTenantId';
 import { formatRelative } from '@/lib/utils';
 import { Terminal, RefreshCw, Zap, ShoppingCart, AlertTriangle, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ActionResult {
   status: 'idle' | 'running' | 'success' | 'error';
@@ -16,6 +18,7 @@ interface ActionResult {
 export default function CommandCentre() {
   const [actionResults, setActionResults] = useState<Record<string, ActionResult>>({});
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
+  const { user } = useAuth();
 
   const { data: recentActivity, isLoading: activityLoading } = useTable('activity_log', {
     filter: { tenant_id: tenantId },
@@ -46,6 +49,24 @@ export default function CommandCentre() {
     }
 
     setActionResults(p => ({ ...p, [actionId]: { status: 'running' } }));
+    // The Edge Function derives its trusted niche from the authenticated session.
+    // Browser storage is a navigation hint only; swish_open_module enforces entitlement.
+    const niche = normaliseNicheId(localStorage.getItem('swish_active_niche') || String(user?.user_metadata?.preferred_niche || 'coins'));
+    if (!niche) {
+      const message = 'Choose an authorised niche in More → Switch niche first.';
+      setActionResults(p => ({ ...p, [actionId]: { status: 'error', message } }));
+      toast.error(message);
+      return;
+    }
+    const sb = getSupabaseClient() || await getSupabaseClientAsync();
+    if (!sb) { toast.error('Backend connection unavailable.'); setActionResults(p => ({ ...p, [actionId]: { status: 'error', message: 'Backend connection unavailable.' } })); return; }
+    const opened = await sb.rpc('swish_open_module', { p_tenant_id: tenantId, p_niche_id: niche });
+    if (opened.error || opened.data !== true) {
+      const message = opened.error?.message || 'This account is not authorised for the selected niche.';
+      setActionResults(p => ({ ...p, [actionId]: { status: 'error', message } }));
+      toast.error(message);
+      return;
+    }
     const { data, error } = await callEdgeFunction(action.edgeFunction, action.payload);
     if (error) {
       const msg = error instanceof EdgeFunctionError ? error.displayMessage : error.message;
