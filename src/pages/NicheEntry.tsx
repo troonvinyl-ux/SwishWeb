@@ -41,6 +41,8 @@ export default function NicheEntry() {
   const navigate = useNavigate();
   const { tenantId, isLoading: tenantLoading } = useCurrentTenantId();
   const [query, setQuery] = useState('');
+  const [opening, setOpening] = useState(false);
+  const [openError, setOpenError] = useState('');
   const [activeId, setActiveId] = useState(() => {
     const stored = normaliseNicheId(localStorage.getItem('swish_active_niche') || String(user?.user_metadata?.preferred_niche || 'coins')) || 'coins';
     return NICHES.some(n => n.id === stored) ? stored : 'coins';
@@ -73,8 +75,8 @@ export default function NicheEntry() {
     // Browser storage must never grant access to an unentitled niche.
     if (enabled.includes(id)) selectNiche(NICHES.find(n => n.id === id) || NICHES[0]);
   };
-  const done = () => {
-    if (tenantLoading || entitlementsLoading) return;
+  const done = async () => {
+    if (tenantLoading || entitlementsLoading || opening || !tenantId) return;
     const niche = NICHES.find(n => n.id === activeId && enabled.includes(n.id)) || NICHES.find(n => enabled.includes(n.id));
     if (!niche) return;
     localStorage.setItem('swish_active_niche', niche.id);
@@ -116,7 +118,7 @@ export default function NicheEntry() {
         <div className="vertical-coming"><Construction className="w-5 h-5 shrink-0" /><div><strong>More verticals coming</strong><p>Musical instruments · Sports equipment · Golf · Watches · Tools · Homeware</p></div></div>
         <div className="vertical-note"><Grid3X3 className="w-4 h-4 shrink-0" /><div><strong>ONE PLATFORM, MANY NICHES</strong><p>Your inventory, eBay integration, AI engine, valuation and orders share one platform. Switching niche changes the specialist context; existing backend access controls remain authoritative.</p></div></div>
       </section>
-      <footer className="vertical-done"><button onClick={done} disabled={tenantLoading || entitlementsLoading || enabled.length === 0}><CheckCircle2 className="w-5 h-5" />Done — Using {NICHES.find(n => n.id === activeId)?.name || 'SWISH'}</button></footer>
+      <footer className="vertical-done">{openError && <p role="alert" className="text-red-400 text-sm p-2">{openError}</p>}<button onClick={() => void done()} disabled={opening || tenantLoading || entitlementsLoading || enabled.length === 0}><CheckCircle2 className="w-5 h-5" />{opening ? 'Opening authorised workspace…' : `Done — Using ${NICHES.find(n => n.id === activeId)?.name || 'SWISH'}`}</button></footer>
     </main>
   );
 }
