@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { validatePublicBackendKey } from '@/lib/publicBackendKey';
 
 export const BACKEND_URL = 'https://iwgaqieyoahmcjfziwga.backend.onspace.ai';
 
@@ -45,8 +46,9 @@ function cacheKey(key: string): void {
 
 /** Called by LoginPage only as an absolute last resort (needs_key state) */
 export function storeAnonKey(key: string): void {
-  cacheKey(key);
-  _buildClient(key);
+  const publicKey = validatePublicBackendKey(key);
+  cacheKey(publicKey);
+  _buildClient(publicKey);
 }
 
 /** Remove only if user explicitly wants to reset/reconfigure */
@@ -66,7 +68,7 @@ let _client: SupabaseClient | null = null;
 let _initPromise: Promise<SupabaseClient | null> | null = null;
 
 function _buildClient(key: string): SupabaseClient {
-  _client = createClient(BACKEND_URL, key, {
+  _client = createClient(BACKEND_URL, validatePublicBackendKey(key), {
     auth: {
       persistSession: true,
       autoRefreshToken: true,

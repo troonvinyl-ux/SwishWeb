@@ -1,0 +1,33 @@
+name: SWISH source contract review
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Test release guard logic
+        run: node --test scripts/test/swish-contracts.test.mjs
+      - name: Compare pinned SWISH source with native main
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SWISH_SOURCE_TOKEN: ${{ secrets.SWISH_SOURCE_READ_TOKEN }}
+        run: node scripts/check-swish-source.mjs --digest
+      - name: Retain source review report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swish-source-review
+          path: artifacts/swish-source-report.json
+          if-no-files-found: warn

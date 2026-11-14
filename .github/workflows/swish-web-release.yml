@@ -1,0 +1,54 @@
+name: SWISH reviewed web release candidate
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-candidate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install --no-audit --no-fund
+      - run: node --test scripts/test/swish-contracts.test.mjs
+      - name: Review source and release evidence
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SWISH_SOURCE_TOKEN: ${{ secrets.SWISH_SOURCE_READ_TOKEN }}
+        run: |
+          node scripts/check-swish-source.mjs
+          node scripts/check-web-release.mjs
+      - run: npm run lint
+      - run: node scripts/verify-niche-map.mjs
+      - run: node scripts/verify-web-parity.mjs
+      - run: npm run build
+      - name: Upload verified build for approval
+        uses: actions/upload-artifact@v4
+        with:
+          name: swish-web-candidate-${{ github.sha }}
+          path: |
+            dist/
+            artifacts/
+            config/swish-source.json
+            docs/production-readiness/web-release-evidence.json
+          retention-days: 7
+      - name: Retain blocked-release diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swish-web-blocked-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: warn
+  approve-candidate:
+    needs: verify-candidate
+    runs-on: ubuntu-latest
+    environment:
+      name: swishflip-production
+      url: https://swishflip.co.uk
+    steps:
+      - name: Record approval boundary
+        run: echo 'Verified candidate approved for the separately configured publishing process. This workflow does not deploy or change DNS.' >> "$GITHUB_STEP_SUMMARY"

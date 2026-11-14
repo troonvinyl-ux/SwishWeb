@@ -7,6 +7,8 @@ import { callEdgeFunction, EdgeFunctionError } from '@/lib/supabase';
 import { ArrowLeft, Save, Zap, Send, Loader2, ImageIcon, CheckCircle, ChevronDown, ChevronRight, AlertTriangle, Upload, X, RotateCw, Sun, Contrast, Sparkles, Tag, Truck, ShoppingBag } from 'lucide-react';
 import { getSupabaseClientAsync } from '@/lib/supabase';
 import { toast } from 'sonner';
+import ListingVerification, { type VerificationResult } from '@/components/features/ListingVerification';
+import PublishConfirmation from '@/components/features/PublishConfirmation';
 
 export default function ListingEditor() {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +32,12 @@ export default function ListingEditor() {
   const [editContrast, setEditContrast] = useState(100);
   const [uploadingImages, setUploadingImages] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
+  const [verification, setVerification] = useState<VerificationResult | null>(null);
+  const [confirmPublish, setConfirmPublish] = useState(false);
+  const [draftDirty, setDraftDirty] = useState(false);
+  const currentInputRef = useRef('');
+  currentInputRef.current = JSON.stringify({ form, selectedImages });
+  useEffect(() => { setVerification(null); setConfirmPublish(false); }, [form, selectedImages]);
 
   // Load linked inventory item to pull scan images
   const itemId = form.item_id as string | undefined;
@@ -39,6 +47,7 @@ export default function ListingEditor() {
     if (data) {
       const listing = data as Record<string, unknown>;
       setForm(listing);
+      setDraftDirty(false);
       // Pre-select existing listing images
       const existingImages = (listing.images as string[]) || [];
       setSelectedImages(existingImages);
@@ -46,7 +55,11 @@ export default function ListingEditor() {
   }, [data]);
 
   const f = (key: string): string => (form[key] as string) || '';
-  const setF = (key: string, val: unknown) => setForm(p => ({ ...p, [key]: val }));
+  const setF = (key: string, val: unknown) => {
+    setDraftDirty(true);
+    setVerification(null);
+    setForm(p => ({ ...p, [key]: val }));
+  };
 
   const suggestCategory = async () => {
     const title = f('title').trim();
@@ -83,6 +96,7 @@ export default function ListingEditor() {
   };
 
   const save = () => {
+    setVerification(null);
     // Keep the web editor aligned with the canonical listings schema used by
     // the SWISH mobile app. UI-only fields (e.g. "category" and "platform")
     // must never be sent as database columns.
@@ -111,6 +125,7 @@ export default function ListingEditor() {
     });
     upsert.mutate(payload, {
       onSuccess: (saved) => {
+        setDraftDirty(false);
         toast.success('Listing saved');
         const savedId = (saved as Record<string, unknown>)?.id as string;
         if (savedId && savedId !== id) navigate(`/listings/${savedId}`);
@@ -122,6 +137,9 @@ export default function ListingEditor() {
   const preflight = async () => {
     if (!form.id) { toast.error('Save listing first'); return; }
     if (!user?.id) { toast.error('Sign in again before running preflight'); return; }
+    if (draftDirty || upsert.isPending) { toast.error('Save your draft changes before running preflight.'); return; }
+    const verifiedInput = currentInputRef.current;
+    setVerification(null);
     setPreflighting(true);
     try {
       const sb = await getSupabaseClientAsync();
@@ -137,11 +155,14 @@ export default function ListingEditor() {
       });
       if (error) throw error;
       if (!result) throw new Error('Preflight returned no verification result');
-
-      // swish-verify returns its verdict and advisories at the top level.
+      if (currentInputRef.current !== verifiedInput) throw new Error('The draft changed during verification. Save and verify the current version again.');
+      const nested = result.verification && typeof result.verification === 'object' ? result.verification as Record<string, unknown> : {};
       const passed = result.passed === true;
-      const failures = Array.isArray(result.failure_reasons) ? result.failure_reasons as string[] : [];
-      const warnings = Array.isArray(result.warnings) ? result.warnings as string[] : [];
+      const rawFailures = result.failure_reasons ?? nested.failure_reasons;
+      const rawWarnings = result.warnings ?? nested.warnings;
+      const failures = Array.isArray(rawFailures) ? rawFailures.filter((value): value is string => typeof value === 'string') : [];
+      const warnings = Array.isArray(rawWarnings) ? rawWarnings.filter((value): value is string => typeof value === 'string') : [];
+      setVerification({ passed, failures, warnings });
       if (passed && warnings.length === 0) {
         toast.success('Preflight passed — listing verification is complete');
       } else {
@@ -161,15 +182,14 @@ export default function ListingEditor() {
   const publish = async () => {
     if (!form.id) { toast.error('Save listing first'); return; }
     if (!user?.id) { toast.error('Sign in again before publishing'); return; }
+    if (!verification?.passed || draftDirty || upsert.isPending || publishing) { toast.error('Save and pass verification before confirming publication.'); return; }
+    if (!selectedImages.length) { toast.error('Select at least one listing photo before publishing.'); return; }
     setPublishing(true);
     try {
       const sb = await getSupabaseClientAsync();
       if (!sb) throw new Error('SWISH backend is not connected');
-      const { data: membership, error: membershipError } = await sb.from('tenant_memberships')
-        .select('tenant_id').eq('user_id', user.id).limit(1).maybeSingle();
-      if (membershipError) throw membershipError;
-      const tenantId = String(form.tenant_id || membership?.tenant_id || '');
       if (!tenantId) throw new Error('Your SWISH workspace is not ready');
+      if (String(form.tenant_id || '') !== tenantId) throw new Error('Listing belongs to a different SWISH workspace.');
 
       // Use the canonical eBay listing function used by the native app.
       // The old publish-listing function is not deployed.
@@ -190,8 +210,9 @@ export default function ListingEditor() {
         throw new Error(detail);
       }
       toast.success('Listing published to eBay');
-      setF('status', 'active');
-      setF('external_listing_id', result.externalListingId || '');
+      setForm(current => ({ ...current, status: 'active', external_listing_id: result.externalListingId || '' }));
+      setDraftDirty(false);
+      setVerification(null);
     } catch (e) {
       const msg = e instanceof EdgeFunctionError ? e.displayMessage : e instanceof Error ? e.message : 'Publishing failed';
       toast.error(msg);
@@ -208,17 +229,21 @@ export default function ListingEditor() {
         <Link to="/listings" className="btn-ghost py-1.5 px-2"><ArrowLeft className="w-4 h-4" /></Link>
         <h1 className="page-title flex-1">Edit Listing</h1>
         <div className="flex gap-2">
-          <button onClick={preflight} disabled={preflighting || !form.id} className="btn-ghost">
+          <button onClick={preflight} disabled={preflighting || publishing || upsert.isPending || draftDirty || !form.id} className="btn-ghost">
             <Zap className="w-3.5 h-3.5" />{preflighting ? 'Checking…' : 'Preflight'}
           </button>
-          <button onClick={publish} disabled={publishing || !form.id} className="btn-ghost">
+          <button onClick={() => setConfirmPublish(true)} disabled={publishing || preflighting || draftDirty || upsert.isPending || !verification?.passed || !selectedImages.length || !form.id} className="btn-ghost">
             <Send className="w-3.5 h-3.5" />{publishing ? 'Publishing…' : 'Publish'}
           </button>
-          <button onClick={save} disabled={upsert.isPending || !tenantId} className="btn-primary">
+          <button onClick={save} disabled={upsert.isPending || publishing || preflighting || !tenantId} className="btn-primary">
             <Save className="w-3.5 h-3.5" />{upsert.isPending ? 'Saving…' : 'Save'}
           </button>
         </div>
       </div>
+
+      <ListingVerification result={verification} />
+      <PublishConfirmation open={confirmPublish} onOpenChange={setConfirmPublish} title={String(form.title || '')} price={Number(form.price || 0)} busy={publishing} onConfirm={() => void publish()} />
+      <p className="text-sm text-muted-foreground">Save changes, run preflight, review the verdict, then explicitly confirm publication. Changing a field or photo requires a new check.</p>
 
       {/* ── Image Gallery ── */}
       {linkedItem && (() => {

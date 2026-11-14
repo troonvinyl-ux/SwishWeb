@@ -1,0 +1,24 @@
+{
+  "repository": "troonvinyl-ux/SWISH",
+  "branch": "main",
+  "commit": "345a3cfcb7be78f18c0257d55694afb015ddf9c2",
+  "backendUrl": "https://iwgaqieyoahmcjfziwga.backend.onspace.ai",
+  "inspectedAt": "2026-11-14",
+  "review": { "status": "pending", "reviewUrl": null },
+  "contracts": {
+    "app": "78363ce4c1933db14d7ff46b6214a56f8a4f0eb1",
+    "services": "a468f4732d2efeab26a35dd068e30682a058b63f",
+    "constants": "27a9daca1cb4bc6415ae750ce9af5cdad7fa7a46",
+    "contexts": "c6d7b7ec4b548e2cf0d1d9b0891c1df938e2135c",
+    "hooks": "a02d726740523f76b6e38cd5ff274f0f412bb91b",
+    "template": "67c80df146495a7aa3d0745473d6cf7dee0f6967",
+    "shared": "a3a5a8bd84e8098032799abef9909047d5f458c2",
+    "supabase": "51f70a07457c83004a90eb2251ec59e1c3f392dd",
+    "niches": "7144a2de0e7b0ed6f98307b9bbac932576dae7f3",
+    "niche-modules.json": "8cd4f122847735d2ce748cc27e86919e19f5579e",
+    ".github": "47137def6d7b842aece65002d51e3b85a3eb57a5",
+    "scripts": "1b983b124ce182c7b09719e5f828186bcb63f0c9",
+    "app.config.js": "999a49c8c2ecd1061531c8d00ca08a507a10e765",
+    "package.json": "7fed569080db5577669837fe6197a724ebff5395"
+  }
+}

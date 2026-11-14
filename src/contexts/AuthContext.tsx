@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   getSupabaseClientAsync,
   getSupabaseClient,
-  resetClient,
   storeAnonKey,
 } from '@/lib/supabase';
 
@@ -29,6 +30,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading]         = useState(true);
   const [connectionStatus, setStatus] = useState<ConnectionStatus>('initialising');
   const unsubRef = useRef<(() => void) | null>(null);
+  const previousUserId = useRef<string | null | undefined>(undefined);
+  const qc = useQueryClient();
 
   const attachAuthListener = useCallback(() => {
     // Clean up any existing subscription first
@@ -37,22 +40,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const sb = getSupabaseClient();
     if (!sb) return;
 
-    // Load existing persisted session
-    sb.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    let active = true;
+    let authRevision = 0;
+    const applySession = (next: Session | null) => {
+      if (!active) return;
+      const nextId = next?.user.id ?? null;
+      if (previousUserId.current !== nextId) {
+        qc.clear();
+        previousUserId.current = nextId;
+      }
+      setSession(next);
+      setUser(next?.user ?? null);
+      setStatus('connected');
       setLoading(false);
+    };
+    // Subscribe first so a late getSession response cannot replace a newer login.
+    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, next) => {
+      authRevision += 1;
+      applySession(next);
     });
-
-    // Subscribe to future auth events
-    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    const revision = authRevision;
+    void sb.auth.getSession().then(({ data, error }) => {
+      if (!active || revision !== authRevision) return;
+      if (error) { setStatus('error'); setLoading(false); return; }
+      applySession(data.session);
     });
-
-    unsubRef.current = () => subscription.unsubscribe();
-  }, []);
+    unsubRef.current = () => { active = false; subscription.unsubscribe(); };
+  }, [qc]);
 
   // Auto-initialise on mount — never requires user interaction under normal conditions
   useEffect(() => {
@@ -76,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     })();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; unsubRef.current?.(); unsubRef.current = null; };
   }, [attachAuthListener]);
 
   /** Called only when auto-init fails and user provides key via LoginPage */
@@ -122,7 +136,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // We only end the user's session. The anon key remains in localStorage
     // so the next sign-in requires no manual key entry.
     const sb = getSupabaseClient();
-    if (sb) await sb.auth.signOut();
+    if (sb) {
+      const { error } = await sb.auth.signOut();
+      if (error) { toast.error(error.message); return; }
+    }
+    qc.clear();
+    previousUserId.current = null;
+    localStorage.removeItem('swish_active_niche');
+    localStorage.removeItem('swish_active_niche_name');
+    delete document.documentElement.dataset.niche;
     setUser(null);
     setSession(null);
     // Do NOT call resetClient() or clearStoredAnonKey() here.

@@ -1,0 +1,9 @@
+# GitHub branch rules must require Code Owner review; this file alone is not enforcement.
+/config/swish-source.json @troonvinyl-ux
+/SWISH_MAIN_APP_PARITY_REGISTER.md @troonvinyl-ux
+/docs/production-readiness/ @troonvinyl-ux
+/.github/ @troonvinyl-ux
+/scripts/ @troonvinyl-ux
+/src/lib/ @troonvinyl-ux
+/src/contexts/ @troonvinyl-ux
+/src/hooks/ @troonvinyl-ux

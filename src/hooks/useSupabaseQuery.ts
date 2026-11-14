@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useId } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { getSupabaseClient, getSupabaseClientAsync } from '@/lib/supabase';
 
 // ---------------------------------------------------------------------------
@@ -31,35 +31,16 @@ export interface TableOptions {
 // ---------------------------------------------------------------------------
 
 export function useTable(table: string, options?: TableOptions) {
-  const qc = useQueryClient();
-  const syncInstanceId = useId().replace(/[^a-zA-Z0-9-]/g, '');
-  // Keep the web inventory fresh when the native app, another browser, or an
-  // eBay sync updates canonical inventory/listing records in the shared backend.
-  useEffect(() => {
-    if (table !== 'items' && table !== 'listings') return;
-    let active = true;
-    let channel: ReturnType<NonNullable<ReturnType<typeof getSupabaseClient>>['channel']> | null = null;
-    const connect = async () => {
-      const sb = await getClient();
-      if (!active) return;
-      channel = sb.channel(`swish-web-sync-${table}-${syncInstanceId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
-          void qc.invalidateQueries({ queryKey: [table] });
-        })
-        .subscribe();
-    };
-    void connect().catch(error => {
-      console.warn(`[SWISH] Realtime sync unavailable for ${table}:`, error instanceof Error ? error.message : error);
-    });
-    return () => {
-      active = false;
-      if (channel) void getClient().then(sb => sb.removeChannel(channel!)).catch(() => {});
-    };
-  }, [table, qc, syncInstanceId]);
-
+  const { user } = useAuth();
+  // The existing backend does not provide Realtime. Refresh read-only data in
+  // the foreground; never replay an uncertain marketplace mutation.
+  const sharedTable = ['items', 'listings', 'orders', 'marketplace_connectors'].includes(table);
   return useQuery({
-    queryKey: [table, options],
-    enabled: options?.enabled !== false,
+    queryKey: [table, options, user?.id],
+    enabled: Boolean(user?.id) && options?.enabled !== false,
+    refetchInterval: sharedTable ? 30_000 : false,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
     retry: (failureCount, error) => {
       // Don't retry schema/auth errors — they won't resolve on their own
       const msg = (error as Error).message || '';
@@ -101,9 +82,11 @@ export function useTable(table: string, options?: TableOptions) {
 // ---------------------------------------------------------------------------
 
 export function useTableRow(table: string, id: string | null | undefined, select = '*', tenantId?: string | null) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [table, id, select, tenantId],
-    enabled: !!id && id !== 'new' && (tenantId === undefined || Boolean(tenantId)),
+    queryKey: [table, id, select, tenantId, user?.id],
+    enabled: Boolean(user?.id) && !!id && id !== 'new' && (tenantId === undefined || Boolean(tenantId)),
+    refetchOnWindowFocus: true,
     retry: false,
     queryFn: async () => {
       const sb = await getClient();
@@ -196,10 +179,14 @@ export function useCount(
   enabled = true,
   select = '*',
 ) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [table, 'count', filter, inFilter, select],
-    enabled,
+    queryKey: [table, 'count', filter, inFilter, select, user?.id],
+    enabled: enabled && Boolean(user?.id),
     retry: false,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const sb = await getClient();
       let q = sb.from(table).select(select, { count: 'exact', head: true });
@@ -210,8 +197,8 @@ export function useCount(
       const { count, error } = await q;
       if (error) {
         console.warn(`[SWISH] useCount("${table}") error:`, error.message);
-        // Return 0 rather than throwing — counts are best-effort for dashboard stats
-        return 0;
+        // Unavailable is not zero stock. Consumers must render an error state.
+        throw new Error(error.message);
       }
       return count || 0;
     },

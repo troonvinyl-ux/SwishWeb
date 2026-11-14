@@ -216,7 +216,7 @@ export default function NicheWorkspace() {
     ['active', 'live'].includes(String(listing.status || '').toLowerCase()),
   ).length;
   const metricsLoading = tenantLoading || (!isOwner && entitlementsLoading) || inventory.isLoading || sold.isLoading || liveListings.isLoading;
-  const metricsError = liveListings.error;
+  const metricsError = liveListings.error || inventory.error || sold.error;
   const Icon = config?.icon || Package;
   const number = (value: number | undefined) => metricsError ? 'Unavailable' : metricsLoading || !queryReady ? '—' : value ?? '—';
 
@@ -264,7 +264,7 @@ export default function NicheWorkspace() {
         <div><strong>{number(live)}</strong><span>Live</span></div>
         <div><strong>{number(sold.data)}</strong><span>Sold</span></div>
       </section>
-      {metricsError && <div role="alert" className="native-workspace-guidance"><CheckCircle2 /><span><strong>Workspace totals are temporarily unavailable</strong><small>{metricsError instanceof Error ? metricsError.message : 'We could not load live marketplace data.'} <button type="button" onClick={() => void liveListings.refetch()} className="underline">Retry</button></small></span></div>}
+      {metricsError && <div role="alert" className="native-workspace-guidance"><CheckCircle2 /><span><strong>Workspace totals are temporarily unavailable</strong><small>{metricsError instanceof Error ? metricsError.message : 'We could not load live marketplace data.'} <button type="button" onClick={() => void Promise.all([liveListings.refetch(), inventory.refetch(), sold.refetch()])} className="underline">Retry</button></small></span></div>}
 
       <div className="native-workspace-section-heading">
         <span>YOUR {config.shortName.toUpperCase()} WORKSPACE</span>
